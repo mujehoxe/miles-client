@@ -75,14 +75,11 @@ export default function Index() {
       };
 
       try {
-        const response = await fetch(
-          process.env.EXPO_PUBLIC_GEO_SERVER_URL + "/data",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data),
-          }
-        );
+        const response = await fetch("http://65.20.87.36:8080/data", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
         const responseText = await response.text();
         console.log("Location sent successfully:", responseText);
       } catch (error) {
