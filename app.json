@@ -14,7 +14,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mujeorg.milesclient"
+      "bundleIdentifier": "com.mujeorg.milesclient",
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +23,8 @@
         "backgroundColor": "#ffffff"
       },
       "permissions": ["INTERNET", "ACCESS_BACKGROUND_LOCATION"],
-      "package": "com.mujeorg.milesclient"
+      "package": "com.mujeorg.milesclient",
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",
