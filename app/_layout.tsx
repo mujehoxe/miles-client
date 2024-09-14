@@ -1,37 +1,43 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+import React, { createContext, useEffect, useState } from "react";
+import { Slot } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import { jwtDecode } from "jwt-decode";
+import LoginPage from "@/components/LoginPage";
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+export const DeviceContext = createContext<string | null>(null);
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
-
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
+export default function RootLayout({ children }) {
+  const [loaded, setLoaded] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+  const [deviceId, setDeviceId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
+    const initializeApp = async () => {
+      const storedToken = await SecureStore.getItemAsync("userToken");
+      if (storedToken) {
+        setToken(storedToken);
+        const decodedToken = jwtDecode(storedToken) as { id: string };
+        setDeviceId(decodedToken.id);
+      }
+      setLoaded(true);
+    };
+    initializeApp();
+  }, []);
 
-  if (!loaded) {
-    return null;
+  const handleLoginSuccess = async (newToken: string) => {
+    setToken(newToken);
+    await SecureStore.setItemAsync("userToken", newToken);
+    const decodedToken = jwtDecode(newToken) as { id: string };
+    setDeviceId(decodedToken.id);
+  };
+
+  if (!token && loaded) {
+    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-    </ThemeProvider>
+    <DeviceContext.Provider value={deviceId}>
+      <Slot />
+    </DeviceContext.Provider>
   );
 }
