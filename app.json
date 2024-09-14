@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "HelloWorld",
-    "slug": "expo-template-default",
+    "name": "Miles Client",
+    "slug": "miles-client",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -13,13 +13,15 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mujeorg.milesclient"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.mujeorg.milesclient"
     },
     "web": {
       "bundler": "metro",
@@ -31,6 +33,18 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "75bb3ac1-a958-44c2-989e-6084b19f60ee"
+      }
+    },
+    "owner": "muje-org",
+    "updates": {
+      "url": "https://u.expo.dev/75bb3ac1-a958-44c2-989e-6084b19f60ee"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }
