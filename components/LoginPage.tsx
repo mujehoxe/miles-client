@@ -10,15 +10,17 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [password, setPassword] = useState("");
 
   const handleLogin = async () => {
-    console.log(process.env.EXPO_PUBLIC_SERVER_URL);
     try {
-      const response = await fetch(`http://65.20.87.36:3000/api/users/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await fetch(
+        `https://crm.milestonehomesrealestate.com/api/users/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
+        }
+      );
 
       const result = await response.json();
 

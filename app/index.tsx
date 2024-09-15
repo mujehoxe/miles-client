@@ -75,11 +75,14 @@ export default function Index() {
       };
 
       try {
-        const response = await fetch("http://65.20.87.36:8080/data", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        });
+        const response = await fetch(
+          "crm.milestonehomesrealestate.com:8080/data",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          }
+        );
         const responseText = await response.text();
         console.log("Location sent successfully:", responseText);
       } catch (error) {

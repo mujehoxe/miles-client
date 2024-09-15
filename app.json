@@ -22,7 +22,12 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "permissions": ["INTERNET", "ACCESS_BACKGROUND_LOCATION"],
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "ACCESS_WIFI_STATE",
+        "ACCESS_BACKGROUND_LOCATION"
+      ],
       "package": "com.mujeorg.milesclient",
       "versionCode": 1
     },
@@ -34,6 +39,19 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 34,
+            "targetSdkVersion": 34,
+            "buildToolsVersion": "34.0.0"
+          },
+          "ios": {
+            "deploymentTarget": "13.4"
+          }
+        }
+      ],
       [
         "expo-location",
         {
