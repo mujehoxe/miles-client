@@ -28,7 +28,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         Alert.alert("Login Failed", "Invalid email or password.");
       }
     } catch (error) {
-      Alert.alert("Error", "Something went wrong. Please try again.");
+      Alert.alert("Error", "Something went wrong.\n" + error);
       console.error(error);
     }
   };
