@@ -76,7 +76,7 @@ export default function Index() {
 
       try {
         const response = await fetch(
-          "crm.milestonehomesrealestate.com:8080/data",
+          "https://crm.milestonehomesrealestate.com:8080/data",
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
