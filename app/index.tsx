@@ -23,88 +23,89 @@ export default function Index() {
 
   const SENSITIVITY_THRESHOLD = 500;
 
-  useEffect(() => {
-    const requestLocationPermission = async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        console.log("Permission to access location was denied");
-        return;
-      }
+  const requestLocationPermission = async () => {
+    let { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") {
+      console.log("Permission to access location was denied");
+      return;
+    }
 
-      let backgroundStatus = await Location.requestBackgroundPermissionsAsync();
-      if (backgroundStatus.status !== "granted") {
-        console.log("Permission to access location in background was denied");
-      }
+    let backgroundStatus = await Location.requestBackgroundPermissionsAsync();
+    if (backgroundStatus.status !== "granted") {
+      console.log("Permission to access location in background was denied");
+    }
 
-      startLocationUpdates();
-    };
+    startLocationUpdates();
+  };
 
-    const fetchAndDisplayAddress = async (
-      latitude: number,
-      longitude: number
-    ) => {
-      const fetchedAddress = await getAddressInfo(latitude, longitude);
-      setAddress(fetchedAddress);
-    };
+  const fetchAndDisplayAddress = async (
+    latitude: number,
+    longitude: number
+  ) => {
+    const fetchedAddress = await getAddressInfo(latitude, longitude);
+    setAddress(fetchedAddress);
+  };
 
-    const sendLocation = async (position: Location.LocationObject) => {
-      const { latitude, longitude } = position.coords;
-      const timestamp = new Date().toISOString();
+  const sendLocation = async (position: Location.LocationObject) => {
+    const { latitude, longitude } = position.coords;
+    const timestamp = new Date().toISOString();
 
-      setLocation({ latitude, longitude });
+    setLocation({ latitude, longitude });
 
-      if (previousLocationRef.current) {
-        const { latitude: prevLat, longitude: prevLng } =
-          previousLocationRef.current;
-        const distance = getDistance(prevLat, prevLng, latitude, longitude);
+    if (previousLocationRef.current) {
+      const { latitude: prevLat, longitude: prevLng } =
+        previousLocationRef.current;
+      const distance = getDistance(prevLat, prevLng, latitude, longitude);
 
-        if (distance > SENSITIVITY_THRESHOLD) {
-          fetchAndDisplayAddress(latitude, longitude);
-        }
-      } else {
+      if (distance > SENSITIVITY_THRESHOLD) {
         fetchAndDisplayAddress(latitude, longitude);
       }
+    } else {
+      fetchAndDisplayAddress(latitude, longitude);
+    }
 
-      previousLocationRef.current = { latitude, longitude };
+    previousLocationRef.current = { latitude, longitude };
 
-      const data = {
-        id: deviceId,
-        latitude,
-        longitude,
-        timestamp,
-      };
-
-      try {
-        const response = await fetch(
-          "https://crm.milestonehomesrealestate.com/data",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data),
-          }
-        );
-        const responseText = await response.text();
-        console.log("Location sent successfully:", responseText);
-      } catch (error) {
-        console.error("Error sending location:", error);
-      }
-
-      setLoading(false);
+    const data = {
+      id: deviceId,
+      latitude,
+      longitude,
+      timestamp,
     };
 
-    const startLocationUpdates = async () => {
-      await Location.watchPositionAsync(
+    try {
+      const response = await fetch(
+        "https://crm.milestonehomesrealestate.com/data",
         {
-          accuracy: Location.Accuracy.High,
-          distanceInterval: 1,
-          timeInterval: 10000,
-        },
-        sendLocation
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        }
       );
-    };
+      const responseText = await response.text();
+      console.log(data);
+      console.log("Location sent successfully:", responseText);
+    } catch (error) {
+      console.error("Error sending location:", error);
+    }
 
-    requestLocationPermission();
-  }, []);
+    setLoading(false);
+  };
+
+  const startLocationUpdates = async () => {
+    await Location.watchPositionAsync(
+      {
+        accuracy: Location.Accuracy.High,
+        distanceInterval: 1,
+        timeInterval: 10000,
+      },
+      sendLocation
+    );
+  };
+
+  useEffect(() => {
+    deviceId && requestLocationPermission();
+  }, [deviceId]);
 
   if (loading) {
     return (

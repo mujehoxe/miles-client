@@ -6,7 +6,7 @@ import LoginPage from "@/components/LoginPage";
 
 export const DeviceContext = createContext<string | null>(null);
 
-export default function RootLayout({ children }) {
+export default function RootLayout() {
   const [loaded, setLoaded] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [deviceId, setDeviceId] = useState<string | null>(null);
