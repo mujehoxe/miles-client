@@ -29,7 +29,8 @@
         "ACCESS_BACKGROUND_LOCATION"
       ],
       "package": "com.mujeorg.milesclient",
-      "versionCode": 1
+      "versionCode": 1,
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",
@@ -37,6 +38,12 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "development"
+        }
+      ],
       "expo-router",
       "expo-secure-store",
       [
@@ -46,7 +53,8 @@
           "isAndroidBackgroundLocationEnabled": true,
           "isIosBackgroundLocationEnabled": true
         }
-      ]
+      ],
+      "onesignal-expo-plugin"
     ],
     "experiments": {
       "typedRoutes": true
@@ -54,7 +62,8 @@
     "extra": {
       "eas": {
         "projectId": "75bb3ac1-a958-44c2-989e-6084b19f60ee"
-      }
+      },
+      "oneSignalAppId": "7a7f495d-a3ba-45b4-aa8e-37bf796e6bc4"
     },
     "owner": "muje-org",
     "updates": {

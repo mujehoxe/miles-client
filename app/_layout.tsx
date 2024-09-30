@@ -1,8 +1,8 @@
-import React, { createContext, useEffect, useState } from "react";
+import LoginPage from "@/components/LoginPage";
 import { Slot } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { jwtDecode } from "jwt-decode";
-import LoginPage from "@/components/LoginPage";
+import React, { createContext, useEffect, useState } from "react";
 
 export const DeviceContext = createContext<string | null>(null);
 
@@ -31,9 +31,8 @@ export default function RootLayout() {
     setDeviceId(decodedToken.id);
   };
 
-  if (!token && loaded) {
+  if (!token && loaded)
     return <LoginPage onLoginSuccess={handleLoginSuccess} />;
-  }
 
   return (
     <DeviceContext.Provider value={deviceId}>

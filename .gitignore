@@ -39,3 +39,5 @@ expo-env.d.ts
 app-example
 
 android
+
+google-services.json
