@@ -38,8 +38,7 @@
         "WRITE_EXTERNAL_STORAGE"
       ],
       "package": "com.mujeorg.milesclient",
-      "versionCode": 1,
-      "googleServicesFile": "./google-services.json"
+      "versionCode": 1
     },
     "plugins": [
       "expo-notifications",
