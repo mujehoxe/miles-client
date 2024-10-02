@@ -16,6 +16,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.mujeorg.milesclient",
       "buildNumber": "1",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
       "infoPlist": {
         "UIBackgroundModes": ["fetch"]
       }
@@ -30,7 +33,9 @@
         "ACCESS_NETWORK_STATE",
         "ACCESS_WIFI_STATE",
         "ACCESS_BACKGROUND_LOCATION",
-        "RECEIVE_BOOT_COMPLETED"
+        "RECEIVE_BOOT_COMPLETED",
+        "NOTIFICATIONS",
+        "WRITE_EXTERNAL_STORAGE"
       ],
       "package": "com.mujeorg.milesclient",
       "versionCode": 1,
@@ -46,6 +51,12 @@
           "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location.",
           "isAndroidBackgroundLocationEnabled": true,
           "isIosBackgroundLocationEnabled": true
+        }
+      ],
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "development"
         }
       ]
     ],

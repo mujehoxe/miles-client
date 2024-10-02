@@ -1,9 +1,11 @@
 import MapComponent from "@/components/MapComponent";
-import SSEClient from "@/components/SSEClient";
 import * as Location from "expo-location";
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import OneSignal from "react-native-onesignal";
 import { DeviceContext } from "./_layout";
+
+const ONE_SIGNAL_APP_ID = "d1134921-c416-419e-a0a7-0c98e2640e2a";
 
 interface LocationData {
   latitude: number;
@@ -106,6 +108,58 @@ export default function Index() {
     deviceId && requestLocationPermission();
   }, [deviceId]);
 
+  useEffect(() => {
+    // Initialize OneSignal
+    OneSignal.setAppId(ONE_SIGNAL_APP_ID);
+
+    // Prompt for push notifications
+    OneSignal.promptForPushNotificationsWithUserResponse((response) => {
+      console.log("User's response to notification prompt:", response);
+    });
+
+    // Handle notifications received while app is in foreground
+    OneSignal.setNotificationWillShowInForegroundHandler(
+      (notificationReceivedEvent) => {
+        console.log(
+          "OneSignal: notification will show in foreground:",
+          notificationReceivedEvent
+        );
+        const notification = notificationReceivedEvent.getNotification();
+        const data = notification.additionalData;
+        console.log("Notification Data:", data);
+        notificationReceivedEvent.complete(notification);
+      }
+    );
+
+    // Handle opened notifications
+    OneSignal.setNotificationOpenedHandler((notification) => {
+      console.log("OneSignal: notification opened:", notification);
+    });
+
+    // Get the device state and ensure subscription
+    OneSignal.getDeviceState().then((deviceState) => {
+      console.log("Device State:", deviceState);
+      if (!deviceState?.isSubscribed) {
+        console.log("Device not subscribed. Attempting to subscribe...");
+        OneSignal.addSubscriptionObserver((event) => {
+          if (event.to.isSubscribed) {
+            console.log("Successfully subscribed with ID:", event.to.userId);
+            // Send this ID to your server
+          }
+        });
+        // Trigger the subscription
+        OneSignal.disablePush(false);
+      } else {
+        console.log("Device already subscribed with ID:", deviceState.userId);
+        // Send this ID to your server if not already sent
+      }
+    });
+
+    return () => {
+      OneSignal.clearHandlers();
+    };
+  }, []);
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -117,7 +171,6 @@ export default function Index() {
 
   return (
     <View style={styles.container}>
-      <SSEClient />
       <Text style={styles.title}>Your Current Location</Text>
       {location && (
         <View style={styles.infoBox}>
