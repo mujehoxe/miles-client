@@ -1,7 +1,6 @@
 import MapComponent from "@/components/MapComponent";
-import Constants from "expo-constants";
+import SSEClient from "@/components/SSEClient";
 import * as Location from "expo-location";
-import OneSignal from "onesignal-expo-plugin";
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { DeviceContext } from "./_layout";
@@ -17,65 +16,11 @@ interface AddressInfo {
 }
 
 export default function Index() {
-  const [notificationData, setNotificationData] = useState(null);
-
   const [location, setLocation] = useState<LocationData | null>(null);
   const [address, setAddress] = useState<AddressInfo>({ city: "", street: "" });
   const [loading, setLoading] = useState(true);
   const previousLocationRef = useRef<LocationData | null>(null);
   const deviceId = useContext(DeviceContext);
-
-  useEffect(() => {
-    // Initialize OneSignal
-    OneSignal.initialize(Constants.expoConfig?.extra?.oneSignalAppId);
-
-    // Prompt for push notifications permission
-    OneSignal.promptForPushNotificationsWithUserResponse((response) => {
-      console.log("Prompt response:", response);
-    });
-
-    // Set up notification opened handler
-    OneSignal.setNotificationOpenedHandler((notification) => {
-      console.log("Notification opened:", notification);
-      setNotificationData(notification.notification);
-    });
-
-    // Set up notification will show in foreground handler
-    OneSignal.setNotificationWillShowInForegroundHandler(
-      (notificationReceivedEvent) => {
-        console.log(
-          "Notification received in foreground:",
-          notificationReceivedEvent
-        );
-        let notification = notificationReceivedEvent.getNotification();
-        notificationReceivedEvent.complete(notification);
-      }
-    );
-
-    // Get the device state
-    OneSignal.getDeviceState().then((deviceState) => {
-      console.log("Device State:", deviceState);
-      const playerId = deviceState.userId;
-      // Send this playerId to your server
-      fetch("192.168.122.1:3000/api/users/update-push-token", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: deviceId,
-          playerId: playerId,
-        }),
-      })
-        .then((response) => response.json())
-        .then((data) => console.log(data))
-        .catch((error) => console.error("Error:", error));
-    });
-
-    return () => {
-      // Clean up listeners if necessary
-    };
-  }, []);
 
   const SENSITIVITY_THRESHOLD = 500;
 
@@ -139,8 +84,6 @@ export default function Index() {
         }
       );
       const responseText = await response.text();
-      console.log(data);
-      console.log("Location sent successfully:", responseText);
     } catch (error) {
       console.error("Error sending location:", error);
     }
@@ -174,25 +117,7 @@ export default function Index() {
 
   return (
     <View style={styles.container}>
-      <View
-        style={{
-          flex: 1,
-          alignItems: "center",
-          justifyContent: "space-around",
-        }}
-      >
-        <Text>Your expo push token: {expoPushToken}</Text>
-        <View style={{ alignItems: "center", justifyContent: "center" }}>
-          <Text>
-            Title: {notification && notification.request.content.title}{" "}
-          </Text>
-          <Text>Body: {notification && notification.request.content.body}</Text>
-          <Text>
-            Data:{" "}
-            {notification && JSON.stringify(notification.request.content.data)}
-          </Text>
-        </View>
-      </View>
+      <SSEClient />
       <Text style={styles.title}>Your Current Location</Text>
       {location && (
         <View style={styles.infoBox}>

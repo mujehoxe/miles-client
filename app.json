@@ -15,7 +15,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.mujeorg.milesclient",
-      "buildNumber": "1"
+      "buildNumber": "1",
+      "infoPlist": {
+        "UIBackgroundModes": ["fetch"]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -26,24 +29,15 @@
         "INTERNET",
         "ACCESS_NETWORK_STATE",
         "ACCESS_WIFI_STATE",
-        "ACCESS_BACKGROUND_LOCATION"
+        "ACCESS_BACKGROUND_LOCATION",
+        "RECEIVE_BOOT_COMPLETED"
       ],
       "package": "com.mujeorg.milesclient",
       "versionCode": 1,
       "googleServicesFile": "./google-services.json"
     },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
-    },
     "plugins": [
-      [
-        "onesignal-expo-plugin",
-        {
-          "mode": "development"
-        }
-      ],
+      "expo-notifications",
       "expo-router",
       "expo-secure-store",
       [
@@ -53,8 +47,7 @@
           "isAndroidBackgroundLocationEnabled": true,
           "isIosBackgroundLocationEnabled": true
         }
-      ],
-      "onesignal-expo-plugin"
+      ]
     ],
     "experiments": {
       "typedRoutes": true
