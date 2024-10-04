@@ -3,7 +3,7 @@ import * as Location from "expo-location";
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import OneSignal from "react-native-onesignal";
-import { DeviceContext } from "./_layout";
+import { UserContext } from "./_layout";
 
 const ONE_SIGNAL_APP_ID = "d1134921-c416-419e-a0a7-0c98e2640e2a";
 
@@ -22,7 +22,7 @@ export default function Index() {
   const [address, setAddress] = useState<AddressInfo>({ city: "", street: "" });
   const [loading, setLoading] = useState(true);
   const previousLocationRef = useRef<LocationData | null>(null);
-  const deviceId = useContext(DeviceContext);
+  const user = useContext(UserContext);
 
   const SENSITIVITY_THRESHOLD = 500;
 
@@ -47,6 +47,7 @@ export default function Index() {
   ) => {
     const fetchedAddress = await getAddressInfo(latitude, longitude);
     setAddress(fetchedAddress);
+    setLoading(false);
   };
 
   const sendLocation = async (position: Location.LocationObject) => {
@@ -70,7 +71,7 @@ export default function Index() {
     previousLocationRef.current = { latitude, longitude };
 
     const data = {
-      id: deviceId,
+      id: user?.id,
       latitude,
       longitude,
       timestamp,
@@ -89,8 +90,6 @@ export default function Index() {
     } catch (error) {
       console.error("Error sending location:", error);
     }
-
-    setLoading(false);
   };
 
   const startLocationUpdates = async () => {
@@ -104,11 +103,7 @@ export default function Index() {
     );
   };
 
-  useEffect(() => {
-    deviceId && requestLocationPermission();
-  }, [deviceId]);
-
-  useEffect(() => {
+  function setupOneSignal() {
     // Initialize OneSignal
     OneSignal.setAppId(ONE_SIGNAL_APP_ID);
 
@@ -144,21 +139,51 @@ export default function Index() {
         OneSignal.addSubscriptionObserver((event) => {
           if (event.to.isSubscribed) {
             console.log("Successfully subscribed with ID:", event.to.userId);
-            // Send this ID to your server
+            sendPlayerIdToServer(user?.id, event.to.userId);
           }
         });
         // Trigger the subscription
         OneSignal.disablePush(false);
       } else {
         console.log("Device already subscribed with ID:", deviceState.userId);
-        // Send this ID to your server if not already sent
+        sendPlayerIdToServer(user?.id, deviceState.userId);
       }
     });
 
     return () => {
       OneSignal.clearHandlers();
     };
-  }, []);
+  }
+
+  const sendPlayerIdToServer = async (userId, playerId) => {
+    try {
+      const response = await fetch(
+        "http://192.168.1.11:3000/api/users/update-player-id",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ userId, playerId }),
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to update OneSignal Player ID");
+
+      const data = await response.json();
+      console.log("OneSignal Player ID updated successfully:", data);
+    } catch (error) {
+      console.error("Error updating OneSignal Player ID:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      console.log(user);
+      requestLocationPermission();
+      setupOneSignal();
+    }
+  }, [user]);
 
   if (loading) {
     return (
@@ -171,19 +196,29 @@ export default function Index() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Your Current Location</Text>
-      {location && (
-        <View style={styles.infoBox}>
-          <Text style={styles.infoText}>Latitude: {location.latitude}</Text>
-          <Text style={styles.infoText}>Longitude: {location.longitude}</Text>
-          <Text style={styles.infoText}>
-            City: {address.city || "Resolving city..."}
+      {user && (
+        <View>
+          <Text style={styles.title}>
+            <Text style={{ fontWeight: "800" }}>{user.name}</Text> Your Current
+            Location
           </Text>
-          <Text style={styles.infoText}>
-            Street: {address.street || "Resolving street..."}
-          </Text>
+          {location && (
+            <View style={styles.infoBox}>
+              <Text style={styles.infoText}>Latitude: {location.latitude}</Text>
+              <Text style={styles.infoText}>
+                Longitude: {location.longitude}
+              </Text>
+              <Text style={styles.infoText}>
+                City: {address.city || "Resolving city..."}
+              </Text>
+              <Text style={styles.infoText}>
+                Street: {address.street || "Resolving street..."}
+              </Text>
+            </View>
+          )}
         </View>
       )}
+
       <MapComponent location={location} />
     </View>
   );
@@ -243,6 +278,7 @@ const getAddressInfo = async (
 
 const styles = StyleSheet.create({
   container: {
+    color: "#fff",
     flex: 1,
     display: "flex",
     flexDirection: "column",
@@ -252,8 +288,9 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   title: {
+    color: "#fff",
     fontSize: 24,
-    fontWeight: "bold",
+    fontWeight: "semibold",
     marginBottom: 20,
     textAlign: "center",
   },
