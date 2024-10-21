@@ -1,6 +1,7 @@
-import notifee from "@notifee/react-native";
 import { useEffect } from "react";
 import OneSignal from "react-native-onesignal";
+
+import * as CountdownNotification from "expo-countdown-notification/src";
 
 const ONE_SIGNAL_APP_ID = "d1134921-c416-419e-a0a7-0c98e2640e2a";
 
@@ -19,11 +20,6 @@ export default function useOneSignal(user) {
       console.log("User's response to notification prompt:", response);
     });
 
-    const channelId = await notifee.createChannel({
-      id: "default",
-      name: "Default Channel",
-    });
-
     OneSignal.setNotificationWillShowInForegroundHandler(
       (notificationReceivedEvent) => {
         console.log(
@@ -36,18 +32,11 @@ export default function useOneSignal(user) {
 
         if (data?.type === "reminder") {
           const reminderTime = new Date(data.dateTime).getTime();
-          notifee.displayNotification({
-            title: "Message from Sarah Lane",
-            body: notification.contentAvailable,
-            subtitle: "Messages",
-            android: {
-              channelId,
-              timestamp: reminderTime,
-              showTimestamp: true,
-              showChronometer: true,
-              chronometerDirection: "down",
-            },
-          });
+          const message = `Scheduled reminder for "${data.leadName}" at ${
+            data.dateTime.split("T")[1]
+          }`;
+          CountdownNotification.display(reminderTime, message, 5 * 60 * 1000);
+          notificationReceivedEvent.complete();
           return;
         }
 
