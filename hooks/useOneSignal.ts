@@ -7,10 +7,8 @@ const ONE_SIGNAL_APP_ID = "d1134921-c416-419e-a0a7-0c98e2640e2a";
 
 export default function useOneSignal(user) {
   useEffect(() => {
-    if (user) {
-      console.log(user);
-      setupOneSignal();
-    }
+    console.log(user);
+    if (user) setupOneSignal();
   }, [user]);
 
   async function setupOneSignal() {
@@ -22,25 +20,32 @@ export default function useOneSignal(user) {
 
     OneSignal.setNotificationWillShowInForegroundHandler(
       (notificationReceivedEvent) => {
-        console.log(
-          "OneSignal: notification will show in foreground:",
-          notificationReceivedEvent
-        );
-        const notification = notificationReceivedEvent.getNotification();
-        const data = notification.additionalData;
-        console.log("Notification Data:", data);
+        try {
+          const notification = notificationReceivedEvent.getNotification();
+          const data = notification.additionalData;
+          console.log("Notification Data:", data);
 
-        if (data?.type === "reminder") {
-          const reminderTime = new Date(data.dateTime).getTime();
-          const message = `Scheduled reminder for "${data.leadName}" at ${
-            data.dateTime.split("T")[1]
-          }`;
-          CountdownNotification.display(reminderTime, message, 5 * 60 * 1000);
-          notificationReceivedEvent.complete();
-          return;
+          if (data?.type === "reminder") {
+            const reminderTime = new Date(data.dateTime);
+
+            const title = `Scheduled reminder for "${
+              data.leadName
+            }" at ${reminderTime.toLocaleTimeString().slice(0, -3)}`;
+
+            CountdownNotification.display(
+              reminderTime.getTime(),
+              title,
+              5 * 60 * 1000
+            );
+
+            notificationReceivedEvent.complete();
+            return;
+          }
+
+          notificationReceivedEvent.complete(notification);
+        } catch (err) {
+          console.log(err);
         }
-
-        notificationReceivedEvent.complete(notification);
       }
     );
 
