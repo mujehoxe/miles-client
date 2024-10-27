@@ -61,7 +61,6 @@ export default function useLocation(user) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      console.log(data.agent_id);
       console.log(await res.text());
     } catch (error) {
       console.error("Error sending location:", error);
