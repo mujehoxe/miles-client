@@ -2,6 +2,7 @@
 
 # dependencies
 node_modules/
+modules/
 
 # Expo
 .expo/
@@ -41,3 +42,4 @@ app-example
 android
 
 google-services.json
+modules/expo-countdown-notification
