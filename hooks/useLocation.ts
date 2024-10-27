@@ -54,13 +54,15 @@ export default function useLocation(user) {
 
   const sendLocationToServer = async (userId, latitude, longitude) => {
     const timestamp = new Date().toISOString();
-    const data = { id: userId, latitude, longitude, timestamp };
+    const data = { agent_id: userId, latitude, longitude, timestamp };
     try {
-      await fetch("https://crm.milestonehomesrealestate.com/data", {
+      const res = await fetch(process.env.EXPO_PUBLIC_API_URL + "/data", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
+      console.log(data.agent_id);
+      console.log(await res.text());
     } catch (error) {
       console.error("Error sending location:", error);
     }
