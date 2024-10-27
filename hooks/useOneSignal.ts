@@ -75,7 +75,7 @@ export default function useOneSignal(user) {
   const sendPlayerIdToServer = async (userId, playerId) => {
     try {
       await fetch(
-        "https://crm.milestonehomesrealestate.com/api/users/update-player-id",
+        process.env.EXPO_PUBLIC_API_URL + "/api/users/update-player-id",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
