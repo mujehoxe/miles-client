@@ -39,7 +39,5 @@ yarn-error.*
 expo-env.d.ts
 app-example
 
-android
-
 google-services.json
 modules/expo-countdown-notification
