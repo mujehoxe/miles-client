@@ -1,8 +1,6 @@
 import { useEffect } from "react";
 import OneSignal from "react-native-onesignal";
 
-import * as CountdownNotification from "expo-countdown-notification/src";
-
 const ONE_SIGNAL_APP_ID = "d1134921-c416-419e-a0a7-0c98e2640e2a";
 
 export default function useOneSignal(user) {
@@ -23,22 +21,8 @@ export default function useOneSignal(user) {
         try {
           const notification = notificationReceivedEvent.getNotification();
           const data = notification.additionalData;
-          console.log("Notification Data:", data);
 
           if (data?.type === "reminder") {
-            const reminderTime = new Date(data.dateTime);
-
-            const title = `Scheduled reminder for "${
-              data.leadName
-            }" at ${reminderTime.toLocaleTimeString().slice(0, -3)}`;
-
-            CountdownNotification.display(
-              reminderTime.getTime(),
-              title,
-              5 * 60 * 1000
-            );
-
-            notificationReceivedEvent.complete();
             return;
           }
 
@@ -48,6 +32,20 @@ export default function useOneSignal(user) {
         }
       }
     );
+
+    // OneSignal.setNotificationOpenedHandler((notification) => {
+    //   console.log("Notification opened:", notification);
+    //   const data = notification.notification.additionalData;
+    //   handleNotificationOpened(data);
+    // });
+
+    // const handleNotificationOpened = (data) => {
+    //   // Handle any specific actions when notification is opened from background
+    //   if (data?.type === "reminder") {
+    //     // Navigate to relevant screen or perform specific action
+    //     // navigation.navigate('ReminderScreen', { reminderData: data });
+    //   }
+    // };
 
     OneSignal.getDeviceState().then((deviceState) => {
       console.log("Device State:", deviceState);
@@ -74,8 +72,8 @@ export default function useOneSignal(user) {
 
   const sendPlayerIdToServer = async (userId, playerId) => {
     try {
-      await fetch(
-        process.env.EXPO_PUBLIC_API_URL + "/api/users/update-player-id",
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_API_URL}/api/users/update-player-id`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
