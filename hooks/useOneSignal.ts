@@ -28,24 +28,10 @@ export default function useOneSignal(user) {
 
           notificationReceivedEvent.complete(notification);
         } catch (err) {
-          console.log(err);
+          console.error(err);
         }
       }
     );
-
-    // OneSignal.setNotificationOpenedHandler((notification) => {
-    //   console.log("Notification opened:", notification);
-    //   const data = notification.notification.additionalData;
-    //   handleNotificationOpened(data);
-    // });
-
-    // const handleNotificationOpened = (data) => {
-    //   // Handle any specific actions when notification is opened from background
-    //   if (data?.type === "reminder") {
-    //     // Navigate to relevant screen or perform specific action
-    //     // navigation.navigate('ReminderScreen', { reminderData: data });
-    //   }
-    // };
 
     OneSignal.getDeviceState().then((deviceState) => {
       console.log("Device State:", deviceState);
