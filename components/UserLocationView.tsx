@@ -1,15 +1,14 @@
-// components/UserLocationView.tsx
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
-export default function UserLocationView({ user, location, address }) {
+export default function UserInfo({ user, location, address }) {
   return (
     <View>
       <Text style={styles.title}>
         <Text style={{ fontWeight: "800" }}>{user.name}</Text> Your Current
         Location
       </Text>
-      <View style={styles.infoBox}>
+      <View>
         <Text style={styles.infoText}>Latitude: {location.latitude}</Text>
         <Text style={styles.infoText}>Longitude: {location.longitude}</Text>
         <Text style={styles.infoText}>
@@ -31,7 +30,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "center",
   },
-  infoBox: { marginVertical: 16, height: 100 },
   infoText: {
     fontSize: 16,
     color: "#fff",

@@ -1,6 +1,6 @@
 import LoadingView from "@/components/LoadingView";
 import MapComponent from "@/components/MapComponent";
-import UserLocationView from "@/components/UserLocationView";
+import UserInfo from "@/components/UserLocationView";
 import useLocation from "@/hooks/useLocation";
 import useOneSignal from "@/hooks/useOneSignal";
 import React, { useContext } from "react";
@@ -17,9 +17,13 @@ export default function Index() {
   return (
     <View style={styles.container}>
       {user && (
-        <UserLocationView user={user} location={location} address={address} />
+        <View style={styles.userInfoContainer}>
+          <UserInfo user={user} location={location} address={address} />
+        </View>
       )}
-      <MapComponent location={location} />
+      <View style={styles.mapWrapper}>
+        <MapComponent location={location} />
+      </View>
     </View>
   );
 }
@@ -27,8 +31,17 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    padding: 10,
+    paddingTop: 46,
+    paddingBottom: 18,
+    height: "100%",
     backgroundColor: "#000",
-    justifyContent: "center",
+    overflow: "hidden",
+  },
+  userInfoContainer: {
+    marginBottom: 18,
+  },
+  mapWrapper: {
+    flex: 1,
   },
 });

@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, Platform } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import { WebView } from "react-native-webview";
 
@@ -69,10 +69,12 @@ const MapComponent: React.FC<MapComponentProps> = ({ location }) => {
 
 const styles = StyleSheet.create({
   mapContainer: {
+    flex: 1,
     width: "100%",
-    height: 700,
+    height: "100%",
   },
   map: {
+    flex: 1,
     width: "100%",
     height: "100%",
   },
