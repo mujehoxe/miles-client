@@ -11,12 +11,13 @@ export default function UserInfo({ user, location, address }) {
       <View>
         <Text style={styles.infoText}>Latitude: {location.latitude}</Text>
         <Text style={styles.infoText}>Longitude: {location.longitude}</Text>
-        <Text style={styles.infoText}>
-          City: {address.city || "Resolving city..."}
-        </Text>
-        <Text style={styles.infoText}>
-          Street: {address.street || "Resolving street..."}
-        </Text>
+        {console.log(address) ||
+          (address.city && (
+            <Text style={styles.infoText}>City: {address.city}</Text>
+          ))}
+        {address.street && (
+          <Text style={styles.infoText}>Street: {address.street}</Text>
+        )}
       </View>
     </View>
   );

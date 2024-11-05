@@ -1,6 +1,6 @@
 import LoadingView from "@/components/LoadingView";
 import MapComponent from "@/components/MapComponent";
-import UserInfo from "@/components/UserLocationView";
+import UserInfo from "@/components/UserInfo";
 import useLocation from "@/hooks/useLocation";
 import useOneSignal from "@/hooks/useOneSignal";
 import React, { useContext } from "react";
