@@ -8,10 +8,15 @@
       "developmentClient": true,
       "distribution": "internal",
       "android": {
-        "image": "latest"
+        "image": "latest",
+        "buildType": "apk"
       },
       "ios": {
         "image": "latest"
+      },
+      "env": {
+        "NODE_ENV": "development",
+        "EXPO_PUBLIC_API_URL": "https://crm.milestonehomesrealestate.com"
       }
     },
     "development-simulator": {
@@ -29,6 +34,9 @@
       },
       "ios": {
         "image": "latest"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://crm.milestonehomesrealestate.com"
       }
     },
     "production": {
