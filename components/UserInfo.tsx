@@ -4,13 +4,20 @@ import { StyleSheet, Text, View } from "react-native";
 export default function UserInfo({ user, location, address }) {
   return (
     <View>
-      <Text style={styles.title}>
-        <Text style={{ fontWeight: "800" }}>{user.name}</Text> Your Current
-        Location
+      <Text style={{ ...styles.title, fontWeight: "800" }}>
+        Hello {user.name},
       </Text>
       <View>
-        <Text style={styles.infoText}>Latitude: {location.latitude}</Text>
-        <Text style={styles.infoText}>Longitude: {location.longitude}</Text>
+        <Text style={{ ...styles.infoText, fontWeight: "800" }}>
+          Your Current Location
+        </Text>
+
+        {location?.latitude && (
+          <Text style={styles.infoText}>Latitude: {location.latitude}</Text>
+        )}
+        {location?.latitude && (
+          <Text style={styles.infoText}>Longitude: {location.longitude}</Text>
+        )}
         {address.city && (
           <Text style={styles.infoText}>City: {address.city}</Text>
         )}
@@ -24,15 +31,12 @@ export default function UserInfo({ user, location, address }) {
 
 const styles = StyleSheet.create({
   title: {
-    color: "#fff",
     fontSize: 24,
     fontWeight: "semibold",
-    marginBottom: 20,
-    textAlign: "center",
+    marginVertical: 10,
   },
   infoText: {
     fontSize: 16,
-    color: "#fff",
-    marginVertical: 5,
+    marginVertical: 6,
   },
 });

@@ -1,5 +1,5 @@
 import LoginPage from "@/components/LoginPage";
-import { Slot } from "expo-router";
+import { Stack } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { jwtDecode } from "jwt-decode";
 import React, { createContext, useEffect, useState } from "react";
@@ -36,7 +36,9 @@ export default function RootLayout() {
 
   return (
     <UserContext.Provider value={user}>
-      <Slot />
+      <Stack>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      </Stack>
     </UserContext.Provider>
   );
 }
