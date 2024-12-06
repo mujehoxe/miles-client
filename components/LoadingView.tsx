@@ -1,11 +1,10 @@
 import React from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 export default function LoadingView() {
   return (
     <View style={styles.container}>
       <ActivityIndicator size="large" color="#0000ff" />
-      <Text style={styles.text}>Fetching location...</Text>
     </View>
   );
 }

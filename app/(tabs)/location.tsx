@@ -2,7 +2,6 @@ import LoadingView from "@/components/LoadingView";
 import MapComponent from "@/components/MapComponent";
 import UserInfo from "@/components/UserInfo";
 import useLocation from "@/hooks/useLocation";
-import useOneSignal from "@/hooks/useOneSignal";
 import { useContext } from "react";
 import { StyleSheet, View } from "react-native";
 import { UserContext } from "../_layout";
@@ -10,7 +9,6 @@ import { UserContext } from "../_layout";
 export default function Tab() {
   const user = useContext(UserContext);
   const { location, address } = useLocation(user);
-  useOneSignal(user);
 
   if (!user || !location) return <LoadingView />;
 
