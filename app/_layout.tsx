@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { jwtDecode } from "jwt-decode";
 import React, { createContext, useEffect, useState } from "react";
+import "../global.css";
 
 export const UserContext = createContext<any | null>(null);
 

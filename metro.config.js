@@ -6,4 +6,6 @@ defaultConfig.resolver.sourceExts.push("cjs");
 
 defaultConfig.resolver.extraNodeModules = {};
 
-module.exports = defaultConfig;
+const { withNativeWind } = require("nativewind/metro");
+
+module.exports = withNativeWind(defaultConfig, { input: "./global.css" });
