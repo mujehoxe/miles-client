@@ -15,26 +15,49 @@ export default function RootLayout() {
 
   useEffect(() => {
     const initializeApp = async () => {
-      const storedToken = await SecureStore.getItemAsync("userToken");
-      if (storedToken) {
-        setToken(storedToken);
-        const decodedToken = jwtDecode(storedToken);
-        setUser(decodedToken);
+      try {
+        const storedToken = await SecureStore.getItemAsync("userToken");
+        
+        if (storedToken) {
+          try {
+            const decodedToken = jwtDecode(storedToken);
+            setToken(storedToken);
+            setUser(decodedToken);
+          } catch (tokenError) {
+            console.error('Failed to decode stored token:', tokenError);
+            // Remove invalid token
+            await SecureStore.deleteItemAsync("userToken");
+          }
+        }
+      } catch (error) {
+        console.error('Error during app initialization:', error);
       }
+      
       setLoaded(true);
     };
     initializeApp();
   }, []);
 
   const handleLoginSuccess = async (newToken: string) => {
-    setToken(newToken);
-    await SecureStore.setItemAsync("userToken", newToken);
-    const decodedToken = jwtDecode(newToken) as { id: string };
-    setUser(decodedToken);
+    try {
+      // Decode token first to validate it
+      const decodedToken = jwtDecode(newToken) as { id: string; exp?: number };
+      
+      // Store token
+      await SecureStore.setItemAsync("userToken", newToken);
+      
+      // Update app state
+      setToken(newToken);
+      setUser(decodedToken);
+    } catch (error) {
+      console.error('Failed to process login success:', error);
+      throw error; // Re-throw so the login component can handle it
+    }
   };
 
-  if (!token && loaded)
+  if (!token && loaded) {
     return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+  }
 
   return (
     <RootSiblingParent>
