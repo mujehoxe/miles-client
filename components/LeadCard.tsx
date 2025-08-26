@@ -1,13 +1,13 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import React, { useState } from "react";
 import {
-  Image,
   Linking,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import AuthenticatedImage from "./AuthenticatedImage";
 
 const LeadCard = ({ lead, onDetailsPress, selected = false, onCardPress }) => {
   const [showContact, setShowContact] = useState(false);
@@ -82,13 +82,22 @@ const LeadCard = ({ lead, onDetailsPress, selected = false, onCardPress }) => {
                 Assigned to: <Text style={styles.assignedName}>{lead.Assigned.username}</Text>
               </Text>
               {lead.Assigned?.Avatar && !avatarError ? (
-                <Image
+                <AuthenticatedImage
                   source={{
                     uri: `${process.env.EXPO_PUBLIC_API_URL || ""}${encodeURI(lead.Assigned.Avatar)}`,
                   }}
                   style={styles.avatar}
                   onError={(error) => {
+                    console.log(`Avatar loading error for ${lead.Assigned.username}:`, {
+                      originalPath: lead.Assigned.Avatar,
+                      encodedPath: encodeURI(lead.Assigned.Avatar),
+                      fullUri: `${process.env.EXPO_PUBLIC_API_URL || ""}${encodeURI(lead.Assigned.Avatar)}`,
+                      error: error
+                    });
                     setAvatarError(true);
+                  }}
+                  onLoad={() => {
+                    console.log(`Avatar loaded successfully for ${lead.Assigned.username}: ${lead.Assigned.Avatar}`);
                   }}
                 />
               ) : (
