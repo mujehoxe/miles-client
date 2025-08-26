@@ -1,9 +1,23 @@
 /**
  * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * These colors are based on the Miles brand palette from the CRM system.
  */
 
-const tintColorLight = '#0a7ea4';
+// Miles brand colors from Tailwind config
+const MilesBrandColors = {
+  50: '#e6f0f8',
+  100: '#cce0f2',
+  200: '#99c1e5',
+  300: '#66a3d9',
+  400: '#3385cc',
+  500: '#176298', // Base Miles brand color
+  600: '#155780',
+  700: '#124b68',
+  800: '#0f3f50',
+  900: '#0d333f',
+};
+
+const tintColorLight = MilesBrandColors[500]; // Miles brand blue
 const tintColorDark = '#fff';
 
 export const Colors = {
@@ -11,8 +25,8 @@ export const Colors = {
     text: '#11181C',
     background: '#fff',
     tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
+    icon: MilesBrandColors[600],
+    tabIconDefault: MilesBrandColors[400],
     tabIconSelected: tintColorLight,
   },
   dark: {
@@ -23,4 +37,6 @@ export const Colors = {
     tabIconDefault: '#9BA1A6',
     tabIconSelected: tintColorDark,
   },
+  // Export Miles brand colors for direct use
+  miles: MilesBrandColors,
 };
