@@ -9,8 +9,9 @@ import {
   View,
 } from "react-native";
 
-const LeadCard = ({ lead, onDetailsPress }) => {
+const LeadCard = ({ lead, onDetailsPress, selected = false, onCardPress }) => {
   const [showContact, setShowContact] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
 
   const handlePhoneCall = (phoneNumber) => {
     Linking.openURL(`tel:${phoneNumber}`);
@@ -24,155 +25,250 @@ const LeadCard = ({ lead, onDetailsPress }) => {
     );
   };
 
+  const formatTimeAgo = (dateString) => {
+    if (!dateString) return '';
+    
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInHours / 24);
+    
+    if (diffInHours < 24) {
+      return `${diffInHours}h ago`;
+    } else {
+      return `${diffInDays}d ago`;
+    }
+  };
+
+  const StatusBadge = ({ status }) => (
+    <View style={[
+      styles.statusBadge, 
+      { backgroundColor: status?.color || '#E5E7EB' }
+    ]}>
+      <Text style={styles.statusText}>
+        {status?.Status || 'N/A'}
+      </Text>
+    </View>
+  );
+
+  const TagChip = ({ tag }) => (
+    <View style={styles.tagChip}>
+      <Text style={styles.tagChipText}>{tag.Tag}</Text>
+    </View>
+  );
+
   return (
-    <View style={styles.card}>
-      {/* Lead Header */}
+    <TouchableOpacity 
+      style={[styles.card, selected && styles.selectedCard]} 
+      onPress={onCardPress}
+    >
+      {selected && (
+        <View style={styles.selectedIndicator}>
+          <Ionicons name="checkmark-circle" size={20} color="#3B82F6" />
+        </View>
+      )}
+
+      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.leadName} numberOfLines={1}>
           {lead.Name}
         </Text>
-
+        
         <View style={styles.assignmentContainer}>
           {lead?.Assigned ? (
             <>
               <Text style={styles.assignedText}>
-                Assigned to: {lead?.Assigned.username}
+                Assigned to: <Text style={styles.assignedName}>{lead.Assigned.username}</Text>
               </Text>
-              {lead?.Assigned?.Avatar ? (
+              {lead.Assigned?.Avatar && !avatarError ? (
                 <Image
                   source={{
-                    uri: `${process.env.EXPO_PUBLIC_BASE_URL || ""}${
-                      lead?.Assigned.Avatar
-                    }`,
+                    uri: `${process.env.EXPO_PUBLIC_API_URL || ""}${encodeURI(lead.Assigned.Avatar)}`,
                   }}
                   style={styles.avatar}
+                  onError={(error) => {
+                    setAvatarError(true);
+                  }}
                 />
-              ) : null}
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Ionicons name="person" size={16} color="#9CA3AF" />
+                </View>
+              )}
             </>
           ) : (
-            <Text style={styles.unassignedText}>Not assigned</Text>
+            <Text style={styles.unassignedText}>Not assigned to any agent</Text>
           )}
         </View>
       </View>
 
-      {/* Lead Details */}
-      <View style={styles.detailsContainer}>
-        <Text style={styles.sectionTitle}>
-          Status: {lead.LeadStatus?.Status || "N/A"}
-        </Text>
-        <Text style={styles.sectionTitle}>
-          Source: {lead.Source?.Source || "N/A"}
-        </Text>
-
-        <View style={styles.tagsSection}>
-          <Text style={styles.tagTitle}>Marketing Tags:</Text>
-          <Text style={styles.tagValues}>
-            {lead.marketingtags?.map((t) => (
-              <Text
-                style={{
-                  backgroundColor: "#cce0f2",
-                  padding: 10,
-                  borderRadius: 10,
-                }}
-              >
-                {t.Tag}
-              </Text>
-            )) || "No tags"}
-          </Text>
+      {/* Body */}
+      <View style={styles.body}>
+        {/* Status and Source Row */}
+        <View style={styles.statusSourceRow}>
+          <View style={styles.statusContainer}>
+            <Text style={styles.fieldLabel}>Status:</Text>
+            <StatusBadge status={lead.LeadStatus} />
+          </View>
+          
+          <View style={styles.sourceContainer}>
+            <Text style={styles.fieldLabel}>Source:</Text>
+            <Text style={styles.sourceText}>{lead.Source?.Source || 'N/A'}</Text>
+          </View>
         </View>
 
-        <View style={styles.tagsSection}>
-          <Text style={styles.tagTitle}>DLD Tags:</Text>
-          <Text style={styles.tagValues}>
-            {lead.tags?.map((t) => (
-              <Text
-                style={{
-                  backgroundColor: "#cce0f2",
-                  padding: 10,
-                  borderRadius: 10,
-                }}
-              >
-                {t.Tag}
-              </Text>
-            )) || "No tags"}
-          </Text>
-        </View>
+        {/* Tags */}
+        {lead.tags && lead.tags.length > 0 && (
+          <View style={styles.tagsContainer}>
+            <Text style={styles.fieldLabel}>Tags:</Text>
+            <View style={styles.tagsRow}>
+              {lead.tags.slice(0, 3).map((tag, index) => (
+                <TagChip key={index} tag={tag} />
+              ))}
+              {lead.tags.length > 3 && (
+                <Text style={styles.moreTagsText}>+{lead.tags.length - 3} more</Text>
+              )}
+            </View>
+          </View>
+        )}
 
-        <View style={styles.descriptionContainer}>
-          <Text style={styles.sectionTitle}>Description:</Text>
-          <Text style={styles.descriptionText} numberOfLines={3}>
-            {lead.Description || "No Description"}
-          </Text>
-        </View>
+        {/* Description */}
+        {lead.Description && (
+          <View style={styles.descriptionContainer}>
+            <Text style={styles.fieldLabel}>Description:</Text>
+            <Text style={styles.descriptionText} numberOfLines={2}>
+              {lead.Description}
+            </Text>
+          </View>
+        )}
+
+        {/* Last Comment */}
+        {lead.lastComment && (
+          <View style={styles.commentContainer}>
+            <Text style={styles.fieldLabel}>Last Comment:</Text>
+            <Text style={styles.commentText} numberOfLines={2}>
+              {lead.lastComment.Content}
+            </Text>
+            {lead.commentCount > 1 && (
+              <TouchableOpacity onPress={onDetailsPress}>
+                <Text style={styles.moreCommentsText}>
+                  +{lead.commentCount - 1} more comments...
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </View>
 
-      {/* Contact Actions */}
-      <View style={styles.actionContainer}>
+      {/* Footer Actions */}
+      <View style={styles.footer}>
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={() => setShowContact(!showContact)}
+          onPress={(e) => {
+            e.stopPropagation();
+            setShowContact(!showContact);
+          }}
         >
-          <Ionicons name="call-sharp" size={20} color="#6B7280" />
+          <Ionicons name="call" size={18} color="#6B7280" />
           <Text style={styles.actionButtonText}>Contact</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionButton} onPress={onDetailsPress}>
-          <Ionicons name="information-circle-sharp" size={24} color="#6B7280" />
+        <View style={styles.divider} />
+
+        <TouchableOpacity 
+          style={styles.actionButton} 
+          onPress={(e) => {
+            e.stopPropagation();
+            onDetailsPress();
+          }}
+        >
+          <Ionicons name="information-circle" size={18} color="#6B7280" />
           <Text style={styles.actionButtonText}>Details</Text>
         </TouchableOpacity>
       </View>
 
+      {/* Contact Section */}
       {showContact && (
         <View style={styles.contactSection}>
-          <TouchableOpacity
-            style={styles.contactMethod}
-            onPress={() => handlePhoneCall(lead.Phone)}
-          >
-            <Ionicons name="call-sharp" size={16} color="#2563EB" />
-            <Text style={styles.contactMethodText}>{lead.Phone}</Text>
-          </TouchableOpacity>
-
-          {lead.AltPhone && (
+          <View style={styles.contactRow}>
             <TouchableOpacity
               style={styles.contactMethod}
-              onPress={() => handlePhoneCall(lead.AltPhone)}
+              onPress={() => handlePhoneCall(lead.Phone)}
             >
-              <Ionicons name="call-sharp" size={16} color="#DC2626" />
-              <Text style={styles.contactMethodText}>{lead.AltPhone}</Text>
+              <Ionicons name="call" size={16} color="#3B82F6" />
+              <Text style={styles.phoneText}>{lead.Phone}</Text>
             </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            style={styles.contactMethod}
-            onPress={() => handleWhatsApp(lead.Phone)}
-          >
-            <Text style={styles.whatsappText}>WhatsApp</Text>
-          </TouchableOpacity>
-
-          {lead.AltPhone && (
+            
+            {lead.AltPhone && (
+              <TouchableOpacity
+                style={styles.contactMethod}
+                onPress={() => handlePhoneCall(lead.AltPhone)}
+              >
+                <Ionicons name="call" size={16} color="#DC2626" />
+                <Text style={styles.altPhoneText}>{lead.AltPhone}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          
+          <View style={styles.contactRow}>
             <TouchableOpacity
-              style={styles.contactMethod}
-              onPress={() => handleWhatsApp(lead.AltPhone)}
+              style={styles.whatsappButton}
+              onPress={() => handleWhatsApp(lead.Phone)}
             >
-              <Text style={styles.whatsappText}>Alt WhatsApp</Text>
+              <Ionicons name="logo-whatsapp" size={16} color="#10B981" />
+              <Text style={styles.whatsappText}>WhatsApp</Text>
             </TouchableOpacity>
+            
+            {lead.AltPhone && (
+              <TouchableOpacity
+                style={styles.whatsappButton}
+                onPress={() => handleWhatsApp(lead.AltPhone)}
+              >
+                <Ionicons name="logo-whatsapp" size={16} color="#10B981" />
+                <Text style={styles.whatsappText}>Alt WhatsApp</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          
+          {lead.lastCalled && (
+            <View style={styles.lastCalledContainer}>
+              <Text style={styles.lastCalledText}>
+                Last called {formatTimeAgo(lead.lastCalled)}
+              </Text>
+            </View>
           )}
         </View>
       )}
-    </View>
+    </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "white",
+    backgroundColor: "#FFFFFF",
     borderRadius: 8,
     marginBottom: 12,
-    shadowColor: "#000",
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 8,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    minHeight: 280,
+  },
+  selectedCard: {
+    borderColor: "#3B82F6",
+    borderWidth: 2,
+  },
+  selectedIndicator: {
+    position: 'absolute',
+    top: -8,
+    left: -8,
+    zIndex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
   },
   header: {
     padding: 12,
@@ -193,47 +289,118 @@ const styles = StyleSheet.create({
   assignedText: {
     fontSize: 14,
     color: "#6B7280",
+    flex: 1,
+  },
+  assignedName: {
+    fontWeight: "500",
+    color: "#111827",
   },
   unassignedText: {
     fontSize: 14,
     color: "#6B7280",
   },
   avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    marginLeft: 8,
   },
-  detailsContainer: {
+  avatarPlaceholder: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 8,
+  },
+  body: {
     padding: 12,
+    flex: 1,
   },
-  sectionTitle: {
-    fontSize: 14,
-    color: "#4B5563",
+  statusSourceRow: {
+    flexDirection: "row",
+    marginBottom: 12,
+    gap: 12,
+  },
+  statusContainer: {
+    flex: 1,
+  },
+  sourceContainer: {
+    flex: 1,
+  },
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#6B7280",
     marginBottom: 4,
   },
-  tagsSection: {
-    marginTop: 8,
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    alignSelf: "flex-start",
   },
-  tagTitle: {
+  statusText: {
     fontSize: 12,
-    color: "#6B7280",
+    fontWeight: "500",
+    color: "#FFFFFF",
+  },
+  sourceText: {
+    fontSize: 14,
+    color: "#111827",
+  },
+  tagsContainer: {
+    marginBottom: 12,
+  },
+  tagsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 4,
+  },
+  tagChip: {
+    backgroundColor: "#EBF4FF",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  tagChipText: {
+    fontSize: 11,
+    color: "#1E40AF",
     fontWeight: "500",
   },
-  tagValues: {
-    fontSize: 14,
-    color: "#1F2937",
+  moreTagsText: {
+    fontSize: 11,
+    color: "#6B7280",
+    fontStyle: "italic",
   },
   descriptionContainer: {
-    marginTop: 12,
+    marginBottom: 12,
   },
   descriptionText: {
     fontSize: 14,
     color: "#374151",
+    lineHeight: 20,
   },
-  actionContainer: {
+  commentContainer: {
+    marginBottom: 8,
+  },
+  commentText: {
+    fontSize: 14,
+    color: "#111827",
+    lineHeight: 20,
+  },
+  moreCommentsText: {
+    fontSize: 12,
+    color: "#3B82F6",
+    fontWeight: "500",
+    marginTop: 4,
+  },
+  footer: {
     flexDirection: "row",
     borderTopWidth: 1,
     borderTopColor: "#E5E7EB",
+    marginTop: "auto",
   },
   actionButton: {
     flex: 1,
@@ -241,34 +408,79 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: 12,
-    borderRightWidth: 1,
-    borderRightColor: "#E5E7EB",
+  },
+  divider: {
+    width: 1,
+    backgroundColor: "#E5E7EB",
   },
   actionButtonText: {
-    marginLeft: 8,
+    marginLeft: 6,
     color: "#6B7280",
     fontSize: 14,
+    fontWeight: "500",
   },
   contactSection: {
     padding: 12,
     backgroundColor: "#F9FAFB",
     borderBottomLeftRadius: 8,
     borderBottomRightRadius: 8,
+    gap: 8,
+  },
+  contactRow: {
+    flexDirection: "row",
+    gap: 8,
   },
   contactMethod: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
-    padding: 8,
-    backgroundColor: "#F3F4F6",
-    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    backgroundColor: "#DBEAFE",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#3B82F6",
+    flex: 1,
   },
-  contactMethodText: {
-    marginLeft: 8,
-    color: "#1F2937",
+  phoneText: {
+    marginLeft: 6,
+    color: "#1E40AF",
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  altPhoneText: {
+    marginLeft: 6,
+    color: "#DC2626",
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  whatsappButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    backgroundColor: "#DCFCE7",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#10B981",
+    flex: 1,
   },
   whatsappText: {
-    color: "#10B981",
+    marginLeft: 6,
+    color: "#059669",
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  lastCalledContainer: {
+    alignItems: "center",
+    marginTop: 4,
+  },
+  lastCalledText: {
+    fontSize: 11,
+    color: "#6B7280",
+    backgroundColor: "#E0E7FF",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
     fontWeight: "500",
   },
 });
