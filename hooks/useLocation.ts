@@ -144,7 +144,7 @@ export default function useLocation(user) {
     const data = { agent_id: userId, latitude, longitude, timestamp };
 
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/data`, {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/data`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

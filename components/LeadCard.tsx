@@ -84,14 +84,14 @@ const LeadCard = ({ lead, onDetailsPress, selected = false, onCardPress }) => {
               {lead.Assigned?.Avatar && !avatarError ? (
                 <AuthenticatedImage
                   source={{
-                    uri: `${process.env.EXPO_PUBLIC_API_URL || ""}${encodeURI(lead.Assigned.Avatar)}`,
+                    uri: `${process.env.EXPO_PUBLIC_BASE_URL || ""}${encodeURI(lead.Assigned.Avatar)}`,
                   }}
                   style={styles.avatar}
                   onError={(error) => {
                     console.log(`Avatar loading error for ${lead.Assigned.username}:`, {
                       originalPath: lead.Assigned.Avatar,
                       encodedPath: encodeURI(lead.Assigned.Avatar),
-                      fullUri: `${process.env.EXPO_PUBLIC_API_URL || ""}${encodeURI(lead.Assigned.Avatar)}`,
+                      fullUri: `${process.env.EXPO_PUBLIC_BASE_URL || ""}${encodeURI(lead.Assigned.Avatar)}`,
                       error: error
                     });
                     setAvatarError(true);

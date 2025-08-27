@@ -91,7 +91,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     setIsLoading(true);
     
     try {
-      const loginUrl = `${process.env.EXPO_PUBLIC_API_URL}/api/users/login`;
+      const loginUrl = `${process.env.EXPO_PUBLIC_BASE_URL}/api/users/login`;
       const requestHeaders = {
         "Content-Type": "application/json",
       };

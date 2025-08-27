@@ -16,7 +16,7 @@
       },
       "env": {
         "NODE_ENV": "development",
-        "EXPO_PUBLIC_API_URL": "https://crm.milestonehomesrealestate.com"
+        "EXPO_PUBLIC_BASE_URL": "https://crm.propertymetre.com"
       }
     },
     "development-simulator": {
@@ -36,7 +36,7 @@
         "image": "latest"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://crm.milestonehomesrealestate.com"
+        "EXPO_PUBLIC_BASE_URL": "https://crm.propertymetre.com"
       }
     },
     "production": {

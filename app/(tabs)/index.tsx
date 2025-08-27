@@ -68,8 +68,8 @@ export default function Tab() {
       "accept": "application/json, text/plain, */*",
       "content-type": "application/json",
       "Cookie": `token=${storedToken}`,
-      "referer": `${process.env.EXPO_PUBLIC_API_URL}/Leads/Marketing`,
-      "origin": `${process.env.EXPO_PUBLIC_API_URL}`,
+      "referer": `${process.env.EXPO_PUBLIC_BASE_URL}/Leads/Marketing`,
+      "origin": `${process.env.EXPO_PUBLIC_BASE_URL}`,
       "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) MilesClient-Mobile/1.0.0",
       "x-requested-with": "XMLHttpRequest",
     };
@@ -79,7 +79,7 @@ export default function Tab() {
   const fetchStatusOptions = async () => {
     try {
       const headers = await createAuthHeaders();
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/Status/get`, {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/Status/get`, {
         method: "GET",
         headers,
       });
@@ -104,7 +104,7 @@ export default function Tab() {
   const fetchSourceOptions = async () => {
     try {
       const headers = await createAuthHeaders();
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/Source/get`, {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/Source/get`, {
         method: "GET",
         headers,
       });
@@ -128,7 +128,7 @@ export default function Tab() {
   const fetchTagOptions = async () => {
     try {
       const headers = await createAuthHeaders();
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/tags/get`, {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/tags/get`, {
         method: "GET",
         headers,
       });
@@ -181,7 +181,7 @@ export default function Tab() {
     
     try {
       const headers = await createAuthHeaders();
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/staff/get?preserveHierarchy=true`, {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/staff/get?preserveHierarchy=true`, {
         method: "GET",
         headers,
       });
@@ -297,14 +297,14 @@ export default function Tab() {
       };
       
       
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/Lead/get`, {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/get`, {
         method: "POST",
         headers: {
           "accept": "application/json, text/plain, */*",
           "content-type": "application/json",
           "Cookie": `token=${storedToken}`,
-          "referer": `${process.env.EXPO_PUBLIC_API_URL}/Leads/Marketing`,
-          "origin": `${process.env.EXPO_PUBLIC_API_URL}`,
+          "referer": `${process.env.EXPO_PUBLIC_BASE_URL}/Leads/Marketing`,
+          "origin": `${process.env.EXPO_PUBLIC_BASE_URL}`,
           "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) MilesClient-Mobile/1.0.0",
           "x-requested-with": "XMLHttpRequest",
         },
