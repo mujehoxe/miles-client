@@ -1,0 +1,42 @@
+{
+  "name": "expo-countdown-notification",
+  "version": "0.1.5",
+  "description": "My new module",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "scripts": {
+    "build": "expo-module build",
+    "clean": "expo-module clean",
+    "lint": "expo-module lint",
+    "test": "expo-module test",
+    "prepare": "expo-module prepare",
+    "prepublishOnly": "expo-module prepublishOnly",
+    "expo-module": "expo-module",
+    "open:ios": "xed example/ios",
+    "open:android": "open -a \"Android Studio\" example/android"
+  },
+  "keywords": [
+    "react-native",
+    "expo",
+    "expo-countdown-notification",
+    "ExpoCountdownNotification"
+  ],
+  "repository": "https://github.com/mujehoxe/expo-countdown-notification",
+  "bugs": {
+    "url": "https://github.com/mujehoxe/expo-countdown-notification/issues"
+  },
+  "author": "mujehoxe <mujehoxe@gmail.com> (https://github.com/mujehoxe)",
+  "license": "MIT",
+  "homepage": "https://github.com/mujehoxe/expo-countdown-notification#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/react": "^18.0.25",
+    "expo-module-scripts": "^3.5.2",
+    "expo-modules-core": "^1.12.24"
+  },
+  "peerDependencies": {
+    "expo": "*",
+    "react": "*",
+    "react-native": "*"
+  }
+}
