@@ -599,22 +599,6 @@ export default function Tab() {
     }
   };
 
-  /**
-   * Handle page size change (items per page)
-   *
-   * This function manages:
-   * - Updating the page size setting
-   * - Resetting to first page (since current page may no longer exist)
-   * - Automatic data refetch via useEffect dependency
-   *
-   * @param {number} newPerPage - New items per page count
-   */
-  const handlePerPageChange = (newPerPage: number) => {
-    setLeadsPerPage(newPerPage);
-    setCurrentPage(0); // Reset to first page since pagination structure changes
-    // Note: fetchLeads will be triggered automatically by the useEffect watching leadsPerPage
-  };
-
   return (
     <View className="flex-1 bg-gray-50">
       {/* Header */}
