@@ -340,6 +340,40 @@ export const transformAgentsDataToTreeSelect = (data: any[]): any[] => {
 };
 
 /**
+ * Update a lead with new data
+ */
+export const updateLead = async (leadId: string, updates: any): Promise<any> => {
+  if (!leadId) {
+    throw new Error('Lead ID is required');
+  }
+
+  if (!(await validateAuthToken())) {
+    throw new Error('Authentication failed');
+  }
+
+  const headers = await createAuthHeaders();
+  
+  console.log('📤 Updating lead:', { leadId, updates });
+
+  const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/update/${leadId}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(updates),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`Lead update failed with status ${response.status}:`, errorText);
+    throw new Error(`Failed to update lead: ${response.status}`);
+  }
+
+  const data = await response.json();
+  console.log('✅ Lead updated successfully:', { leadId, data: data.data });
+  
+  return data.data;
+};
+
+/**
  * Fetch agents options with hierarchy
  */
 export const fetchAgents = async (user: any): Promise<any[]> => {

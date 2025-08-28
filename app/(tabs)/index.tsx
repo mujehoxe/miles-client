@@ -15,7 +15,7 @@ import { useFilters } from "@/hooks/useFilters";
 import { usePagination } from "@/hooks/usePagination";
 import { useLeadsSelection } from "@/hooks/useLeadsSelection";
 import { useSearchDebounce } from "@/hooks/useSearchDebounce";
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useState } from "react";
 
 // React Native imports
 import {
@@ -37,7 +37,7 @@ import tailwindConfig from "../../tailwind.config";
 import { UserContext } from "../_layout";
 
 // Services and utilities
-import { fetchTagOptions } from "@/services/api";
+import { fetchTagOptions, updateLead } from "@/services/api";
 import { SEARCH_BOX_OPTIONS, COUNT_OPTIONS, DEFAULT_PAGINATION } from "@/utils/constants";
 
 const fullConfig = resolveConfig(tailwindConfig);
@@ -121,6 +121,14 @@ export default function Tab() {
     currentPage,
     leadsPerPage
   });
+  
+  // Additional state for leads management
+  const [localLeads, setLocalLeads] = useState<any[]>([]);
+  
+  // Sync localLeads with leads from hook
+  useEffect(() => {
+    setLocalLeads(leads);
+  }, [leads]);
 
   // =============================================
   // EVENT HANDLERS
@@ -237,13 +245,56 @@ export default function Tab() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 100 }}
           >
-            {leads.map((lead, index) => (
+            {localLeads.map((lead, index) => (
               <LeadCard
                 key={lead._id || index}
                 lead={lead}
                 selected={isLeadSelected(lead)}
                 onCardPress={() => toggleLeadSelection(lead)}
                 onDetailsPress={() => console.log("details", lead._id)}
+                statusOptions={statusOptions}
+                sourceOptions={sourceOptions}
+                onLeadUpdate={async (leadId, updates) => {
+                  try {
+                    console.log('🔄 Updating lead:', leadId, updates);
+                    
+                    // Call API to update lead
+                    const updatedLead = await updateLead(leadId, updates);
+                    
+                    // Update local state immediately
+                    setLocalLeads(prevLeads => 
+                      prevLeads.map(prevLead => 
+                        prevLead._id === leadId 
+                          ? {
+                              ...updatedLead,
+                              // Add comment info if description was provided
+                              ...(updates.updateDescription && updates.updateDescription.length > 0
+                                ? {
+                                    lastComment: { Content: updates.updateDescription },
+                                    commentCount: (prevLead.commentCount || 0) + 1,
+                                  }
+                                : {}),
+                            }
+                          : prevLead
+                      )
+                    );
+                    
+                    Toast.show('Lead updated successfully', {
+                      duration: Toast.durations.SHORT,
+                    });
+                    
+                  } catch (error) {
+                    console.error('Failed to update lead:', error);
+                    Toast.show(`Failed to update lead: ${error.message}`, {
+                      duration: Toast.durations.LONG,
+                    });
+                  }
+                }}
+                onOpenModal={(type, callback) => {
+                  console.log('Opening modal:', type);
+                  // TODO: Implement modal opening logic for meetings/reminders
+                  if (callback) callback();
+                }}
               />
             ))}
           </ScrollView>
