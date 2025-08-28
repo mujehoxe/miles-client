@@ -1,14 +1,19 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Tabs } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 
 export default function TabLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: "#176298",
-        headerBackgroundContainerStyle: { backgroundColor: "#176298" },
-      }}
-    >
+    <>
+      <StatusBar style="dark" backgroundColor="#ffffff" />
+      <Tabs
+        screenOptions={{
+          tabBarActiveTintColor: "#176298",
+          headerBackgroundContainerStyle: { backgroundColor: "#176298" },
+          // tabBarStyle: { display: 'none' }, // Re-enabled tab bar
+          headerShown: true, // Ensure header is shown
+        }}
+      >
       <Tabs.Screen
         name="index"
         options={{
@@ -28,5 +33,6 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </>
   );
 }

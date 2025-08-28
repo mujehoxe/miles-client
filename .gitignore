@@ -2,7 +2,8 @@
 
 # dependencies
 node_modules/
-modules/
+# Exclude only node_modules within modules, but allow android/ios directories
+modules/**/node_modules/
 
 # Expo
 .expo/
@@ -16,6 +17,10 @@ web-build/
 *.p12
 *.key
 *.mobileprovision
+
+# Prebuild (only exclude root android/ios, not module android/ios)
+/android
+/ios
 
 # Metro
 .metro-health-check*
@@ -34,14 +39,10 @@ yarn-error.*
 .env
 
 # typescript
-*.tsbuildinfocolor
+*.tsbuildinfo
 
 expo-env.d.ts
 app-example
 
 google-services.json
-modules/expo-countdown-notification
-
 build*
-modules/expo-countdown-notification
-color
