@@ -127,17 +127,16 @@ const Pagination: React.FC<PaginationProps> = ({
   const visiblePages = getVisiblePages();
 
   return (
-    <View className="bg-white py-4 px-4 border-t border-gray-200 gap-3">
-      {/* Items info */}
-      <View className="items-center">
-        <Text className="text-sm text-gray-500 font-medium">
-          Showing {startItem}-{endItem} of {totalItems} leads
-        </Text>
-      </View>
+    <View className="border-t border-gray-200">
+      {/* Overlay */}
+      <View className="absolute right-0 left-0 top-0 bottom-0 w-full h-full p-0 mt-0 mb-0 mr-0 ml-0 inset-0 bg-white opacity-90" />
 
-      {/* Pagination controls */}
-      <View className="flex-row items-center justify-between">
+      <View className="p-2 flex-row items-center justify-between">
+        <Text className="text-sm text-gray-500 font-medium">
+          {itemsPerPage} / {totalItems}
+        </Text>
         {/* Previous button */}
+
         <TouchableOpacity
           className={`flex-row items-center p-2 rounded-lg bg-gray-50 border border-gray-200 gap-1 justify-center ${
             currentPage === 0 || loading ? "opacity-50" : ""
@@ -177,7 +176,7 @@ const Pagination: React.FC<PaginationProps> = ({
                 key={page}
                 className={`w-10 h-10 rounded-lg border items-center justify-center ${
                   isCurrentPage
-                    ? "bg-blue-500 border-blue-500"
+                    ? "bg-miles-500 border-miles-500"
                     : "bg-gray-50 border-gray-200"
                 } ${loading ? "opacity-50" : ""}`}
                 onPress={() => handlePageSelect(page)}

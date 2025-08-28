@@ -1,15 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  Modal,
-  TextInput,
   ActivityIndicator,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+  Modal,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 interface FilterOption {
   value: string;
@@ -25,7 +24,15 @@ interface FilterDropdownProps {
   placeholder?: string;
   showColors?: boolean;
   lazyLoad?: boolean;
-  onFetchOptions?: () => Promise<FilterOption[]>;
+  onFetchOptions?: (
+    page?: number,
+    limit?: number,
+    searchTerm?: string
+  ) => Promise<{
+    options: FilterOption[];
+    hasMore: boolean;
+    totalCount: number;
+  }>;
 }
 
 export default function FilterDropdown({
@@ -39,10 +46,15 @@ export default function FilterDropdown({
   onFetchOptions,
 }: FilterDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [searchText, setSearchText] = useState('');
+  const [searchText, setSearchText] = useState("");
   const [localOptions, setLocalOptions] = useState<FilterOption[]>(options);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchDebounceTimer, setSearchDebounceTimer] =
+    useState<NodeJS.Timeout | null>(null);
 
   // Update localOptions when options prop changes
   useEffect(() => {
@@ -52,40 +64,106 @@ export default function FilterDropdown({
   // Handle lazy loading when modal opens
   const handleOpenModal = async () => {
     setIsOpen(true);
-    
-    if (lazyLoad && onFetchOptions && !hasLoadedOnce && localOptions.length === 0) {
-      setLoading(true);
-      try {
-        const fetchedOptions = await onFetchOptions();
-        setLocalOptions(fetchedOptions);
-        setHasLoadedOnce(true);
-      } catch (error) {
-        console.error('Error fetching options:', error);
-      } finally {
-        setLoading(false);
-      }
+
+    if (lazyLoad && onFetchOptions && !hasLoadedOnce) {
+      await loadInitialOptions();
     }
   };
 
+  // Load initial options
+  const loadInitialOptions = async () => {
+    if (!onFetchOptions) return;
+
+    setLoading(true);
+    try {
+      const result = await onFetchOptions(1, 50, searchText);
+      setLocalOptions(result.options);
+      setHasMore(result.hasMore);
+      setCurrentPage(1);
+      setHasLoadedOnce(true);
+    } catch (error) {
+      console.error("Error fetching initial options:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load more options for infinite scroll
+  const loadMoreOptions = async () => {
+    if (!onFetchOptions || loadingMore || !hasMore) return;
+
+    setLoadingMore(true);
+    try {
+      const nextPage = currentPage + 1;
+      const result = await onFetchOptions(nextPage, 50, searchText);
+      setLocalOptions((prev) => [...prev, ...result.options]);
+      setHasMore(result.hasMore);
+      setCurrentPage(nextPage);
+    } catch (error) {
+      console.error("Error loading more options:", error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  // Handle search with debouncing
+  const handleSearch = async (text: string) => {
+    setSearchText(text);
+
+    if (!lazyLoad || !onFetchOptions) return;
+
+    // Clear existing debounce timer
+    if (searchDebounceTimer) {
+      clearTimeout(searchDebounceTimer);
+    }
+
+    // Set new debounce timer
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const result = await onFetchOptions(1, 50, text);
+        setLocalOptions(result.options);
+        setHasMore(result.hasMore);
+        setCurrentPage(1);
+      } catch (error) {
+        console.error("Error searching options:", error);
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
+
+    setSearchDebounceTimer(timer);
+  };
+
+  // Cleanup debounce timer
+  useEffect(() => {
+    return () => {
+      if (searchDebounceTimer) {
+        clearTimeout(searchDebounceTimer);
+      }
+    };
+  }, [searchDebounceTimer]);
+
   const currentOptions = lazyLoad ? localOptions : options;
-  const filteredOptions = currentOptions.filter(option =>
+  const filteredOptions = currentOptions.filter((option) =>
     option.label.toLowerCase().includes(searchText.toLowerCase())
   );
 
   const isAllSelected = selectedValues.length === currentOptions.length;
-  const isPartiallySelected = selectedValues.length > 0 && selectedValues.length < currentOptions.length;
+  const isPartiallySelected =
+    selectedValues.length > 0 && selectedValues.length < currentOptions.length;
 
   const handleSelectAll = () => {
     if (isAllSelected) {
       onSelectionChange([]);
     } else {
-      onSelectionChange(currentOptions.map(option => option.value));
+      onSelectionChange(currentOptions.map((option) => option.value));
     }
   };
 
   const handleToggleOption = (value: string) => {
     if (selectedValues.includes(value)) {
-      onSelectionChange(selectedValues.filter(v => v !== value));
+      onSelectionChange(selectedValues.filter((v) => v !== value));
     } else {
       onSelectionChange([...selectedValues, value]);
     }
@@ -94,104 +172,173 @@ export default function FilterDropdown({
   const getDisplayText = () => {
     if (selectedValues.length === 0) return placeholder;
     if (selectedValues.length === 1) {
-      const option = options.find(o => o.value === selectedValues[0]);
+      const option = options.find((o) => o.value === selectedValues[0]);
       return option?.label || placeholder;
     }
     return `${selectedValues.length} selected`;
   };
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity 
-        style={styles.dropdownButton}
+    <View className="mb-4">
+      <TouchableOpacity
+        className="flex-row items-center justify-between bg-white border border-gray-300 rounded-lg p-3 min-h-[48px]"
         onPress={handleOpenModal}
       >
-        <Text style={styles.dropdownText}>{getDisplayText()}</Text>
+        <Text className="text-base text-gray-700 flex-1">
+          {getDisplayText()}
+        </Text>
         <Ionicons name="chevron-down" size={20} color="#6B7280" />
       </TouchableOpacity>
 
-      <Modal visible={isOpen} animationType="slide" presentationStyle="pageSheet">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
+      <Modal
+        visible={isOpen}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <View className="flex-1 bg-gray-50">
+          <View className="flex-row items-center justify-between p-4 bg-white border-b border-gray-200">
             <TouchableOpacity onPress={() => setIsOpen(false)}>
               <Ionicons name="close" size={24} color="#6B7280" />
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>{title}</Text>
-            <View style={{ width: 24 }} />
+            <Text className="text-lg font-semibold text-gray-900">{title}</Text>
+            <View className="w-6" />
           </View>
 
-          <View style={styles.searchContainer}>
-            <Ionicons name="search" size={20} color="#6B7280" style={styles.searchIcon} />
+          <View className="flex-row items-center bg-white border-b border-gray-200 px-4 py-3">
+            <Ionicons
+              name="search"
+              size={20}
+              color="#6B7280"
+              className="mr-2"
+            />
             <TextInput
-              style={styles.searchInput}
+              className="flex-1 text-base text-gray-900"
               placeholder="Search options..."
               value={searchText}
-              onChangeText={setSearchText}
+              onChangeText={lazyLoad ? handleSearch : setSearchText}
             />
           </View>
 
-          <View style={styles.selectAllContainer}>
-            <TouchableOpacity 
-              style={styles.selectAllButton}
+          <View className="bg-white border-b border-gray-200 p-4">
+            <TouchableOpacity
+              className="flex-row items-center"
               onPress={handleSelectAll}
             >
-              <View style={[
-                styles.checkbox,
-                isAllSelected && styles.checkboxSelected,
-                isPartiallySelected && styles.checkboxPartial,
-              ]}>
-                {isAllSelected && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
-                {isPartiallySelected && <View style={styles.partialIndicator} />}
+              <View
+                className={`w-5 h-5 rounded border-2 items-center justify-center ${
+                  isAllSelected
+                    ? "bg-miles-500 border-miles-500"
+                    : isPartiallySelected
+                    ? "bg-gray-100 border-miles-500"
+                    : "border-gray-300"
+                }`}
+              >
+                {isAllSelected && (
+                  <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                )}
+                {isPartiallySelected && (
+                  <View className="w-2 h-0.5 bg-miles-500" />
+                )}
               </View>
-              <Text style={styles.selectAllText}>
-                {isAllSelected ? 'Deselect All' : 'Select All'}
+              <Text className="text-base font-medium text-miles-500 ml-3">
+                {isAllSelected ? "Deselect All" : "Select All"}
               </Text>
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.optionsContainer}>
+          <ScrollView
+            className="flex-1 bg-white"
+            onScroll={({ nativeEvent }) => {
+              // Check if user has scrolled to bottom (with some buffer)
+              const { layoutMeasurement, contentOffset, contentSize } =
+                nativeEvent;
+              const paddingToBottom = 20;
+              const isAtBottom =
+                layoutMeasurement.height + contentOffset.y >=
+                contentSize.height - paddingToBottom;
+
+              if (isAtBottom && lazyLoad) {
+                loadMoreOptions();
+              }
+            }}
+            scrollEventThrottle={400}
+          >
             {loading ? (
-              <View style={styles.loadingContainer}>
+              <View className="flex-1 justify-center items-center p-8">
                 <ActivityIndicator size="large" color="#3B82F6" />
-                <Text style={styles.loadingText}>Loading options...</Text>
+                <Text className="mt-3 text-base text-gray-500">
+                  Loading options...
+                </Text>
               </View>
             ) : (
-              filteredOptions.map((option) => {
-                const isSelected = selectedValues.includes(option.value);
-                return (
-                  <TouchableOpacity
-                    key={option.value}
-                    style={styles.optionRow}
-                    onPress={() => handleToggleOption(option.value)}
-                  >
-                    <View style={[
-                      styles.checkbox,
-                      isSelected && styles.checkboxSelected,
-                    ]}>
-                      {isSelected && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
-                    </View>
-                    
-                    <View style={styles.optionContent}>
-                      <Text style={styles.optionText}>{option.label}</Text>
-                      {showColors && option.color && (
-                        <View style={[
-                          styles.colorIndicator,
-                          { backgroundColor: option.color }
-                        ]} />
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })
+              <>
+                {filteredOptions.map((option) => {
+                  const isSelected = selectedValues.includes(option.value);
+                  return (
+                    <TouchableOpacity
+                      key={option.value}
+                      className="flex-row items-center p-4 border-b border-gray-100"
+                      onPress={() => handleToggleOption(option.value)}
+                    >
+                      <View
+                        className={`w-5 h-5 rounded border-2 items-center justify-center ${
+                          isSelected
+                            ? "bg-miles-500 border-miles-500"
+                            : "border-gray-300"
+                        }`}
+                      >
+                        {isSelected && (
+                          <Ionicons
+                            name="checkmark"
+                            size={16}
+                            color="#FFFFFF"
+                          />
+                        )}
+                      </View>
+
+                      <View className="flex-1 flex-row items-center justify-between ml-3">
+                        <Text className="text-base text-gray-700">
+                          {option.label}
+                        </Text>
+                        {showColors && option.color && (
+                          <View
+                            className="w-4 h-4 rounded-full ml-2"
+                            style={{ backgroundColor: option.color }}
+                          />
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+
+                {/* Loading more indicator */}
+                {loadingMore && (
+                  <View className="flex-row items-center justify-center p-4 border-b border-gray-100">
+                    <ActivityIndicator size="small" color="#3B82F6" />
+                    <Text className="ml-2 text-sm text-gray-500">
+                      Loading more...
+                    </Text>
+                  </View>
+                )}
+
+                {/* End of results indicator */}
+                {lazyLoad && !hasMore && localOptions.length > 0 && (
+                  <View className="items-center p-4 border-b border-gray-100">
+                    <Text className="text-sm text-gray-400 italic">
+                      No more options to load
+                    </Text>
+                  </View>
+                )}
+              </>
             )}
           </ScrollView>
 
-          <View style={styles.footer}>
-            <TouchableOpacity 
-              style={styles.doneButton}
+          <View className="p-4 bg-white border-t border-gray-200">
+            <TouchableOpacity
+              className="bg-miles-500 rounded-lg p-4 items-center"
               onPress={() => setIsOpen(false)}
             >
-              <Text style={styles.doneButtonText}>Done</Text>
+              <Text className="text-white text-base font-semibold">Done</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -199,154 +346,3 @@ export default function FilterDropdown({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-  },
-  dropdownButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    padding: 12,
-    minHeight: 48,
-  },
-  dropdownText: {
-    fontSize: 16,
-    color: '#374151',
-    flex: 1,
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#111827',
-  },
-  selectAllContainer: {
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    padding: 16,
-  },
-  selectAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  selectAllText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#3B82F6',
-    marginLeft: 12,
-  },
-  optionsContainer: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  optionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: '#D1D5DB',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxSelected: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
-  },
-  checkboxPartial: {
-    backgroundColor: '#F3F4F6',
-    borderColor: '#3B82F6',
-  },
-  partialIndicator: {
-    width: 8,
-    height: 2,
-    backgroundColor: '#3B82F6',
-  },
-  optionContent: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginLeft: 12,
-  },
-  optionText: {
-    fontSize: 16,
-    color: '#374151',
-  },
-  colorIndicator: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    marginLeft: 8,
-  },
-  footer: {
-    padding: 16,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  doneButton: {
-    backgroundColor: '#3B82F6',
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-  },
-  doneButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#6B7280',
-  },
-});

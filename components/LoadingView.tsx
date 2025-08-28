@@ -1,22 +1,16 @@
 import React from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
+import resolveConfig from "tailwindcss/resolveConfig";
+import tailwindConfig from "../tailwind.config";
+
+const fullConfig = resolveConfig(tailwindConfig);
+
+const miles700 = fullConfig.theme.colors.miles[900];
 
 export default function LoadingView() {
   return (
-    <View style={styles.container}>
-      <ActivityIndicator size="large" className="text-miles-600" />
+    <View className="flex-1 justify-center items-center">
+      <ActivityIndicator size="large" color={miles700} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  text: {
-    marginTop: 10,
-    fontSize: 16,
-  },
-});

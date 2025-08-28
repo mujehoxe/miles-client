@@ -1,17 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
   Modal,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  TextInput,
   Platform,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import FilterDropdown from './FilterDropdown';
-import TreeSelect from './TreeSelect';
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import FilterDropdown from "./FilterDropdown";
+import TreeSelect from "./TreeSelect";
 
 interface FilterOption {
   value: string;
@@ -65,13 +64,16 @@ export default function FiltersModal({
   const [localFilters, setLocalFilters] = useState(filters);
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
-  
+
   const dateForOptions = [
-    { value: 'LeadIntroduction', label: 'Date for lead introduction' },
+    { value: "LeadIntroduction", label: "Date for lead introduction" },
     {
-      value: 'LeadAssignment',
-      label: 'Date for agent assignment to lead',
-      disabled: localFilters.selectedAgents.length === 0 || !localFilters.dateRange[0] || !localFilters.dateRange[1],
+      value: "LeadAssignment",
+      label: "Date for agent assignment to lead",
+      disabled:
+        localFilters.selectedAgents.length === 0 ||
+        !localFilters.dateRange[0] ||
+        !localFilters.dateRange[1],
     },
   ];
 
@@ -86,8 +88,9 @@ export default function FiltersModal({
 
   const handleClearFilters = () => {
     const clearedFilters = {
-      searchTerm: '',
-      searchBoxFilters: searchBoxOptions.length > 0 ? [searchBoxOptions[0].value] : [],
+      searchTerm: "",
+      searchBoxFilters:
+        searchBoxOptions.length > 0 ? [searchBoxOptions[0].value] : [],
       selectedAgents: [],
       selectedStatuses: [],
       selectedSources: [],
@@ -100,12 +103,12 @@ export default function FiltersModal({
   };
 
   const toggleSelection = (field: string, value: string) => {
-    setLocalFilters(prev => {
+    setLocalFilters((prev) => {
       const currentArray = prev[field] as string[];
       const newArray = currentArray.includes(value)
-        ? currentArray.filter(item => item !== value)
+        ? currentArray.filter((item) => item !== value)
         : [...currentArray, value];
-      
+
       return {
         ...prev,
         [field]: newArray,
@@ -113,14 +116,18 @@ export default function FiltersModal({
     });
   };
 
-  const handleDateChange = (event: any, selectedDate: Date | undefined, isStartDate: boolean) => {
-    if (Platform.OS === 'android') {
+  const handleDateChange = (
+    event: any,
+    selectedDate: Date | undefined,
+    isStartDate: boolean
+  ) => {
+    if (Platform.OS === "android") {
       setShowStartDatePicker(false);
       setShowEndDatePicker(false);
     }
-    
+
     if (selectedDate) {
-      setLocalFilters(prev => {
+      setLocalFilters((prev) => {
         const newRange: [Date | null, Date | null] = [...prev.dateRange];
         if (isStartDate) {
           newRange[0] = selectedDate;
@@ -135,24 +142,47 @@ export default function FiltersModal({
     }
   };
 
-  const FilterSection = ({ title, options, field }: { title: string; options: FilterOption[]; field: string }) => (
-    <View style={styles.sectionContainer}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.optionsContainer}>
+  const FilterSection = ({
+    title,
+    options,
+    field,
+  }: {
+    title: string;
+    options: FilterOption[];
+    field: string;
+  }) => (
+    <View className="mb-6">
+      <Text className="text-base font-semibold mb-3">{title}</Text>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        className="flex-row"
+      >
         {options.map((option) => {
-          const isSelected = (localFilters[field] as string[]).includes(option.value);
+          const isSelected = (localFilters[field] as string[]).includes(
+            option.value
+          );
           return (
             <TouchableOpacity
               key={option.value}
+              className={`px-3 py-2 mr-2 bg-white border rounded-2xl min-w-[60px] items-center ${
+                isSelected ? "bg-miles-500 border-miles-500" : "border-gray-300"
+              }`}
               style={[
-                styles.optionChip,
-                isSelected && styles.selectedChip,
                 option.color && !isSelected && { borderColor: option.color },
-                option.color && isSelected && { backgroundColor: option.color, borderColor: option.color },
+                option.color &&
+                  isSelected && {
+                    backgroundColor: option.color,
+                    borderColor: option.color,
+                  },
               ]}
               onPress={() => toggleSelection(field, option.value)}
             >
-              <Text style={[styles.optionText, isSelected && styles.selectedText]}>
+              <Text
+                className={`text-sm ${
+                  isSelected ? "text-white font-medium" : "text-gray-500"
+                }`}
+              >
                 {option.label}
               </Text>
             </TouchableOpacity>
@@ -168,26 +198,30 @@ export default function FiltersModal({
       animationType="slide"
       presentationStyle="pageSheet"
     >
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+      <View className="flex-1 bg-gray-50">
+        <View className="flex-row items-center justify-between p-4 bg-white border-b border-gray-200">
+          <TouchableOpacity onPress={onClose} className="p-1">
             <Ionicons name="close" size={24} color="#6B7280" />
           </TouchableOpacity>
-          <Text style={styles.title}>Filters</Text>
-          <TouchableOpacity onPress={handleClearFilters} style={styles.clearButton}>
-            <Text style={styles.clearText}>Clear</Text>
+          <Text className="text-lg font-semibold text-gray-900">Filters</Text>
+          <TouchableOpacity onPress={handleClearFilters} className="p-1">
+            <Text className="text-red-500 text-base font-medium">Clear</Text>
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView className="flex-1 p-4" showsVerticalScrollIndicator={false}>
           {/* Search */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Search</Text>
+          <View className="mb-6">
+            <Text className="text-base font-semibold text-gray-700 mb-3">
+              Search
+            </Text>
             <TextInput
-              style={styles.searchInput}
+              className="bg-white border border-gray-300 rounded-lg p-3 text-base"
               placeholder="Search leads..."
               value={localFilters.searchTerm}
-              onChangeText={(text) => setLocalFilters(prev => ({ ...prev, searchTerm: text }))}
+              onChangeText={(text) =>
+                setLocalFilters((prev) => ({ ...prev, searchTerm: text }))
+              }
             />
           </View>
 
@@ -202,31 +236,40 @@ export default function FiltersModal({
 
           {/* Agents - TreeSelect */}
           {agents.length > 0 && (
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Agents</Text>
+            <View className="mb-6">
+              <Text className="text-base font-semibold text-gray-700 mb-3">
+                Agents
+              </Text>
               <TreeSelect
                 title="Select Agents"
                 treeData={agents}
                 selectedValues={localFilters.selectedAgents}
-                onSelectionChange={(values) => 
-                  setLocalFilters(prev => ({ ...prev, selectedAgents: values }))
+                onSelectionChange={(values) =>
+                  setLocalFilters((prev) => ({
+                    ...prev,
+                    selectedAgents: values,
+                  }))
                 }
                 placeholder="Select agents..."
               />
             </View>
           )}
 
-
           {/* Status - Multi-select Dropdown */}
           {statusOptions.length > 0 && (
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Status</Text>
+            <View className="mb-6">
+              <Text className="text-base font-semibold text-gray-700 mb-3">
+                Status
+              </Text>
               <FilterDropdown
                 title="Select Status"
                 options={statusOptions}
                 selectedValues={localFilters.selectedStatuses}
-                onSelectionChange={(values) => 
-                  setLocalFilters(prev => ({ ...prev, selectedStatuses: values }))
+                onSelectionChange={(values) =>
+                  setLocalFilters((prev) => ({
+                    ...prev,
+                    selectedStatuses: values,
+                  }))
                 }
                 placeholder="Select status..."
                 showColors={true}
@@ -236,14 +279,19 @@ export default function FiltersModal({
 
           {/* Sources - Multi-select Dropdown */}
           {sourceOptions.length > 0 && (
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Sources</Text>
+            <View className="mb-6">
+              <Text className="text-base font-semibold text-gray-700 mb-3">
+                Sources
+              </Text>
               <FilterDropdown
                 title="Select Sources"
                 options={sourceOptions}
                 selectedValues={localFilters.selectedSources}
-                onSelectionChange={(values) => 
-                  setLocalFilters(prev => ({ ...prev, selectedSources: values }))
+                onSelectionChange={(values) =>
+                  setLocalFilters((prev) => ({
+                    ...prev,
+                    selectedSources: values,
+                  }))
                 }
                 placeholder="Select sources..."
                 showColors={false}
@@ -252,14 +300,16 @@ export default function FiltersModal({
           )}
 
           {/* Tags - Multi-select Dropdown with lazy loading */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Tags</Text>
+          <View className="mb-6">
+            <Text className="text-base font-semibold text-gray-700 mb-3">
+              Tags
+            </Text>
             <FilterDropdown
               title="Select Tags"
               options={tagOptions}
               selectedValues={localFilters.selectedTags}
-              onSelectionChange={(values) => 
-                setLocalFilters(prev => ({ ...prev, selectedTags: values }))
+              onSelectionChange={(values) =>
+                setLocalFilters((prev) => ({ ...prev, selectedTags: values }))
               }
               placeholder="Select tags..."
               showColors={false}
@@ -269,38 +319,52 @@ export default function FiltersModal({
           </View>
 
           {/* Date Range - Simplified for now */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Date Range</Text>
-            <View style={styles.dateContainer}>
-              <View style={styles.dateInputContainer}>
-                <Text style={styles.dateLabel}>Start Date:</Text>
+          <View className="mb-6">
+            <Text className="text-base font-semibold text-gray-700 mb-3">
+              Date Range
+            </Text>
+            <View className="flex-row gap-3">
+              <View className="flex-1">
+                <Text className="text-sm font-medium text-gray-700 mb-1">
+                  Start Date:
+                </Text>
                 <TextInput
-                  style={styles.dateInput}
+                  className="bg-white border border-gray-300 rounded-lg p-3 text-base"
                   placeholder="DD/MM/YYYY"
-                  value={localFilters.dateRange[0] ? localFilters.dateRange[0].toLocaleDateString() : ''}
+                  value={
+                    localFilters.dateRange[0]
+                      ? localFilters.dateRange[0].toLocaleDateString()
+                      : ""
+                  }
                   onChangeText={(text) => {
                     const date = text ? new Date(text) : null;
                     if (date && !isNaN(date.getTime())) {
-                      setLocalFilters(prev => ({
+                      setLocalFilters((prev) => ({
                         ...prev,
-                        dateRange: [date, prev.dateRange[1]]
+                        dateRange: [date, prev.dateRange[1]],
                       }));
                     }
                   }}
                 />
               </View>
-              <View style={styles.dateInputContainer}>
-                <Text style={styles.dateLabel}>End Date:</Text>
+              <View className="flex-1">
+                <Text className="text-sm font-medium text-gray-700 mb-1">
+                  End Date:
+                </Text>
                 <TextInput
-                  style={styles.dateInput}
+                  className="bg-white border border-gray-300 rounded-lg p-3 text-base"
                   placeholder="DD/MM/YYYY"
-                  value={localFilters.dateRange[1] ? localFilters.dateRange[1].toLocaleDateString() : ''}
+                  value={
+                    localFilters.dateRange[1]
+                      ? localFilters.dateRange[1].toLocaleDateString()
+                      : ""
+                  }
                   onChangeText={(text) => {
                     const date = text ? new Date(text) : null;
                     if (date && !isNaN(date.getTime())) {
-                      setLocalFilters(prev => ({
+                      setLocalFilters((prev) => ({
                         ...prev,
-                        dateRange: [prev.dateRange[0], date]
+                        dateRange: [prev.dateRange[0], date],
                       }));
                     }
                   }}
@@ -310,35 +374,44 @@ export default function FiltersModal({
           </View>
 
           {/* Date For */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Date For</Text>
-            <View style={styles.radioContainer}>
+          <View className="mb-6">
+            <Text className="text-base font-semibold text-gray-700 mb-3">
+              Date For
+            </Text>
+            <View className="gap-3">
               {dateForOptions.map((option) => {
                 const isSelected = localFilters.dateFor === option.value;
                 const isDisabled = option.disabled;
                 return (
                   <TouchableOpacity
                     key={option.value}
-                    style={[
-                      styles.radioOption,
-                      isDisabled && styles.disabledOption,
-                    ]}
+                    className={`flex-row items-center py-2 gap-3 ${
+                      isDisabled ? "opacity-50" : ""
+                    }`}
                     onPress={() => {
                       if (!isDisabled) {
-                        setLocalFilters(prev => ({ ...prev, dateFor: option.value }));
+                        setLocalFilters((prev) => ({
+                          ...prev,
+                          dateFor: option.value,
+                        }));
                       }
                     }}
                     disabled={isDisabled}
                   >
-                    <View style={[
-                      styles.radioCircle,
-                      isSelected && styles.radioCircleSelected,
-                      isDisabled && styles.disabledRadio,
-                    ]} />
-                    <Text style={[
-                      styles.radioText,
-                      isDisabled && styles.disabledText,
-                    ]}>
+                    <View
+                      className={`w-5 h-5 rounded-full border-2 bg-white ${
+                        isSelected
+                          ? "border-miles-500 text-miles-500"
+                          : isDisabled
+                          ? "border-gray-400"
+                          : "border-gray-300"
+                      }`}
+                    />
+                    <Text
+                      className={`text-base flex-1 ${
+                        isDisabled ? "text-gray-400" : "text-gray-700"
+                      }`}
+                    >
                       {option.label}
                     </Text>
                   </TouchableOpacity>
@@ -349,18 +422,26 @@ export default function FiltersModal({
 
           {/* Results Per Page */}
           {countOptions.length > 0 && leadsData && (
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Results Per Page</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.optionsContainer}>
+            <View className="mb-6">
+              <Text className="text-base font-semibold text-gray-700 mb-3">
+                Results Per Page
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                className="flex-row"
+              >
                 {countOptions.map((option) => {
-                  const isSelected = leadsData.leadsPerPage.toString() === option.value;
+                  const isSelected =
+                    leadsData.leadsPerPage.toString() === option.value;
                   return (
                     <TouchableOpacity
                       key={option.value}
-                      style={[
-                        styles.optionChip,
-                        isSelected && styles.selectedChip,
-                      ]}
+                      className={`px-3 py-2 mr-2 bg-white border rounded-2xl min-w-[60px] items-center ${
+                        isSelected
+                          ? "bg-miles-500 border-miles-500"
+                          : "border-gray-300"
+                      }`}
                       onPress={() => {
                         if (onLeadsDataChange) {
                           onLeadsDataChange({
@@ -371,7 +452,13 @@ export default function FiltersModal({
                         }
                       }}
                     >
-                      <Text style={[styles.optionText, isSelected && styles.selectedText]}>
+                      <Text
+                        className={`text-sm ${
+                          isSelected
+                            ? "text-white font-medium"
+                            : "text-gray-500"
+                        }`}
+                      >
                         {option.label}
                       </Text>
                     </TouchableOpacity>
@@ -382,229 +469,17 @@ export default function FiltersModal({
           )}
         </ScrollView>
 
-        <View style={styles.footer}>
+        <View className="p-4 bg-white border-t border-gray-200">
           <TouchableOpacity
-            style={styles.applyButton}
+            className="bg-miles-500 rounded-lg p-4 items-center"
             onPress={handleApplyFilters}
           >
-            <Text style={styles.applyButtonText}>Apply Filters</Text>
+            <Text className="text-white text-base font-semibold">
+              Apply Filters
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  closeButton: {
-    padding: 4,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  clearButton: {
-    padding: 4,
-  },
-  clearText: {
-    color: '#EF4444',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  content: {
-    flex: 1,
-    padding: 16,
-  },
-  sectionContainer: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 12,
-  },
-  searchInput: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-  },
-  optionsContainer: {
-    flexDirection: 'row',
-  },
-  optionChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginRight: 8,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 20,
-    minWidth: 60,
-    alignItems: 'center',
-  },
-  selectedChip: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
-  },
-  optionText: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  selectedText: {
-    color: '#FFFFFF',
-    fontWeight: '500',
-  },
-  footer: {
-    padding: 16,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  applyButton: {
-    backgroundColor: '#3B82F6',
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-  },
-  applyButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  dateContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  dateButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    padding: 12,
-    gap: 8,
-  },
-  dateText: {
-    fontSize: 16,
-    color: '#374151',
-  },
-  pickerContainer: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  picker: {
-    height: 50,
-    width: '100%',
-  },
-  dateInputContainer: {
-    flex: 1,
-  },
-  dateLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-    marginBottom: 4,
-  },
-  dateInput: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-  },
-  radioContainer: {
-    gap: 12,
-  },
-  radioOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    gap: 12,
-  },
-  radioCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#D1D5DB',
-    backgroundColor: '#FFFFFF',
-  },
-  radioCircleSelected: {
-    borderColor: '#3B82F6',
-    backgroundColor: '#3B82F6',
-  },
-  radioText: {
-    fontSize: 16,
-    color: '#374151',
-    flex: 1,
-  },
-  disabledOption: {
-    opacity: 0.5,
-  },
-  disabledRadio: {
-    borderColor: '#9CA3AF',
-  },
-  disabledText: {
-    color: '#9CA3AF',
-  },
-  toggleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    gap: 12,
-  },
-  toggleSwitch: {
-    width: 50,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#D1D5DB',
-    justifyContent: 'center',
-    paddingHorizontal: 2,
-  },
-  toggleSwitchActive: {
-    backgroundColor: '#3B82F6',
-  },
-  toggleKnob: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  toggleKnobActive: {
-    alignSelf: 'flex-end',
-  },
-  toggleText: {
-    fontSize: 16,
-    color: '#374151',
-    flex: 1,
-  },
-});
