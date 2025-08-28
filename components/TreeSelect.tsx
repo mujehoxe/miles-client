@@ -136,7 +136,7 @@ export default function TreeSelect({
             <View
               className={`w-5 h-5 rounded border-2 items-center justify-center ${
                 selectionState === "all"
-                  ? "bg-miles-500 border-miles-500"
+                  ? "bg-miles-500 border-miles-500 border-0"
                   : selectionState === "partial"
                   ? "bg-gray-100 border-miles-500"
                   : "border-gray-300"

@@ -65,9 +65,8 @@ export default function FilterDropdown({
   const handleOpenModal = async () => {
     setIsOpen(true);
 
-    if (lazyLoad && onFetchOptions && !hasLoadedOnce) {
+    if (lazyLoad && onFetchOptions && !hasLoadedOnce)
       await loadInitialOptions();
-    }
   };
 
   // Load initial options
@@ -225,9 +224,9 @@ export default function FilterDropdown({
               onPress={handleSelectAll}
             >
               <View
-                className={`w-5 h-5 rounded border-2 items-center justify-center ${
+                className={`w-5 h-5 rounded border-2 items-center align-middle justify-center ${
                   isAllSelected
-                    ? "bg-miles-500 border-miles-500"
+                    ? "bg-miles-500 border-miles-500 border-0"
                     : isPartiallySelected
                     ? "bg-gray-100 border-miles-500"
                     : "border-gray-300"
@@ -281,10 +280,10 @@ export default function FilterDropdown({
                       onPress={() => handleToggleOption(option.value)}
                     >
                       <View
-                        className={`w-5 h-5 rounded border-2 items-center justify-center ${
+                        className={`w-5 h-5 rounded items-center justify-center ${
                           isSelected
                             ? "bg-miles-500 border-miles-500"
-                            : "border-gray-300"
+                            : "border-gray-300 border-2"
                         }`}
                       >
                         {isSelected && (
