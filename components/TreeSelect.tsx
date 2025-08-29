@@ -1,11 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Modal,
+  PanResponder,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
+  Vibration,
   View,
 } from "react-native";
 
@@ -36,7 +38,27 @@ export default function TreeSelect({
 }: TreeSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const longPressHandled = useRef<boolean>(false);
+
+  // Initialize with all parent nodes expanded
+  const initializeExpandedNodes = () => {
+    const expanded = new Set<string>();
+    const collectParentNodes = (nodes: TreeNode[]) => {
+      nodes.forEach((node) => {
+        if (node.children && node.children.length > 0) {
+          expanded.add(node.value);
+          collectParentNodes(node.children);
+        }
+      });
+    };
+    collectParentNodes(treeData);
+    return expanded;
+  };
+
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(() =>
+    initializeExpandedNodes()
+  );
 
   // Flatten tree for search
   const flattenTree = (nodes: TreeNode[]): TreeNode[] => {
@@ -78,26 +100,92 @@ export default function TreeSelect({
     setExpandedNodes(newExpanded);
   };
 
+  // Handle single node selection (regular press)
   const handleToggleSelection = (node: TreeNode) => {
+    const isSelected = selectedValues.includes(node.value);
+
+    if (isSelected) {
+      // Remove only this node
+      const newSelected = selectedValues.filter((val) => val !== node.value);
+      onSelectionChange(newSelected);
+    } else {
+      // Add only this node
+      const newSelected = [...selectedValues, node.value];
+      onSelectionChange(newSelected);
+    }
+  };
+
+  // Handle subtree selection (immediate on long press threshold)
+  const handleToggleSubtreeSelection = (node: TreeNode) => {
     const nodeValues = flattenNodeValues(node);
     const hasAnySelected = nodeValues.some((val) =>
       selectedValues.includes(val)
     );
 
     if (hasAnySelected) {
-      // Remove all node values
+      // Remove all node values from subtree
       const newSelected = selectedValues.filter(
         (val) => !nodeValues.includes(val)
       );
       onSelectionChange(newSelected);
     } else {
-      // Add all node values
+      // Add all node values from subtree
       const newSelected = [...new Set([...selectedValues, ...nodeValues])];
       onSelectionChange(newSelected);
     }
+
+    // Provide haptic feedback
+    Vibration.vibrate(50);
+  };
+
+  // Create pan responder for custom long press handling
+  const createNodePanResponder = (node: TreeNode) => {
+    return PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => false,
+      onPanResponderGrant: () => {
+        // Reset long press handled flag
+        longPressHandled.current = false;
+
+        // Start long press timer
+        longPressTimer.current = setTimeout(() => {
+          handleToggleSubtreeSelection(node);
+          longPressHandled.current = true;
+          longPressTimer.current = null;
+        }, 500);
+      },
+      onPanResponderRelease: () => {
+        // Clear timer and handle regular press only if long press hasn't been handled
+        if (longPressTimer.current) {
+          clearTimeout(longPressTimer.current);
+          longPressTimer.current = null;
+        }
+
+        // Only handle regular press if long press wasn't triggered
+        if (!longPressHandled.current) {
+          handleToggleSelection(node);
+        }
+
+        // Reset flag for next interaction
+        longPressHandled.current = false;
+      },
+      onPanResponderTerminate: () => {
+        // Clear timer if gesture is interrupted
+        if (longPressTimer.current) {
+          clearTimeout(longPressTimer.current);
+          longPressTimer.current = null;
+        }
+        // Reset flag
+        longPressHandled.current = false;
+      },
+    });
   };
 
   const getNodeSelectionState = (node: TreeNode) => {
+    // For individual node selection, just check if this specific node is selected
+    const isNodeSelected = selectedValues.includes(node.value);
+
+    // For visual indication of subtree state
     const nodeValues = flattenNodeValues(node);
     const selectedCount = nodeValues.filter((val) =>
       selectedValues.includes(val)
@@ -108,52 +196,80 @@ export default function TreeSelect({
     return "partial";
   };
 
+  // Get selection state for individual node (for the main checkbox)
+  const getIndividualNodeState = (node: TreeNode) => {
+    return selectedValues.includes(node.value) ? "selected" : "none";
+  };
+
   const renderTreeNode = (node: TreeNode, level = 0) => {
     const hasChildren = node.children && node.children.length > 0;
     const isExpanded = expandedNodes.has(node.value);
     const selectionState = getNodeSelectionState(node);
+    const indentationWidth = level * 16; // Reduced indentation for better spacing
 
     return (
-      <View key={node.value} style={{ paddingLeft: level * 20 }}>
-        <TouchableOpacity className="flex-row items-center min-h-[48px]">
-          {hasChildren && (
-            <TouchableOpacity
-              onPress={() => handleToggleExpand(node.value)}
-              className="w-8 h-8 items-center justify-center"
-            >
-              <Ionicons
-                name={isExpanded ? "chevron-down" : "chevron-forward"}
-                size={16}
-                color="#6B7280"
-              />
-            </TouchableOpacity>
-          )}
+      <View key={node.value}>
+        <View
+          className="flex-row items-center min-h-[48px] px-2"
+          style={{ paddingLeft: indentationWidth + 4 }}
+        >
+          {/* Expand/Collapse Button */}
+          <View className="w-6 h-6 items-center justify-center mr-2">
+            {hasChildren ? (
+              <TouchableOpacity
+                onPress={() => handleToggleExpand(node.value)}
+                className="w-6 h-6 items-center justify-center rounded"
+                activeOpacity={0.6}
+              >
+                <Ionicons
+                  name={isExpanded ? "chevron-down" : "chevron-forward"}
+                  size={16}
+                  color="#6B7280"
+                />
+              </TouchableOpacity>
+            ) : (
+              <View className="w-6 h-6" />
+            )}
+          </View>
 
-          <TouchableOpacity
-            className="flex-1 flex-row items-center py-3 pr-4"
-            onPress={() => handleToggleSelection(node)}
+          {/* Selection Checkbox and Label */}
+          <View
+            className="flex-1 flex-row items-center py-2"
+            {...createNodePanResponder(node).panHandlers}
           >
+            {/* Individual Node Checkbox */}
             <View
-              className={`w-5 h-5 rounded items-center justify-center ${
-                selectionState === "all"
-                  ? "bg-miles-500"
-                  : selectionState === "partial"
-                  ? "bg-gray-100 border-miles-500 border-2"
-                  : "border-gray-300 border-2"
+              className={`w-5 h-5 rounded items-center justify-center mr-3 ${
+                getIndividualNodeState(node) === "selected"
+                  ? "bg-miles-500 border-miles-500"
+                  : "border-gray-300 border-2 bg-white"
               }`}
             >
-              {selectionState === "all" && (
-                <Ionicons name="checkmark" size={16} color="#FFFFFF" />
-              )}
-              {selectionState === "partial" && (
-                <View className="w-2 h-0.5 bg-miles-500" />
+              {getIndividualNodeState(node) === "selected" && (
+                <Ionicons name="checkmark" size={14} color="#FFFFFF" />
               )}
             </View>
 
-            <Text className="text-base text-gray-700 ml-3">{node.label}</Text>
-          </TouchableOpacity>
-        </TouchableOpacity>
+            <Text
+              className={`text-base flex-1 ${
+                level === 0 ? "text-gray-900 font-medium" : "text-gray-700"
+              }`}
+              numberOfLines={2}
+            >
+              {node.label}
+            </Text>
 
+            {hasChildren &&
+              selectionState === "all" &&
+              getIndividualNodeState(node) === "none" && (
+                <View className="w-3 h-3 rounded-full bg-miles-500 items-center justify-center ml-2">
+                  <Ionicons name="checkmark" size={8} color="#FFFFFF" />
+                </View>
+              )}
+          </View>
+        </View>
+
+        {/* Children Nodes */}
         {hasChildren && isExpanded && (
           <View>
             {node.children!.map((child) => renderTreeNode(child, level + 1))}
@@ -165,10 +281,10 @@ export default function TreeSelect({
 
   const renderSearchResults = () => {
     return filteredNodes.map((node) => (
-      <TouchableOpacity
+      <View
         key={node.value}
         className="flex-row items-center p-4 border-b border-gray-100"
-        onPress={() => handleToggleSelection(node)}
+        {...createNodePanResponder(node).panHandlers}
       >
         <View
           className={`w-5 h-5 rounded border-2 items-center justify-center ${
@@ -181,8 +297,17 @@ export default function TreeSelect({
             <Ionicons name="checkmark" size={16} color="#FFFFFF" />
           )}
         </View>
-        <Text className="text-base text-gray-700 ml-3">{node.label}</Text>
-      </TouchableOpacity>
+        <Text className="text-base text-gray-700 ml-3 flex-1">
+          {node.label}
+        </Text>
+
+        {/* Subtree indicator for search results */}
+        {node.children && node.children.length > 0 && (
+          <Text className="text-xs text-gray-400 ml-2">
+            +{flattenNodeValues(node).length - 1}
+          </Text>
+        )}
+      </View>
     ));
   };
 
