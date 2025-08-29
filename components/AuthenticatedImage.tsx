@@ -5,7 +5,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 interface AuthenticatedImageProps {
   source: { uri: string };
-  style: any;
+  style?: any;
+  className?: string;
   onError?: (error: any) => void;
   onLoad?: () => void;
   fallbackComponent?: React.ReactNode;
@@ -14,6 +15,7 @@ interface AuthenticatedImageProps {
 const AuthenticatedImage: React.FC<AuthenticatedImageProps> = ({
   source,
   style,
+  className,
   onError,
   onLoad,
   fallbackComponent
@@ -74,16 +76,20 @@ const AuthenticatedImage: React.FC<AuthenticatedImageProps> = ({
 
   if (loading) {
     return (
-      <View style={[style, styles.placeholder]}>
-        <Ionicons name="person" size={16} color="#9CA3AF" />
+      <View style={style} className={className || ""} >
+        <View style={styles.placeholder}>
+          <Ionicons name="person" size={16} color="#9CA3AF" />
+        </View>
       </View>
     );
   }
 
   if (error || !imageData) {
     return fallbackComponent || (
-      <View style={[style, styles.placeholder]}>
-        <Ionicons name="person" size={16} color="#9CA3AF" />
+      <View style={style} className={className || ""}>
+        <View style={styles.placeholder}>
+          <Ionicons name="person" size={16} color="#9CA3AF" />
+        </View>
       </View>
     );
   }
@@ -92,6 +98,7 @@ const AuthenticatedImage: React.FC<AuthenticatedImageProps> = ({
     <Image
       source={{ uri: imageData }}
       style={style}
+      className={className || ""}
       onError={(e) => {
         setError(true);
         onError?.(e);
