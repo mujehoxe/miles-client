@@ -224,12 +224,12 @@ export default function FilterDropdown({
               onPress={handleSelectAll}
             >
               <View
-                className={`w-5 h-5 rounded border-2 items-center align-middle justify-center ${
+                className={`w-5 h-5 rounded items-center align-middle justify-center ${
                   isAllSelected
-                    ? "bg-miles-500 border-miles-500 border-0"
+                    ? "bg-miles-500"
                     : isPartiallySelected
-                    ? "bg-gray-100 border-miles-500"
-                    : "border-gray-300"
+                    ? "bg-gray-100 border-miles-500 border-2"
+                    : "border-gray-300 border-2"
                 }`}
               >
                 {isAllSelected && (
