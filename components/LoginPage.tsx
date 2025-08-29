@@ -12,11 +12,8 @@ import {
   Animated,
   Dimensions,
   Image,
-  useColorScheme,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
-import { useThemeColor } from '@/hooks/useThemeColor';
-import { Colors } from '@/constants/Colors';
 
 const { width } = Dimensions.get('window');
 
@@ -34,11 +31,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [fadeAnim] = useState(new Animated.Value(0));
   const [logoError, setLogoError] = useState(false);
 
-  // Theme colors and logo selection
-  const colorScheme = useColorScheme();
-  const backgroundColor = useThemeColor({}, 'background');
-  const textColor = useThemeColor({}, 'text');
-  const tintColor = useThemeColor({}, 'tint');
+  // Force light mode colors
+  const backgroundColor = '#ffffff';
+  const textColor = '#000000';
+  const tintColor = '#176298'; // Miles primary color
   
   // Use the high-quality SVG-generated Miles logo
   const logoSource = require('../assets/images/miles-logo-mobile-hq.png');

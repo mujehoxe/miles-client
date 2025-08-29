@@ -1,4 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Alert, Linking, Text, TouchableOpacity, View } from "react-native";
 import Animated, { SlideInDown, SlideOutUp } from "react-native-reanimated";
@@ -571,7 +572,7 @@ const LeadCard: React.FC<LeadCardProps> = ({
           className="flex-1 flex-row justify-center items-center py-2.5"
           onPress={(e) => {
             e.stopPropagation();
-            onDetailsPress();
+            router.push(`/lead-details/${lead._id}`);
           }}
         >
           <Ionicons name="information-circle" size={18} color="#6B7280" />

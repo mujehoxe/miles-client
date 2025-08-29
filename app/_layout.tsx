@@ -1,5 +1,6 @@
 import LoginPage from "@/components/LoginPage";
 import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import * as SecureStore from "expo-secure-store";
 import { jwtDecode } from "jwt-decode";
 import React, { createContext, useEffect, useState } from "react";
@@ -61,6 +62,7 @@ export default function RootLayout() {
 
   return (
     <RootSiblingParent>
+      <StatusBar style="dark" backgroundColor="#ffffff" />
       <UserContext.Provider value={user}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

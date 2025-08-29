@@ -165,8 +165,8 @@ export default function FiltersModal({
           return (
             <TouchableOpacity
               key={option.value}
-              className={`px-3 py-2 mr-2 bg-white border rounded-2xl min-w-[60px] items-center ${
-                isSelected ? "bg-miles-500 border-miles-500" : "border-gray-300"
+              className={`px-3 py-2 mr-2 bg-miles-500 rounded-2xl min-w-[60px] items-center ${
+                !isSelected && "border bg-white border-gray-300"
               }`}
               style={[
                 option.color && !isSelected && { borderColor: option.color },
@@ -228,7 +228,7 @@ export default function FiltersModal({
           {/* Search Box Filters */}
           {searchBoxOptions.length > 0 && (
             <FilterSection
-              title="Search Fields"
+              title="Search In"
               options={searchBoxOptions}
               field="searchBoxFilters"
             />
@@ -437,10 +437,8 @@ export default function FiltersModal({
                   return (
                     <TouchableOpacity
                       key={option.value}
-                      className={`px-3 py-2 mr-2 bg-white border rounded-2xl min-w-[60px] items-center ${
-                        isSelected
-                          ? "bg-miles-500 border-miles-500"
-                          : "border-gray-300"
+                      className={`px-3 py-2 mr-2 bg-miles-500 rounded-2xl min-w-[60px] items-center ${
+                        !isSelected && "border bg-white border-gray-300"
                       }`}
                       onPress={() => {
                         if (onLeadsDataChange) {

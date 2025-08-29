@@ -420,3 +420,139 @@ export const fetchAgents = async (user: any): Promise<any[]> => {
     return [];
   }
 };
+
+/**
+ * Fetch full lead details by ID including all related data
+ */
+export const fetchLeadById = async (leadId: string): Promise<any> => {
+  if (!leadId) {
+    throw new Error('Lead ID is required');
+  }
+
+  if (!(await validateAuthToken())) {
+    throw new Error('Authentication failed');
+  }
+
+  const headers = await createAuthHeaders();
+  
+  console.log('📤 Fetching lead details:', { leadId });
+
+  const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/${leadId}`, {
+    method: 'GET',
+    headers,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`Fetch lead failed with status ${response.status}:`, errorText);
+    throw new Error(`Failed to fetch lead: ${response.status}`);
+  }
+
+  const data = await response.json();
+  console.log('✅ Lead details fetched successfully:', { leadId });
+  
+  return data.data || data;
+};
+
+/**
+ * Fetch comments for a specific lead
+ */
+export const fetchLeadComments = async (leadId: string): Promise<any[]> => {
+  if (!leadId) {
+    throw new Error('Lead ID is required');
+  }
+
+  if (!(await validateAuthToken())) {
+    throw new Error('Authentication failed');
+  }
+
+  const headers = await createAuthHeaders();
+  
+  console.log('📤 Fetching lead comments:', { leadId });
+
+  const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/comment/get/${leadId}`, {
+    method: 'GET',
+    headers,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`Fetch comments failed with status ${response.status}:`, errorText);
+    throw new Error(`Failed to fetch comments: ${response.status}`);
+  }
+
+  const data = await response.json();
+  console.log('✅ Comments fetched successfully:', { leadId, count: data.data?.length || 0 });
+  
+  return data.data || [];
+};
+
+/**
+ * Add a comment to a lead
+ */
+export const addLeadComment = async (leadId: string, content: string): Promise<any> => {
+  if (!leadId || !content?.trim()) {
+    throw new Error('Lead ID and comment content are required');
+  }
+
+  if (!(await validateAuthToken())) {
+    throw new Error('Authentication failed');
+  }
+
+  const headers = await createAuthHeaders();
+  
+  console.log('📤 Adding lead comment:', { leadId, contentLength: content.length });
+
+  const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/comment/add`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      leadData: { _id: leadId },
+      content: content.trim(),
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`Add comment failed with status ${response.status}:`, errorText);
+    throw new Error(`Failed to add comment: ${response.status}`);
+  }
+
+  const data = await response.json();
+  console.log('✅ Comment added successfully:', { leadId });
+  
+  return data;
+};
+
+/**
+ * Delete a comment
+ */
+export const deleteLeadComment = async (commentId: string): Promise<any> => {
+  if (!commentId) {
+    throw new Error('Comment ID is required');
+  }
+
+  if (!(await validateAuthToken())) {
+    throw new Error('Authentication failed');
+  }
+
+  const headers = await createAuthHeaders();
+  
+  console.log('📤 Deleting comment:', { commentId });
+
+  const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/comment/delete/${commentId}`, {
+    method: 'DELETE',
+    headers,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`Delete comment failed with status ${response.status}:`, errorText);
+    throw new Error(`Failed to delete comment: ${response.status}`);
+  }
+
+  const data = await response.json();
+  console.log('✅ Comment deleted successfully:', { commentId });
+  
+  return data;
+};
