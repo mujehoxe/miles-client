@@ -385,7 +385,7 @@ const LeadCard: React.FC<LeadCardProps> = ({
                   lead.Assigned.Avatar
                 )}`,
               }}
-              className="w-10 h-full rounded-full ml-2"
+              className="size-10 rounded-full ml-2"
               onError={(error) => {
                 console.log(
                   `Avatar loading error for ${lead.Assigned?.username}:`,
@@ -406,13 +406,13 @@ const LeadCard: React.FC<LeadCardProps> = ({
                 );
               }}
               fallbackComponent={
-                <View className="w-10 h-full rounded-full bg-gray-100 items-center justify-center">
+                <View className="size-10 rounded-full bg-gray-100 items-center justify-center ml-2">
                   <Ionicons name="person" size={16} color="#9CA3AF" />
                 </View>
               }
             />
           ) : (
-            <View className="w-10 h-full rounded-full bg-gray-100 items-center justify-center ml-2">
+            <View className="size-10 rounded-full bg-gray-100 items-center justify-center ml-2">
               <Ionicons name="person" size={16} color="#9CA3AF" />
             </View>
           )}
