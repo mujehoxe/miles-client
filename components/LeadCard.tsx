@@ -350,72 +350,71 @@ const LeadCard: React.FC<LeadCardProps> = ({
       onPress={onCardPress}
     >
       {/* Header */}
-      <View className="p-3 border-b border-gray-200">
-        <View className="flex-row items-center justify-between mb-2">
-          <Text
-            className={`text-base font-semibold text-gray-900 ${
-              lead.lastCalled && lead.LeadStatus?.Status !== "New"
-                ? "max-w-[75%]"
-                : "flex-1"
-            }`}
-            numberOfLines={1}
-          >
-            {lead.Name}
-          </Text>
-        </View>
+      <View className="w-full p-3 border-b border-gray-200">
+        <View className="flex-row justify-between">
+          <View className="flex-1">
+            <Text
+              className={`text-base font-semibold text-gray-900`}
+              numberOfLines={1}
+            >
+              {lead.Name}
+            </Text>
 
-        <View className="flex-row items-center justify-between">
-          {lead?.Assigned ? (
-            <>
-              <Text className="text-sm text-gray-500 flex-1">
-                Assigned to:{" "}
-                <Text className="font-medium text-gray-900">
-                  {lead.Assigned.username}
-                </Text>
-              </Text>
-              {lead.Assigned?.Avatar && !avatarError ? (
-                <AuthenticatedImage
-                  source={{
-                    uri: `${process.env.EXPO_PUBLIC_BASE_URL || ""}${encodeURI(
-                      lead.Assigned.Avatar
-                    )}`,
-                  }}
-                  className="w-6 h-6 rounded-full ml-2"
-                  onError={(error) => {
-                    console.log(
-                      `Avatar loading error for ${lead.Assigned?.username}:`,
-                      {
-                        originalPath: lead.Assigned?.Avatar,
-                        encodedPath: encodeURI(lead.Assigned?.Avatar || ""),
-                        fullUri: `${
-                          process.env.EXPO_PUBLIC_BASE_URL || ""
-                        }${encodeURI(lead.Assigned?.Avatar || "")}`,
-                        error: error,
-                      }
-                    );
-                    setAvatarError(true);
-                  }}
-                  onLoad={() => {
-                    console.log(
-                      `Avatar loaded successfully for ${lead.Assigned?.username}: ${lead.Assigned?.Avatar}`
-                    );
-                  }}
-                  fallbackComponent={
-                    <View className="w-6 h-6 rounded-full bg-gray-100 items-center justify-center">
-                      <Ionicons name="person" size={16} color="#9CA3AF" />
-                    </View>
-                  }
-                />
+            <View className="flex-row items-center">
+              {lead?.Assigned ? (
+                <>
+                  <Text className="text-sm text-nowrap text-gray-500">
+                    Assigned to:{" "}
+                    <Text className="font-medium text-gray-900">
+                      {lead.Assigned.username.replaceAll("  ", " ")}
+                    </Text>
+                  </Text>
+                </>
               ) : (
-                <View className="w-6 h-6 rounded-full bg-gray-100 items-center justify-center ml-2">
+                <Text className="text-sm text-gray-500">
+                  Not assigned to any agent
+                </Text>
+              )}
+            </View>
+          </View>
+
+          {lead.Assigned?.Avatar && !avatarError ? (
+            <AuthenticatedImage
+              source={{
+                uri: `${process.env.EXPO_PUBLIC_BASE_URL || ""}${encodeURI(
+                  lead.Assigned.Avatar
+                )}`,
+              }}
+              className="w-10 h-full rounded-full ml-2"
+              onError={(error) => {
+                console.log(
+                  `Avatar loading error for ${lead.Assigned?.username}:`,
+                  {
+                    originalPath: lead.Assigned?.Avatar,
+                    encodedPath: encodeURI(lead.Assigned?.Avatar || ""),
+                    fullUri: `${
+                      process.env.EXPO_PUBLIC_BASE_URL || ""
+                    }${encodeURI(lead.Assigned?.Avatar || "")}`,
+                    error: error,
+                  }
+                );
+                setAvatarError(true);
+              }}
+              onLoad={() => {
+                console.log(
+                  `Avatar loaded successfully for ${lead.Assigned?.username}: ${lead.Assigned?.Avatar}`
+                );
+              }}
+              fallbackComponent={
+                <View className="w-10 h-full rounded-full bg-gray-100 items-center justify-center">
                   <Ionicons name="person" size={16} color="#9CA3AF" />
                 </View>
-              )}
-            </>
+              }
+            />
           ) : (
-            <Text className="text-sm text-gray-500">
-              Not assigned to any agent
-            </Text>
+            <View className="w-10 h-full rounded-full bg-gray-100 items-center justify-center ml-2">
+              <Ionicons name="person" size={16} color="#9CA3AF" />
+            </View>
           )}
         </View>
 
