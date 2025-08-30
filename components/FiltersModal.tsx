@@ -44,6 +44,7 @@ interface FilterProps {
     currentPage: number;
   };
   onFetchTags?: () => Promise<FilterOption[]>;
+  currentUser?: any;
 }
 
 export default function FiltersModal({
@@ -60,6 +61,7 @@ export default function FiltersModal({
   countOptions = [],
   leadsData,
   onFetchTags,
+  currentUser,
 }: FilterProps) {
   const [localFilters, setLocalFilters] = useState(filters);
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
@@ -251,6 +253,8 @@ export default function FiltersModal({
                   }))
                 }
                 placeholder="Select agents..."
+                currentUser={currentUser}
+                autoSelectDefaults={true}
               />
             </View>
           )}

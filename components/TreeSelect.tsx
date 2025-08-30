@@ -27,6 +27,8 @@ interface TreeSelectProps {
   selectedValues: string[];
   onSelectionChange: (values: string[]) => void;
   placeholder?: string;
+  currentUser?: any;
+  autoSelectDefaults?: boolean;
 }
 
 export default function TreeSelect({
@@ -35,6 +37,8 @@ export default function TreeSelect({
   selectedValues,
   onSelectionChange,
   placeholder = "Select agents...",
+  currentUser,
+  autoSelectDefaults = true,
 }: TreeSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
@@ -60,7 +64,7 @@ export default function TreeSelect({
     initializeExpandedNodes()
   );
 
-  // Flatten tree for search
+  // Flatten tree for getting all node values
   const flattenTree = (nodes: TreeNode[]): TreeNode[] => {
     const result: TreeNode[] = [];
     nodes.forEach((node) => {
@@ -73,6 +77,34 @@ export default function TreeSelect({
   };
 
   const allNodes = flattenTree(treeData);
+
+  // Function to get default selected agents based on user role
+  const getDefaultSelectedAgents = () => {
+    if (!autoSelectDefaults || !currentUser || !treeData.length) {
+      return [];
+    }
+
+    // If user is super admin, select all agents
+    if (currentUser.role === 'superAdmin') {
+      return allNodes.map(node => node.value);
+    }
+
+    // Otherwise, select only the current user if they exist in the agents list
+    const currentUserNode = allNodes.find(node => node.value === currentUser.id);
+    return currentUserNode ? [currentUser.id] : [];
+  };
+
+  // Apply default selections when treeData loads and no selections exist
+  React.useEffect(() => {
+    if (selectedValues.length === 0 && treeData.length > 0 && autoSelectDefaults) {
+      const defaultSelections = getDefaultSelectedAgents();
+      if (defaultSelections.length > 0) {
+        onSelectionChange(defaultSelections);
+      }
+    }
+  }, [treeData, selectedValues.length, autoSelectDefaults, currentUser]);
+
+  // Filter nodes for search
   const filteredNodes = searchText
     ? allNodes.filter((node) =>
         node.label.toLowerCase().includes(searchText.toLowerCase())
