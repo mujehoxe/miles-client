@@ -355,6 +355,7 @@ export default function Tab() {
           currentPage: currentPage + 1,
         }}
         onFetchTags={fetchTagOptions}
+        currentUser={user}
       />
     </View>
   );

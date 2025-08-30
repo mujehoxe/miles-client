@@ -60,37 +60,119 @@ export const createAuthHeaders = async () => {
 };
 
 /**
- * Validate token and check if it's expired
- * @returns Promise<boolean> - true if token is valid, false otherwise
+ * Refresh the authentication token
+ */
+const refreshAuthToken = async (): Promise<string | null> => {
+  try {
+    const refreshToken = await SecureStore.getItemAsync('refreshToken');
+    if (!refreshToken) {
+      console.log('No refresh token available');
+      return null;
+    }
+
+    const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': `refreshToken=${refreshToken}`,
+      },
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      if (result.success && result.token) {
+        // Store new access token
+        await SecureStore.setItemAsync('userToken', result.token);
+        
+        // Store new refresh token if provided
+        if (result.refreshToken) {
+          await SecureStore.setItemAsync('refreshToken', result.refreshToken);
+        }
+        
+        console.log('✅ Token refreshed successfully');
+        return result.token;
+      }
+    }
+    
+    console.log('❌ Token refresh failed');
+    return null;
+  } catch (error) {
+    console.error('Error refreshing token:', error);
+    return null;
+  }
+};
+
+/**
+ * Clear all authentication data and force logout
+ * @returns Promise<void>
+ */
+export const clearAuthData = async (): Promise<void> => {
+  await SecureStore.deleteItemAsync('userToken');
+  await SecureStore.deleteItemAsync('refreshToken');
+  console.log('✅ Authentication data cleared');
+};
+
+/**
+ * Validate token and attempt refresh if needed
+ * @returns Promise<boolean> - true if token is valid or refreshed, false if authentication failed
  */
 export const validateAuthToken = async (): Promise<boolean> => {
   try {
     const storedToken = await SecureStore.getItemAsync('userToken');
     if (!storedToken) {
-      Toast.show('Please login again to access leads', {
-        duration: Toast.durations.LONG,
-      });
+      console.log('No access token found');
       return false;
     }
 
+    // Check if current token is valid
     const tokenPayload = JSON.parse(atob(storedToken.split('.')[1]));
     const currentTime = Math.floor(Date.now() / 1000);
     const tokenExpiry = tokenPayload.exp;
+    const timeUntilExpiry = tokenExpiry - currentTime;
 
-    if (currentTime > tokenExpiry) {
-      Toast.show('Your session has expired. Please login again.', {
-        duration: Toast.durations.LONG,
-      });
-      await SecureStore.deleteItemAsync('userToken');
-      return false;
+    // If token expires within 5 minutes, try to refresh it
+    if (timeUntilExpiry < 300) {
+      console.log(`Token expires in ${timeUntilExpiry} seconds, attempting refresh...`);
+      const newToken = await refreshAuthToken();
+      
+      if (newToken) {
+        return true; // Successfully refreshed
+      } else {
+        // Refresh failed, clear auth data
+        await clearAuthData();
+        Toast.show('Session expired. Please login again.', {
+          duration: Toast.durations.LONG,
+        });
+        return false;
+      }
     }
 
-    return true;
+    // Token is still valid
+    if (currentTime < tokenExpiry) {
+      return true;
+    }
+
+    // Token is expired, try to refresh
+    console.log('Token expired, attempting refresh...');
+    const newToken = await refreshAuthToken();
+    
+    if (newToken) {
+      return true; // Successfully refreshed
+    } else {
+      // Refresh failed, clear auth data
+      await clearAuthData();
+      Toast.show('Session expired. Please login again.', {
+        duration: Toast.durations.LONG,
+      });
+      return false;
+    }
+    
   } catch (tokenError) {
-    Toast.show('Invalid session token. Please login again.', {
+    console.error('Token validation error:', tokenError);
+    await clearAuthData();
+    Toast.show('Invalid session. Please login again.', {
       duration: Toast.durations.LONG,
     });
-    await SecureStore.deleteItemAsync('userToken');
     return false;
   }
 };

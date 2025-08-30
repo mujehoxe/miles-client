@@ -14,6 +14,7 @@ import {
   Image,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
+import * as SecureStore from 'expo-secure-store';
 
 const { width } = Dimensions.get('window');
 
@@ -102,6 +103,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       const result = await response.json();
 
       if (result.success) {
+        // Store refresh token if provided
+        if (result.refreshToken) {
+          await SecureStore.setItemAsync('refreshToken', result.refreshToken);
+        }
         onLoginSuccess(result.token);
       } else {
         const errorMessage = result.message || "Invalid email or password. Please try again.";
