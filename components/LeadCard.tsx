@@ -221,14 +221,14 @@ const LeadCard: React.FC<LeadCardProps> = ({
           // Force reminder modal before update
           onOpenModal?.("Add Reminder", () => updateLead());
           return;
-        } else if (
-          newStatus.requiresReminder === "optional" &&
-          !showCommentInput
-        ) {
-          // Show comment input with optional reminder button only if not already shown
-          setShowCommentInput(true);
-          setLoading(false);
-          return;
+        } else if (newStatus.requiresReminder === "optional") {
+          // For optional reminders, ensure comment input is shown with reminder button
+          if (!showCommentInput) {
+            setShowCommentInput(true);
+            setLoading(false);
+            return;
+          }
+          // If comment input is already shown and user submitted, proceed with update
         }
       }
 
