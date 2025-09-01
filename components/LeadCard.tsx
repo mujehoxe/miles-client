@@ -241,12 +241,11 @@ const LeadCard: React.FC<LeadCardProps> = ({
       await updateLead();
 
       // If status was changed to Closure, show success message
-      if (isChangingToClosure) {
+      if (isChangingToClosure)
         Alert.alert(
           "Success",
           "Lead status changed to Closure. You can now create a deal from this lead."
         );
-      }
     } catch (e: any) {
       console.error("Error updating lead:", e);
       Alert.alert(
