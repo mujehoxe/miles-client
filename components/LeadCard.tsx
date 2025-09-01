@@ -354,7 +354,7 @@ const LeadCard: React.FC<LeadCardProps> = ({
         <View className="flex-row justify-between">
           <View className="flex-1">
             <Text
-              className={`text-base font-semibold text-gray-900`}
+              className={`text-base font-semibold text-gray-900 text-left`}
               numberOfLines={1}
             >
               {lead.Name}
