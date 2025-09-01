@@ -1,3 +1,4 @@
+import { getUserPermissions } from "@/utils/userPermissions";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -9,12 +10,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { fetchLeadById } from "../../services/api";
 import CommentsTab from "../../components/leadDetails/CommentsTab";
 import MeetingsTab from "../../components/leadDetails/MeetingsTab";
 import ProfileTab from "../../components/leadDetails/ProfileTab";
 import RemindersTab from "../../components/leadDetails/RemindersTab";
-import { userPermissions } from "../../utils/userPermissions";
+import { fetchLeadById } from "../../services/api";
 
 interface Lead {
   _id: string;
@@ -54,17 +54,17 @@ type TabType = "Profile" | "Comments" | "Reminders" | "Meetings";
 export default function LeadDetailsPage() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  
+
   const [lead, setLead] = useState<Lead | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>("Profile");
   const [error, setError] = useState<string | null>(null);
 
-  const permissions = userPermissions();
+  const permissions = getUserPermissions();
 
   useEffect(() => {
     if (!id) return;
-    
+
     const fetchLead = async () => {
       try {
         setLoading(true);
@@ -110,8 +110,8 @@ export default function LeadDetailsPage() {
     switch (activeTab) {
       case "Profile":
         return (
-          <ProfileTab 
-            lead={lead} 
+          <ProfileTab
+            lead={lead}
             onLeadUpdate={handleLeadUpdate}
             userPermissions={permissions}
           />
@@ -161,26 +161,26 @@ export default function LeadDetailsPage() {
     <SafeAreaView className="flex-1 bg-white">
       {/* Header */}
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200">
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="p-2 -ml-2"
-        >
+        <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2">
           <Ionicons name="arrow-back" size={24} color="#374151" />
         </TouchableOpacity>
-        
+
         <View className="flex-1 mx-4">
-          <Text className="text-lg font-semibold text-gray-900 text-center" numberOfLines={1}>
+          <Text
+            className="text-lg font-semibold text-gray-900 text-center"
+            numberOfLines={1}
+          >
             {lead.Name}
           </Text>
         </View>
-        
+
         <View className="w-10" />
       </View>
 
       {/* Tab Navigation */}
       <View className="px-4 py-3 border-b border-gray-200">
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 0 }}
         >
@@ -194,9 +194,7 @@ export default function LeadDetailsPage() {
       </View>
 
       {/* Tab Content */}
-      <View className="flex-1">
-        {renderTabContent()}
-      </View>
+      <View className="flex-1">{renderTabContent()}</View>
     </SafeAreaView>
   );
 }
