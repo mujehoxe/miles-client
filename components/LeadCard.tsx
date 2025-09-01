@@ -86,7 +86,6 @@ const LeadCard: React.FC<LeadCardProps> = ({
       originalLeadStatus: lead.LeadStatus,
     });
     setShowCommentInput(false);
-    setIsUpdateDescriptionInput(false);
   }, [lead]);
 
   const handlePhoneCall = (phoneNumber: string) => {
@@ -148,8 +147,6 @@ const LeadCard: React.FC<LeadCardProps> = ({
       },
       originalLeadStatus: lead.LeadStatus,
     });
-
-    setIsUpdateDescriptionInput(true);
 
     // Automatically open comment input when status changes
     if (option.value !== lead.LeadStatus?._id) {
@@ -229,7 +226,6 @@ const LeadCard: React.FC<LeadCardProps> = ({
           !showCommentInput
         ) {
           // Show comment input with optional reminder button only if not already shown
-          setIsUpdateDescriptionInput(true);
           setShowCommentInput(true);
           setLoading(false);
           return;
@@ -272,7 +268,6 @@ const LeadCard: React.FC<LeadCardProps> = ({
     await onLeadUpdate(lead._id, payload);
 
     // Reset UI state after successful update
-    setIsUpdateDescriptionInput(false);
     setShowCommentInput(false);
     setUpdateBody({
       updateDescription: "",
