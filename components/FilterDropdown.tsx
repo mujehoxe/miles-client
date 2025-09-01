@@ -89,17 +89,20 @@ export default function FilterDropdown({
 
   // Load more options for infinite scroll
   const loadMoreOptions = async () => {
-    if (!onFetchOptions || loadingMore || !hasMore) return;
+    if (!onFetchOptions || loadingMore || !hasMore) {
+      return;
+    }
 
     setLoadingMore(true);
     try {
       const nextPage = currentPage + 1;
       const result = await onFetchOptions(nextPage, 50, searchText);
+
       setLocalOptions((prev) => [...prev, ...result.options]);
       setHasMore(result.hasMore);
       setCurrentPage(nextPage);
     } catch (error) {
-      console.error("Error loading more options:", error);
+      console.error("❌ Error loading more options:", error);
     } finally {
       setLoadingMore(false);
     }
@@ -144,9 +147,15 @@ export default function FilterDropdown({
   }, [searchDebounceTimer]);
 
   const currentOptions = lazyLoad ? localOptions : options;
-  const filteredOptions = currentOptions.filter((option) =>
-    option.label.toLowerCase().includes(searchText.toLowerCase())
-  );
+
+  // For lazy loading, don't filter client-side when search is active (server handles it)
+  // For regular dropdowns, apply client-side filtering
+  const filteredOptions =
+    lazyLoad && searchText
+      ? currentOptions // Server-side filtering already applied
+      : currentOptions.filter((option) =>
+          option.label.toLowerCase().includes(searchText.toLowerCase())
+        );
 
   const isAllSelected = selectedValues.length === currentOptions.length;
   const isPartiallySelected =
@@ -248,19 +257,78 @@ export default function FilterDropdown({
           <ScrollView
             className="flex-1 bg-white"
             onScroll={({ nativeEvent }) => {
-              // Check if user has scrolled to bottom (with some buffer)
+              // Load more when user is approaching the bottom (not at the very end)
               const { layoutMeasurement, contentOffset, contentSize } =
                 nativeEvent;
-              const paddingToBottom = 20;
-              const isAtBottom =
+              const loadMoreBuffer = 200; // Load when 200px from bottom
+              const isNearBottom =
                 layoutMeasurement.height + contentOffset.y >=
-                contentSize.height - paddingToBottom;
+                contentSize.height - loadMoreBuffer;
 
-              if (isAtBottom && lazyLoad) {
+              console.log("📜 Scroll event:", {
+                layoutHeight: layoutMeasurement.height,
+                contentOffset: contentOffset.y,
+                contentSize: contentSize.height,
+                remainingScroll:
+                  contentSize.height -
+                  (layoutMeasurement.height + contentOffset.y),
+                loadMoreBuffer,
+                isNearBottom,
+                hasMore,
+                loadingMore,
+                lazyLoad,
+              });
+
+              if (isNearBottom && lazyLoad && hasMore && !loadingMore) {
+                console.log("📜 Triggering load more from scroll...");
                 loadMoreOptions();
               }
             }}
-            scrollEventThrottle={400}
+            onScrollEndDrag={({ nativeEvent }) => {
+              // Fallback trigger when user stops dragging
+              const { layoutMeasurement, contentOffset, contentSize } =
+                nativeEvent;
+              const loadMoreBuffer = 200;
+              const isNearBottom =
+                layoutMeasurement.height + contentOffset.y >=
+                contentSize.height - loadMoreBuffer;
+
+              console.log("📜 Scroll end drag:", {
+                isNearBottom,
+                hasMore,
+                loadingMore,
+                lazyLoad,
+              });
+
+              if (isNearBottom && lazyLoad && hasMore && !loadingMore) {
+                console.log("📜 Triggering load more from scroll end drag...");
+                loadMoreOptions();
+              }
+            }}
+            onMomentumScrollEnd={({ nativeEvent }) => {
+              // Fallback trigger when momentum scroll ends
+              const { layoutMeasurement, contentOffset, contentSize } =
+                nativeEvent;
+              const loadMoreBuffer = 200;
+              const isNearBottom =
+                layoutMeasurement.height + contentOffset.y >=
+                contentSize.height - loadMoreBuffer;
+
+              console.log("📜 Momentum scroll end:", {
+                isNearBottom,
+                hasMore,
+                loadingMore,
+                lazyLoad,
+              });
+
+              if (isNearBottom && lazyLoad && hasMore && !loadingMore) {
+                console.log(
+                  "📜 Triggering load more from momentum scroll end..."
+                );
+                loadMoreOptions();
+              }
+            }}
+            scrollEventThrottle={100}
           >
             {loading ? (
               <View className="flex-1 justify-center items-center p-8">
