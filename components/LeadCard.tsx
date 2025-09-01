@@ -420,7 +420,7 @@ const LeadCard: React.FC<LeadCardProps> = ({
       </View>
 
       {/* Body */}
-      <View className="p-3 flex-1">
+      <View className="p-3 flex-1 min-h-12">
         {/* Status and Source Row */}
         <View className="flex-row mb-3 gap-3">
           <View className="flex-1">
