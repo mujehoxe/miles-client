@@ -79,6 +79,7 @@ const LeadCard: React.FC<LeadCardProps> = ({
   const [avatarError, setAvatarError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [updateBody, setUpdateBody] = useState<any>({});
+  const [reminderAddedForRequiredStatus, setReminderAddedForRequiredStatus] = useState(false);
 
   useEffect(() => {
     setUpdateBody({
@@ -148,6 +149,9 @@ const LeadCard: React.FC<LeadCardProps> = ({
       originalLeadStatus: lead.LeadStatus,
     });
 
+    // Reset reminder flag when status changes
+    setReminderAddedForRequiredStatus(false);
+
     // Automatically open comment input when status changes
     if (option.value !== lead.LeadStatus?._id) {
       setShowCommentInput(true);
@@ -216,10 +220,19 @@ const LeadCard: React.FC<LeadCardProps> = ({
       const newStatus = statusOptions.find(
         (o) => o.value === updateBody.LeadStatus?._id
       );
+      console.log('🔍 Debug requiresReminder:', {
+        statusChanged,
+        newStatusLabel: newStatus?.label,
+        requiresReminder: newStatus?.requiresReminder,
+        leadName: lead.Name
+      });
       if (statusChanged && newStatus?.requiresReminder) {
         if (newStatus.requiresReminder === "yes") {
-          // Force reminder modal before update
-          onOpenModal?.("Add Reminder", () => updateLead());
+          // Directly open reminder modal for required reminders
+          onOpenModal?.("Add Reminder", () => {
+            setReminderAddedForRequiredStatus(true);
+            // Don't auto-update, let user submit again after reminder is added
+          });
           return;
         } else if (newStatus.requiresReminder === "optional") {
           // For optional reminders, ensure comment input is shown with reminder button

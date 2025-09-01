@@ -31,6 +31,7 @@ export interface FilterOption {
   value: string;
   label: string;
   color?: string;
+  requiresReminder?: "yes" | "no" | "optional";
 }
 
 export interface TagsResponse {
@@ -453,6 +454,7 @@ export const fetchStatusOptions = async (): Promise<FilterOption[]> => {
         value: status._id,
         label: status.Status,
         color: status.color,
+        requiresReminder: status.requiresReminder,
       }));
     } else {
       console.error('Failed to fetch status options:', response.status);
