@@ -1,6 +1,6 @@
 import { getUserPermissions } from "@/utils/userPermissions";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, useNavigation } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -53,6 +53,7 @@ type TabType = "Profile" | "Comments" | "Reminders" | "Meetings";
 
 export default function LeadDetailsPage() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [lead, setLead] = useState<Lead | null>(null);
@@ -61,6 +62,15 @@ export default function LeadDetailsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const permissions = getUserPermissions();
+
+  // Set the header title when lead data is loaded
+  useEffect(() => {
+    if (lead && navigation) {
+      navigation.setOptions({
+        headerTitle: lead.Name,
+      });
+    }
+  }, [lead, navigation]);
 
   useEffect(() => {
     if (!id) return;
@@ -159,24 +169,6 @@ export default function LeadDetailsPage() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {/* Header */}
-      <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200">
-        <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2">
-          <Ionicons name="arrow-back" size={24} color="#374151" />
-        </TouchableOpacity>
-
-        <View className="flex-1 mx-4">
-          <Text
-            className="text-lg font-semibold text-gray-900 text-center"
-            numberOfLines={1}
-          >
-            {lead.Name}
-          </Text>
-        </View>
-
-        <View className="w-10" />
-      </View>
-
       {/* Tab Navigation */}
       <View className="px-4 py-3 border-b border-gray-200">
         <ScrollView

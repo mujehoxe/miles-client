@@ -123,6 +123,19 @@ export default function RootLayout() {
       <UserContext.Provider value={user}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen 
+            name="lead-details/[id]" 
+            options={{
+              headerShown: true,
+              headerTitle: '',
+              headerBackTitle: 'Back',
+              headerStyle: {
+                backgroundColor: '#ffffff',
+              },
+              headerTintColor: '#374151',
+              headerShadowVisible: true,
+            }} 
+          />
         </Stack>
       </UserContext.Provider>
     </RootSiblingParent>
