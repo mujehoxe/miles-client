@@ -79,8 +79,6 @@ const LeadCard: React.FC<LeadCardProps> = ({
   const [avatarError, setAvatarError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [updateBody, setUpdateBody] = useState<any>({});
-  const [isUpdateDescriptionInput, setIsUpdateDescriptionInput] =
-    useState(false);
 
   useEffect(() => {
     setUpdateBody({
@@ -127,9 +125,6 @@ const LeadCard: React.FC<LeadCardProps> = ({
     userPermissions?.lead?.includes("update_status") ?? true;
   const canUpdateSource =
     userPermissions?.lead?.includes("update_source") ?? true;
-  const canUpdateInfo = userPermissions?.lead?.includes("update_info") ?? true;
-  const canViewSensitiveDetails =
-    userPermissions?.lead?.includes("view_sensetive_details") ?? true;
 
   // Debug logging (limited to reduce spam)
   if (statusOptions.length > 0 && lead.Name && lead._id) {
@@ -175,19 +170,6 @@ const LeadCard: React.FC<LeadCardProps> = ({
 
     // Show comment input when source changes
     if (option.value !== lead.Source?._id) {
-      setShowCommentInput(true);
-      setShowContact(false);
-    }
-  };
-
-  const handleTagsChanged = (newTags: any[]) => {
-    setUpdateBody({
-      ...updateBody,
-      tags: newTags,
-    });
-
-    // Show comment input when tags change
-    if (JSON.stringify(newTags) !== JSON.stringify(lead.tags)) {
       setShowCommentInput(true);
       setShowContact(false);
     }
