@@ -112,15 +112,6 @@ const StatusPicker: React.FC<StatusPickerProps> = ({
                 <Text className="text-base text-gray-900 flex-1">
                   {option.label}
                 </Text>
-                {option.requiresReminder && (
-                  <View className="mr-2">
-                    <Ionicons 
-                      name="notifications" 
-                      size={16} 
-                      color={option.requiresReminder === 'yes' ? '#EF4444' : '#10B981'} 
-                    />
-                  </View>
-                )}
                 {option.value === value && (
                   <Ionicons name="checkmark" size={20} color="#3B82F6" />
                 )}
