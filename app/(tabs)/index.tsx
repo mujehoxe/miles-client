@@ -119,16 +119,74 @@ export default function Tab() {
     filters,
     searchTerm,
     currentPage,
-    leadsPerPage
+    leadsPerPage,
+    shouldFetchLeads: hasInitializedFilters || filters.selectedAgents.length > 0
   });
   
   // Additional state for leads management
   const [localLeads, setLocalLeads] = useState<any[]>([]);
+  const [hasInitializedFilters, setHasInitializedFilters] = useState(false);
   
   // Sync localLeads with leads from hook
   useEffect(() => {
     setLocalLeads(leads);
   }, [leads]);
+
+  // Initialize filters with default agents when agents data loads
+  useEffect(() => {
+    if (!hasInitializedFilters && agents.length > 0 && user && filters.selectedAgents.length === 0) {
+      console.log('🎯 Initializing filters with default agents for user:', user.role || 'regular user');
+      
+      let defaultAgents: string[] = [];
+      
+      if (user.role === 'superAdmin') {
+        // Select all agents for super admin
+        const flattenAgents = (agentList: any[]): string[] => {
+          let result: string[] = [];
+          agentList.forEach(agent => {
+            result.push(agent.value);
+            if (agent.children) {
+              result = result.concat(flattenAgents(agent.children));
+            }
+          });
+          return result;
+        };
+        defaultAgents = flattenAgents(agents);
+        console.log('👑 Super admin: selecting all agents:', defaultAgents.length);
+      } else {
+        // Find current user in agents list
+        const flattenAgents = (agentList: any[]): any[] => {
+          let result: any[] = [];
+          agentList.forEach(agent => {
+            result.push(agent);
+            if (agent.children) {
+              result = result.concat(flattenAgents(agent.children));
+            }
+          });
+          return result;
+        };
+        
+        const allAgents = flattenAgents(agents);
+        const currentUserAgent = allAgents.find(agent => agent.value === user.id);
+        if (currentUserAgent) {
+          defaultAgents = [user.id];
+          console.log('👤 Regular user: selecting self:', user.id);
+        } else {
+          console.log('⚠️ Current user not found in agents list, using empty selection');
+        }
+      }
+      
+      if (defaultAgents.length > 0) {
+        const newFilters = {
+          ...filters,
+          selectedAgents: defaultAgents
+        };
+        updateFilters(newFilters);
+      }
+      
+      setHasInitializedFilters(true);
+    }
+  }, [agents, user, filters, hasInitializedFilters, updateFilters]);
 
   // =============================================
   // EVENT HANDLERS

@@ -17,6 +17,7 @@ export interface UseLeadsDataProps {
   searchTerm: string;
   currentPage: number;
   leadsPerPage: number;
+  shouldFetchLeads?: boolean;
 }
 
 export interface UseLeadsDataReturn {
@@ -49,7 +50,8 @@ export const useLeadsData = ({
   filters,
   searchTerm,
   currentPage,
-  leadsPerPage
+  leadsPerPage,
+  shouldFetchLeads = true
 }: UseLeadsDataProps): UseLeadsDataReturn => {
   // Core data state
   const [leads, setLeads] = useState<any[]>([]);
@@ -70,7 +72,10 @@ export const useLeadsData = ({
    * Fetch leads data with current parameters
    */
   const refreshLeads = useCallback(async () => {
-    if (!user || !user.id) {
+    if (!user || !user.id || !shouldFetchLeads) {
+      if (!shouldFetchLeads) {
+        console.log('⏸️ Skipping leads fetch - waiting for filter initialization');
+      }
       setLoading(false);
       return;
     }
@@ -109,7 +114,7 @@ export const useLeadsData = ({
     }
 
     setLoading(false);
-  }, [user, filters, searchTerm, currentPage, leadsPerPage]);
+  }, [user, filters, searchTerm, currentPage, leadsPerPage, shouldFetchLeads]);
 
   /**
    * Load filter options when user is available
@@ -144,13 +149,19 @@ export const useLeadsData = ({
     }
   }, [user]);
 
-  // Load initial data and filter options when user becomes available
+  // Load filter options when user becomes available
   useEffect(() => {
     if (user && user.id) {
       loadFilterOptions();
+    }
+  }, [user, loadFilterOptions]);
+  
+  // Fetch leads when user and shouldFetchLeads conditions are met
+  useEffect(() => {
+    if (user && user.id && shouldFetchLeads) {
       refreshLeads();
     }
-  }, [user, loadFilterOptions, refreshLeads]);
+  }, [user, shouldFetchLeads, refreshLeads]);
 
   return {
     // Data

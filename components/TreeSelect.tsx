@@ -95,14 +95,16 @@ export default function TreeSelect({
   };
 
   // Apply default selections when treeData loads and no selections exist
+  // Only auto-select if parent hasn't already provided selections
   React.useEffect(() => {
-    if (selectedValues.length === 0 && treeData.length > 0 && autoSelectDefaults) {
+    if (selectedValues.length === 0 && treeData.length > 0 && autoSelectDefaults && currentUser) {
       const defaultSelections = getDefaultSelectedAgents();
       if (defaultSelections.length > 0) {
+        console.log('🌳 TreeSelect auto-selecting defaults:', defaultSelections.length, 'agents');
         onSelectionChange(defaultSelections);
       }
     }
-  }, [treeData, selectedValues.length, autoSelectDefaults, currentUser]);
+  }, [treeData.length, selectedValues.length, autoSelectDefaults, currentUser?.id, currentUser?.role]);
 
   // Filter nodes for search
   const filteredNodes = searchText
