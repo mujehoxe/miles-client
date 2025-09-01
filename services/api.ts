@@ -60,6 +60,148 @@ export const createAuthHeaders = async () => {
 };
 
 /**
+ * Add a new reminder
+ * @param reminderData - The reminder data to submit
+ * @returns Promise<any> - API response
+ */
+export const addReminder = async (reminderData: any) => {
+  console.log('📝 Adding reminder:', { leadId: reminderData.Leadid, dateTime: reminderData.DateTime });
+  
+  if (!(await validateAuthToken())) {
+    throw new Error('Authentication failed. Please login again.');
+  }
+  
+  try {
+    const headers = await createAuthHeaders();
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Reminder/add`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(reminderData),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+      throw new Error(errorData.error || `Failed to add reminder: HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
+    console.log('✅ Reminder added successfully');
+    return result;
+  } catch (error) {
+    console.error('❌ Error adding reminder:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update an existing reminder
+ * @param reminderId - The ID of the reminder to update
+ * @param reminderData - The updated reminder data
+ * @returns Promise<any> - API response
+ */
+export const updateReminder = async (reminderId: string, reminderData: any) => {
+  console.log('📝 Updating reminder:', { reminderId, dateTime: reminderData.DateTime });
+  
+  if (!(await validateAuthToken())) {
+    throw new Error('Authentication failed. Please login again.');
+  }
+  
+  try {
+    const headers = await createAuthHeaders();
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Reminder/update/${reminderId}`;
+    
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify(reminderData),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+      throw new Error(errorData.error || `Failed to update reminder: HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
+    console.log('✅ Reminder updated successfully');
+    return result;
+  } catch (error) {
+    console.error('❌ Error updating reminder:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get reminders for a specific lead
+ * @param leadId - The ID of the lead
+ * @returns Promise<any[]> - Array of reminders
+ */
+export const getLeadReminders = async (leadId: string) => {
+  console.log('📝 Fetching reminders for lead:', leadId);
+  
+  if (!(await validateAuthToken())) {
+    throw new Error('Authentication failed. Please login again.');
+  }
+  
+  try {
+    const headers = await createAuthHeaders();
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Reminder/get/${leadId}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+      throw new Error(errorData.error || `Failed to fetch reminders: HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
+    console.log('✅ Lead reminders fetched successfully:', result.data?.length || 0, 'reminders');
+    return result.data || [];
+  } catch (error) {
+    console.error('❌ Error fetching lead reminders:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get all users/agents for assignee selection
+ * @returns Promise<User[]> - Array of users
+ */
+export const getUsers = async () => {
+  console.log('👥 Fetching users for assignee selection');
+  
+  if (!(await validateAuthToken())) {
+    throw new Error('Authentication failed. Please login again.');
+  }
+  
+  try {
+    const headers = await createAuthHeaders();
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Users/get`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+      throw new Error(errorData.error || `Failed to fetch users: HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
+    console.log('✅ Users fetched successfully:', result.data?.length || 0, 'users');
+    return result.data || [];
+  } catch (error) {
+    console.error('❌ Error fetching users:', error);
+    throw error;
+  }
+};
+
+/**
  * Refresh the authentication token
  */
 const refreshAuthToken = async (): Promise<string | null> => {

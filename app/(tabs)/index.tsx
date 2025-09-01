@@ -7,6 +7,7 @@ import FiltersModal from "@/components/FiltersModal";
 import LeadCard from "@/components/LeadCard";
 import LoadingView from "@/components/LoadingView";
 import Pagination from "@/components/Pagination";
+import ReminderModal from "@/components/ReminderModal";
 
 // Hook imports
 import useOneSignal from "@/hooks/useOneSignal";
@@ -37,7 +38,7 @@ import tailwindConfig from "../../tailwind.config";
 import { UserContext } from "../_layout";
 
 // Services and utilities
-import { fetchTagOptions, updateLead } from "@/services/api";
+import { fetchTagOptions, getUsers, updateLead } from "@/services/api";
 import { SEARCH_BOX_OPTIONS, COUNT_OPTIONS, DEFAULT_PAGINATION } from "@/utils/constants";
 
 const fullConfig = resolveConfig(tailwindConfig);
@@ -126,6 +127,12 @@ export default function Tab() {
   // Additional state for leads management
   const [localLeads, setLocalLeads] = useState<any[]>([]);
   const [hasInitializedFilters, setHasInitializedFilters] = useState(false);
+  
+  // Reminder modal state
+  const [showReminderModal, setShowReminderModal] = useState(false);
+  const [reminderLeadId, setReminderLeadId] = useState<string | null>(null);
+  const [users, setUsers] = useState<any[]>([]);
+  const [reminderCallback, setReminderCallback] = useState<(() => void) | null>(null);
   
   // Sync localLeads with leads from hook
   useEffect(() => {
@@ -236,6 +243,20 @@ export default function Tab() {
     setLeadsPerPage(data.leadsPerPage);
     setCurrentPage(data.currentPage - 1); // Convert to 0-based
   };
+  
+  // Fetch users for reminder assignee options
+  useEffect(() => {
+    const fetchUsersData = async () => {
+      try {
+        const usersData = await getUsers();
+        setUsers(usersData);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    };
+
+    fetchUsersData();
+  }, []);
   
   // Update totalPages when totalLeads changes
   useEffect(() => {
@@ -348,10 +369,20 @@ export default function Tab() {
                     });
                   }
                 }}
-                onOpenModal={(type, callback) => {
-                  console.log('Opening modal:', type);
-                  // TODO: Implement modal opening logic for meetings/reminders
-                  if (callback) callback();
+onOpenModal={(type, callback) => {
+                  console.log('Opening modal:', type, 'for lead:', lead._id);
+                  
+                  if (type === 'Add Reminder') {
+                    setReminderLeadId(lead._id);
+                    setReminderCallback(() => callback);
+                    setShowReminderModal(true);
+                  } else if (type === 'Add Meeting') {
+                    // TODO: Implement meeting modal
+                    console.log('Meeting modal not implemented yet');
+                    if (callback) callback();
+                  } else {
+                    if (callback) callback();
+                  }
                 }}
               />
             ))}
@@ -414,6 +445,36 @@ export default function Tab() {
         }}
         onFetchTags={fetchTagOptions}
         currentUser={user}
+      />
+      
+      {/* Reminder Modal */}
+      <ReminderModal
+        visible={showReminderModal}
+        onClose={() => {
+          setShowReminderModal(false);
+          setReminderLeadId(null);
+          setReminderCallback(null);
+        }}
+        leadId={reminderLeadId || ''}
+        assigneesOptions={users}
+        onSuccess={() => {
+          console.log('✅ Reminder added successfully');
+          
+          // Execute callback if provided (for status changes requiring reminders)
+          if (reminderCallback) {
+            reminderCallback();
+          }
+          
+          // Show success message
+          Toast.show('Reminder added successfully', {
+            duration: Toast.durations.SHORT,
+          });
+          
+          // Close modal
+          setShowReminderModal(false);
+          setReminderLeadId(null);
+          setReminderCallback(null);
+        }}
       />
     </View>
   );
