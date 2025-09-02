@@ -782,3 +782,111 @@ export const deleteLeadComment = async (commentId: string): Promise<any> => {
   
   return data;
 };
+
+/**
+ * Add a new meeting
+ * @param meetingData - The meeting data to submit
+ * @returns Promise<any> - API response
+ */
+export const addMeeting = async (meetingData: any) => {
+  console.log('📝 Adding meeting:', { leadId: meetingData.Lead, subject: meetingData.Subject });
+  
+  if (!(await validateAuthToken())) {
+    throw new Error('Authentication failed. Please login again.');
+  }
+  
+  try {
+    const headers = await createAuthHeaders();
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Meeting/add`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(meetingData),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+      throw new Error(errorData.error || `Failed to add meeting: HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
+    console.log('✅ Meeting added successfully');
+    return result;
+  } catch (error) {
+    console.error('❌ Error adding meeting:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update an existing meeting
+ * @param meetingId - The ID of the meeting to update
+ * @param meetingData - The updated meeting data
+ * @returns Promise<any> - API response
+ */
+export const updateMeeting = async (meetingId: string, meetingData: any) => {
+  console.log('📝 Updating meeting:', { meetingId, subject: meetingData.Subject });
+  
+  if (!(await validateAuthToken())) {
+    throw new Error('Authentication failed. Please login again.');
+  }
+  
+  try {
+    const headers = await createAuthHeaders();
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Meeting/update/${meetingId}`;
+    
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify(meetingData),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+      throw new Error(errorData.error || `Failed to update meeting: HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
+    console.log('✅ Meeting updated successfully');
+    return result;
+  } catch (error) {
+    console.error('❌ Error updating meeting:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get meetings for a specific lead
+ * @param leadId - The ID of the lead
+ * @returns Promise<any[]> - Array of meetings
+ */
+export const getLeadMeetings = async (leadId: string) => {
+  console.log('📝 Fetching meetings for lead:', leadId);
+  
+  if (!(await validateAuthToken())) {
+    throw new Error('Authentication failed. Please login again.');
+  }
+  
+  try {
+    const headers = await createAuthHeaders();
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Meeting/get/${leadId}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+      throw new Error(errorData.error || `Failed to fetch meetings: HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
+    console.log('✅ Lead meetings fetched successfully:', result.data?.length || 0, 'meetings');
+    return result.data || [];
+  } catch (error) {
+    console.error('❌ Error fetching lead meetings:', error);
+    throw error;
+  }
+};

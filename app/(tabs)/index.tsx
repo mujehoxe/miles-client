@@ -6,6 +6,7 @@
 import FiltersModal from "@/components/FiltersModal";
 import LeadCard from "@/components/LeadCard";
 import LoadingView from "@/components/LoadingView";
+import MeetingModal from "@/components/MeetingModal";
 import Pagination from "@/components/Pagination";
 import ReminderModal from "@/components/ReminderModal";
 
@@ -133,6 +134,11 @@ export default function Tab() {
   const [reminderLeadId, setReminderLeadId] = useState<string | null>(null);
   const [users, setUsers] = useState<any[]>([]);
   const [reminderCallback, setReminderCallback] = useState<(() => void) | null>(null);
+  
+  // Meeting modal state
+  const [showMeetingModal, setShowMeetingModal] = useState(false);
+  const [meetingLeadId, setMeetingLeadId] = useState<string | null>(null);
+  const [meetingCallback, setMeetingCallback] = useState<(() => void) | null>(null);
   
   // Sync localLeads with leads from hook
   useEffect(() => {
@@ -377,9 +383,9 @@ onOpenModal={(type, callback) => {
                     setReminderCallback(() => callback);
                     setShowReminderModal(true);
                   } else if (type === 'Add Meeting') {
-                    // TODO: Implement meeting modal
-                    console.log('Meeting modal not implemented yet');
-                    if (callback) callback();
+                    setMeetingLeadId(lead._id);
+                    setMeetingCallback(() => callback);
+                    setShowMeetingModal(true);
                   } else {
                     if (callback) callback();
                   }
@@ -474,6 +480,37 @@ onOpenModal={(type, callback) => {
           setShowReminderModal(false);
           setReminderLeadId(null);
           setReminderCallback(null);
+        }}
+      />
+      
+      {/* Meeting Modal */}
+      <MeetingModal
+        visible={showMeetingModal}
+        onClose={() => {
+          setShowMeetingModal(false);
+          setMeetingLeadId(null);
+          setMeetingCallback(null);
+        }}
+        leadId={meetingLeadId || ''}
+        assigneeOptions={users}
+        statusOptions={statusOptions}
+        onSuccess={() => {
+          console.log('✅ Meeting scheduled successfully');
+          
+          // Execute callback if provided (for status changes requiring meetings)
+          if (meetingCallback) {
+            meetingCallback();
+          }
+          
+          // Show success message
+          Toast.show('Meeting scheduled successfully', {
+            duration: Toast.durations.SHORT,
+          });
+          
+          // Close modal
+          setShowMeetingModal(false);
+          setMeetingLeadId(null);
+          setMeetingCallback(null);
         }}
       />
     </View>
