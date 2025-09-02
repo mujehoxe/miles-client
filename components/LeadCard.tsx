@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Alert, Linking, Text, TouchableOpacity, View } from "react-native";
 import Animated, { SlideInDown, SlideOutUp } from "react-native-reanimated";
+import Toast from "react-native-root-toast";
 import { formatPhoneNumber, formatTimestamp } from "../utils/dateFormatter";
 import AuthenticatedImage from "./AuthenticatedImage";
 import SourcePicker from "./SourcePicker";
@@ -198,10 +199,14 @@ const LeadCard: React.FC<LeadCardProps> = ({
         wordCount < 3 &&
         !noDescriptionStatuses.includes(newStatusLabel || "")
       ) {
-        Alert.alert(
-          "Error",
-          "Description must exceed 2 words on status change."
-        );
+        Toast.show("Description must exceed 2 words on status change.", {
+          duration: Toast.durations.LONG,
+          position: Toast.positions.BOTTOM,
+          backgroundColor: '#EF4444',
+          textColor: '#FFFFFF',
+          shadow: true,
+        });
+        setLoading(false);
         return;
       }
 
