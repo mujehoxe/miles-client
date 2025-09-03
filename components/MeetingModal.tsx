@@ -12,7 +12,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { addMeeting, updateMeeting, getUsers } from "../services/api";
+import Toast from "react-native-root-toast";
+import { addMeeting, updateMeeting, searchDevelopers } from "../services/api";
+import SearchableDropdown from './SearchableDropdown';
 
 interface User {
   _id: string;
@@ -49,6 +51,13 @@ interface MeetingModalProps {
   visible: boolean;
   onClose: () => void;
   leadId: string;
+  assigneeOptions?: User[];
+  statusOptions?: Array<{
+    value: string;
+    label: string;
+    color?: string;
+    requiresReminder?: "yes" | "no" | "optional";
+  }>;
   onSuccess?: () => void;
   meetingToEdit?: any;
 }
@@ -68,14 +77,19 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
   visible,
   onClose,
   leadId,
+  assigneeOptions = [],
+  statusOptions = [],
   onSuccess,
   meetingToEdit = null,
 }) => {
   const [loading, setLoading] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
   
+  // Developer search state
+  const [developers, setDevelopers] = useState<any[]>([]);
+  const [developerSearchLoading, setDeveloperSearchLoading] = useState(false);
+
   // Modal selection states
   const [showPrioritySelect, setShowPrioritySelect] = useState(false);
   const [showTypeSelect, setShowTypeSelect] = useState(false);
@@ -112,22 +126,21 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTime, setSelectedTime] = useState<Date>(new Date());
 
-  // Load users on mount
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const usersData = await getUsers();
-        setUsers(usersData);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-        Alert.alert("Error", "Failed to load users");
-      }
-    };
+  // Users are now passed as props via assigneeOptions
 
-    if (visible) {
-      fetchUsers();
+  // Handle developer search (move before useEffect to avoid dependency issues)
+  const handleDeveloperSearch = async (query: string) => {
+    setDeveloperSearchLoading(true);
+    try {
+      const results = await searchDevelopers(query);
+      setDevelopers(results);
+    } catch (error) {
+      console.error('Error searching developers:', error);
+      setDevelopers([]);
+    } finally {
+      setDeveloperSearchLoading(false);
     }
-  }, [visible]);
+  };
 
   useEffect(() => {
     if (meetingToEdit) {
@@ -150,7 +163,7 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
       const now = new Date();
       setSelectedDate(now);
       setSelectedTime(now);
-      
+
       setMeeting({
         Subject: "",
         Date: "",
@@ -173,7 +186,29 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
         },
       });
     }
+    
+    // Cleanup function to reset nested modal states when main modal changes
+    return () => {
+      if (!visible) {
+        setShowDatePicker(false);
+        setShowTimePicker(false);
+        setShowPrioritySelect(false);
+        setShowTypeSelect(false);
+        setShowDirectAgentSelect(false);
+        setShowStatusSelect(false);
+        setShowAssigneeSelect(false);
+        setShowFollowersSelect(false);
+        setShowUnitSelect(false);
+      }
+    };
   }, [meetingToEdit, leadId, visible]);
+  
+  // Load initial developers when modal opens (separate useEffect)
+  useEffect(() => {
+    if (visible && developers.length === 0) {
+      handleDeveloperSearch('');
+    }
+  }, [visible]);
 
   const updateDateTime = () => {
     // Combine date and time
@@ -187,14 +222,14 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
 
     // Format for local timezone without Z suffix
     const year = combinedDateTime.getFullYear();
-    const month = String(combinedDateTime.getMonth() + 1).padStart(2, '0');
-    const day = String(combinedDateTime.getDate()).padStart(2, '0');
-    const hours = String(combinedDateTime.getHours()).padStart(2, '0');
-    const minutes = String(combinedDateTime.getMinutes()).padStart(2, '0');
-    const seconds = String(combinedDateTime.getSeconds()).padStart(2, '0');
-    
+    const month = String(combinedDateTime.getMonth() + 1).padStart(2, "0");
+    const day = String(combinedDateTime.getDate()).padStart(2, "0");
+    const hours = String(combinedDateTime.getHours()).padStart(2, "0");
+    const minutes = String(combinedDateTime.getMinutes()).padStart(2, "0");
+    const seconds = String(combinedDateTime.getSeconds()).padStart(2, "0");
+
     const localDateTimeString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-    setMeeting(prev => ({ ...prev, Date: localDateTimeString }));
+    setMeeting((prev) => ({ ...prev, Date: localDateTimeString }));
   };
 
   useEffect(() => {
@@ -216,15 +251,23 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
   };
 
   const getSelectedUser = (userId: string) => {
-    return users.find(user => user._id === userId);
+    return assigneeOptions.find((user) => user._id === userId);
   };
 
   const getSelectedUsers = (userIds: string[]) => {
-    return userIds.map(id => users.find(user => user._id === id)).filter(Boolean);
+    return userIds
+      .map((id) => assigneeOptions.find((user) => user._id === id))
+      .filter(Boolean);
   };
 
   const onSubmit = async () => {
-    if (!meeting.Subject || !meeting.Date || !meeting.Priority || !meeting.MeetingType || !meeting.Status) {
+    if (
+      !meeting.Subject ||
+      !meeting.Date ||
+      !meeting.Priority ||
+      !meeting.MeetingType ||
+      !meeting.Status
+    ) {
       Alert.alert("Error", "Please fill in all required fields.");
       return;
     }
@@ -251,12 +294,16 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
       } else {
         result = await addMeeting(meetingData);
       }
-      
-      Alert.alert(
-        "Success", 
-        isEditMode ? "Meeting updated successfully" : "Meeting added successfully"
+
+      Toast.show(
+        isEditMode
+          ? "Meeting updated successfully"
+          : "Meeting added successfully",
+        {
+          duration: Toast.durations.SHORT,
+        }
       );
-      
+
       if (onSuccess) onSuccess();
       onClose();
     } catch (error: any) {
@@ -264,8 +311,9 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
         isEditMode ? "Error updating meeting:" : "Error adding meeting:",
         error
       );
-      
-      const errorMessage = error.message || `Failed to ${isEditMode ? "update" : "add"} meeting`;
+
+      const errorMessage =
+        error.message || `Failed to ${isEditMode ? "update" : "add"} meeting`;
       Alert.alert("Error", errorMessage);
     } finally {
       setLoading(false);
@@ -280,7 +328,7 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
     { value: "Urgent", label: "Urgent" },
   ];
 
-  const statusOptions = [
+  const meetingStatusOptions = [
     { value: "Meeting Scheduled", label: "Scheduled" },
     { value: "Meeting Completed", label: "Completed" },
     { value: "Meeting Cancelled", label: "Cancelled" },
@@ -301,10 +349,6 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
     { value: "hours", label: "Hours" },
     { value: "days", label: "Days" },
   ];
-
-  const formatUserLabel = (user: User) => {
-    return `${user.username}${user.Role ? ` (${user.Role})` : ""}${user.isParent ? " (Team Leader)" : ""}`;
-  };
 
   return (
     <Modal
@@ -334,7 +378,9 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
             <TextInput
               className="bg-white border border-gray-300 rounded-lg p-3 text-base text-gray-900"
               value={meeting.Subject}
-              onChangeText={(text) => setMeeting(prev => ({ ...prev, Subject: text }))}
+              onChangeText={(text) =>
+                setMeeting((prev) => ({ ...prev, Subject: text }))
+              }
               placeholder="Enter meeting subject"
             />
           </View>
@@ -344,35 +390,45 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
             <Text className="text-sm font-medium text-gray-700 mb-2">
               Meeting Date & Time <Text className="text-red-500">*</Text>
             </Text>
-            
+
             <View className="flex-row gap-2">
               {/* Date Selection */}
               <TouchableOpacity
                 className="flex-1 bg-white border border-gray-300 rounded-lg p-3 flex-row items-center justify-center"
                 onPress={() => setShowDatePicker(true)}
               >
-                <Ionicons name="calendar" size={16} color="#6B7280" className="mr-2" />
+                <Ionicons
+                  name="calendar"
+                  size={16}
+                  color="#6B7280"
+                  className="mr-2"
+                />
                 <Text className="text-base text-gray-900">
-                  {selectedDate.toLocaleDateString([], { 
-                    weekday: 'short',
-                    month: 'short', 
-                    day: 'numeric',
-                    year: 'numeric'
+                  {selectedDate.toLocaleDateString([], {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
                   })}
                 </Text>
               </TouchableOpacity>
-              
+
               {/* Time Selection */}
               <TouchableOpacity
                 className="bg-white border border-gray-300 rounded-lg p-3 flex-row items-center justify-center min-w-[100px]"
                 onPress={() => setShowTimePicker(true)}
               >
-                <Ionicons name="time" size={16} color="#6B7280" className="mr-2" />
+                <Ionicons
+                  name="time"
+                  size={16}
+                  color="#6B7280"
+                  className="mr-2"
+                />
                 <Text className="text-base text-gray-900">
-                  {selectedTime.toLocaleTimeString([], { 
-                    hour: '2-digit', 
-                    minute: '2-digit',
-                    hour12: true
+                  {selectedTime.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true,
                   })}
                 </Text>
               </TouchableOpacity>
@@ -439,7 +495,9 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
                 <TextInput
                   className="bg-white border border-gray-300 rounded-lg p-3 text-base text-gray-900"
                   value={meeting.agentName}
-                  onChangeText={(text) => setMeeting(prev => ({ ...prev, agentName: text }))}
+                  onChangeText={(text) =>
+                    setMeeting((prev) => ({ ...prev, agentName: text }))
+                  }
                   placeholder="Enter agent name"
                 />
               </View>
@@ -451,7 +509,9 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
                 <TextInput
                   className="bg-white border border-gray-300 rounded-lg p-3 text-base text-gray-900"
                   value={meeting.agentPhone}
-                  onChangeText={(text) => setMeeting(prev => ({ ...prev, agentPhone: text }))}
+                  onChangeText={(text) =>
+                    setMeeting((prev) => ({ ...prev, agentPhone: text }))
+                  }
                   placeholder="Enter agent phone"
                   keyboardType="phone-pad"
                 />
@@ -464,7 +524,9 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
                 <TextInput
                   className="bg-white border border-gray-300 rounded-lg p-3 text-base text-gray-900"
                   value={meeting.agentCompany}
-                  onChangeText={(text) => setMeeting(prev => ({ ...prev, agentCompany: text }))}
+                  onChangeText={(text) =>
+                    setMeeting((prev) => ({ ...prev, agentCompany: text }))
+                  }
                   placeholder="Enter agent company"
                 />
               </View>
@@ -478,11 +540,19 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
                 <Text className="text-sm font-medium text-gray-700 mb-2">
                   Developer
                 </Text>
-                <TextInput
-                  className="bg-white border border-gray-300 rounded-lg p-3 text-base text-gray-900"
+                <SearchableDropdown
+                  options={developers}
                   value={meeting.Developer}
-                  onChangeText={(text) => setMeeting(prev => ({ ...prev, Developer: text }))}
-                  placeholder="Enter developer name"
+                  placeholder="Select or type developer name"
+                  onSelect={(option) => {
+                    setMeeting((prev) => ({
+                      ...prev,
+                      Developer: option ? option.value : '',
+                    }));
+                  }}
+                  onSearch={handleDeveloperSearch}
+                  loading={developerSearchLoading}
+                  allowClear={true}
                 />
               </View>
 
@@ -493,7 +563,9 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
                 <TextInput
                   className="bg-white border border-gray-300 rounded-lg p-3 text-base text-gray-900"
                   value={meeting.Location}
-                  onChangeText={(text) => setMeeting(prev => ({ ...prev, Location: text }))}
+                  onChangeText={(text) =>
+                    setMeeting((prev) => ({ ...prev, Location: text }))
+                  }
                   placeholder="Enter location"
                 />
               </View>
@@ -510,7 +582,8 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
               onPress={() => setShowAssigneeSelect(true)}
             >
               <Text className="text-base text-gray-900">
-                {getSelectedUser(meeting.Assignees)?.username || "Select assignee"}
+                {getSelectedUser(meeting.Assignees)?.username ||
+                  "Select assignee"}
               </Text>
               <Ionicons name="chevron-down" size={16} color="#6B7280" />
             </TouchableOpacity>
@@ -526,7 +599,8 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
               onPress={() => setShowStatusSelect(true)}
             >
               <Text className="text-base text-gray-900">
-                {statusOptions.find(s => s.value === meeting.Status)?.label || "Select status"}
+                {meetingStatusOptions.find((s) => s.value === meeting.Status)
+                  ?.label || "Select status"}
               </Text>
               <Ionicons name="chevron-down" size={16} color="#6B7280" />
             </TouchableOpacity>
@@ -540,7 +614,9 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
             <TextInput
               className="bg-white border border-gray-300 rounded-lg p-3 text-base text-gray-900"
               value={meeting.Comment}
-              onChangeText={(text) => setMeeting(prev => ({ ...prev, Comment: text }))}
+              onChangeText={(text) =>
+                setMeeting((prev) => ({ ...prev, Comment: text }))
+              }
               placeholder="Enter meeting comment"
               multiline
               numberOfLines={3}
@@ -558,8 +634,8 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
                 <TextInput
                   className="flex-1 bg-white border border-gray-300 rounded-lg p-3 text-base text-gray-900"
                   value={meeting.notifyBefore.time.toString()}
-                  onChangeText={(text) => 
-                    setMeeting(prev => ({
+                  onChangeText={(text) =>
+                    setMeeting((prev) => ({
                       ...prev,
                       notifyBefore: {
                         ...prev.notifyBefore,
@@ -575,7 +651,9 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
                   onPress={() => setShowUnitSelect(true)}
                 >
                   <Text className="text-base text-gray-900">
-                    {unitOptions.find(u => u.value === meeting.notifyBefore.unit)?.label || "Hours"}
+                    {unitOptions.find(
+                      (u) => u.value === meeting.notifyBefore.unit
+                    )?.label || "Hours"}
                   </Text>
                   <Ionicons name="chevron-down" size={16} color="#6B7280" />
                 </TouchableOpacity>
@@ -588,12 +666,24 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
         <View className="p-4 border-t border-gray-200">
           <TouchableOpacity
             className={`rounded-lg p-4 items-center flex-row justify-center ${
-              loading || !meeting.Subject || !meeting.Date || !meeting.Priority || !meeting.MeetingType || !meeting.Status
-                ? "bg-gray-300" 
+              loading ||
+              !meeting.Subject ||
+              !meeting.Date ||
+              !meeting.Priority ||
+              !meeting.MeetingType ||
+              !meeting.Status
+                ? "bg-gray-300"
                 : "bg-miles-500"
             }`}
             onPress={onSubmit}
-            disabled={loading || !meeting.Subject || !meeting.Date || !meeting.Priority || !meeting.MeetingType || !meeting.Status}
+            disabled={
+              loading ||
+              !meeting.Subject ||
+              !meeting.Date ||
+              !meeting.Priority ||
+              !meeting.MeetingType ||
+              !meeting.Status
+            }
           >
             {loading && (
               <ActivityIndicator size="small" color="white" className="mr-2" />
@@ -629,6 +719,7 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
 
         {/* Priority Select Modal */}
         <Modal
+          key="priority-select-modal"
           visible={showPrioritySelect}
           animationType="slide"
           transparent={true}
@@ -644,7 +735,7 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
                   <Ionicons name="close" size={24} color="#6B7280" />
                 </TouchableOpacity>
               </View>
-              
+
               <ScrollView>
                 {priorityOptions.map((option) => (
                   <TouchableOpacity
@@ -653,7 +744,10 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
                       meeting.Priority === option.value ? "bg-miles-50" : ""
                     }`}
                     onPress={() => {
-                      setMeeting(prev => ({ ...prev, Priority: option.value }));
+                      setMeeting((prev) => ({
+                        ...prev,
+                        Priority: option.value,
+                      }));
                       setShowPrioritySelect(false);
                     }}
                   >
@@ -672,6 +766,7 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
 
         {/* Type Select Modal */}
         <Modal
+          key="type-select-modal"
           visible={showTypeSelect}
           animationType="slide"
           transparent={true}
@@ -687,7 +782,7 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
                   <Ionicons name="close" size={24} color="#6B7280" />
                 </TouchableOpacity>
               </View>
-              
+
               <ScrollView>
                 {typeOptions.map((option) => (
                   <TouchableOpacity
@@ -696,7 +791,10 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
                       meeting.MeetingType === option.value ? "bg-miles-50" : ""
                     }`}
                     onPress={() => {
-                      setMeeting(prev => ({ ...prev, MeetingType: option.value }));
+                      setMeeting((prev) => ({
+                        ...prev,
+                        MeetingType: option.value,
+                      }));
                       setShowTypeSelect(false);
                     }}
                   >
@@ -715,6 +813,7 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
 
         {/* Direct/Agent Select Modal */}
         <Modal
+          key="direct-agent-select-modal"
           visible={showDirectAgentSelect}
           animationType="slide"
           transparent={true}
@@ -726,20 +825,27 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
                 <Text className="text-lg font-semibold text-gray-900">
                   Select Direct or Agent
                 </Text>
-                <TouchableOpacity onPress={() => setShowDirectAgentSelect(false)}>
+                <TouchableOpacity
+                  onPress={() => setShowDirectAgentSelect(false)}
+                >
                   <Ionicons name="close" size={24} color="#6B7280" />
                 </TouchableOpacity>
               </View>
-              
+
               <ScrollView>
                 {directOrAgentOptions.map((option) => (
                   <TouchableOpacity
                     key={option.value}
                     className={`flex-row items-center p-4 ${
-                      meeting.directoragnet === option.value ? "bg-miles-50" : ""
+                      meeting.directoragnet === option.value
+                        ? "bg-miles-50"
+                        : ""
                     }`}
                     onPress={() => {
-                      setMeeting(prev => ({ ...prev, directoragnet: option.value }));
+                      setMeeting((prev) => ({
+                        ...prev,
+                        directoragnet: option.value,
+                      }));
                       setShowDirectAgentSelect(false);
                     }}
                   >
@@ -758,6 +864,7 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
 
         {/* Status Select Modal */}
         <Modal
+          key="status-select-modal"
           visible={showStatusSelect}
           animationType="slide"
           transparent={true}
@@ -773,16 +880,16 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
                   <Ionicons name="close" size={24} color="#6B7280" />
                 </TouchableOpacity>
               </View>
-              
+
               <ScrollView>
-                {statusOptions.map((option) => (
+                {meetingStatusOptions.map((option) => (
                   <TouchableOpacity
                     key={option.value}
                     className={`flex-row items-center p-4 ${
                       meeting.Status === option.value ? "bg-miles-50" : ""
                     }`}
                     onPress={() => {
-                      setMeeting(prev => ({ ...prev, Status: option.value }));
+                      setMeeting((prev) => ({ ...prev, Status: option.value }));
                       setShowStatusSelect(false);
                     }}
                   >
@@ -801,6 +908,7 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
 
         {/* Assignee Select Modal */}
         <Modal
+          key="assignee-select-modal"
           visible={showAssigneeSelect}
           animationType="slide"
           transparent={true}
@@ -816,14 +924,14 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
                   <Ionicons name="close" size={24} color="#6B7280" />
                 </TouchableOpacity>
               </View>
-              
+
               <ScrollView className="max-h-96">
                 <TouchableOpacity
                   className={`flex-row items-center p-4 ${
                     !meeting.Assignees ? "bg-miles-50" : ""
                   }`}
                   onPress={() => {
-                    setMeeting(prev => ({ ...prev, Assignees: "" }));
+                    setMeeting((prev) => ({ ...prev, Assignees: "" }));
                     setShowAssigneeSelect(false);
                   }}
                 >
@@ -834,23 +942,31 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
                     <Ionicons name="checkmark" size={20} color="#3B82F6" />
                   )}
                 </TouchableOpacity>
-                {users.map((user) => (
+                {assigneeOptions.map((user) => (
                   <TouchableOpacity
                     key={user._id}
                     className={`flex-row items-center p-4 ${
                       meeting.Assignees === user._id ? "bg-miles-50" : ""
                     }`}
                     onPress={() => {
-                      setMeeting(prev => ({ ...prev, Assignees: user._id }));
+                      setMeeting((prev) => ({ ...prev, Assignees: user._id }));
                       setShowAssigneeSelect(false);
                     }}
                   >
-                    <Text className="text-base text-gray-900 flex-1">
-                      {formatUserLabel(user)}
-                    </Text>
-                    {meeting.Assignees === user._id && (
-                      <Ionicons name="checkmark" size={20} color="#3B82F6" />
-                    )}
+                    <View className="text-base text-gray-900 justify-between flex-1 flex-row">
+                      <Text>{user.username}</Text>
+                      <Text className="mr-2">
+                        {user.Role ? ` (${user.Role})` : ""}
+                      </Text>
+                    </View>
+                    <Ionicons
+                      className={`${
+                        meeting.Assignees === user._id ? "visible" : "invisible"
+                      }`}
+                      name="checkmark"
+                      size={20}
+                      color="#3B82F6"
+                    />
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -860,6 +976,7 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
 
         {/* Unit Select Modal */}
         <Modal
+          key="unit-select-modal"
           visible={showUnitSelect}
           animationType="slide"
           transparent={true}
@@ -875,16 +992,18 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
                   <Ionicons name="close" size={24} color="#6B7280" />
                 </TouchableOpacity>
               </View>
-              
+
               <ScrollView>
                 {unitOptions.map((unit) => (
                   <TouchableOpacity
                     key={unit.value}
                     className={`flex-row items-center p-4 ${
-                      meeting.notifyBefore.unit === unit.value ? "bg-miles-50" : ""
+                      meeting.notifyBefore.unit === unit.value
+                        ? "bg-miles-50"
+                        : ""
                     }`}
                     onPress={() => {
-                      setMeeting(prev => ({
+                      setMeeting((prev) => ({
                         ...prev,
                         notifyBefore: {
                           ...prev.notifyBefore,

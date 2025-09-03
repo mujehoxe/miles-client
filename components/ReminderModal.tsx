@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Toast from "react-native-root-toast";
 import { addReminder, updateReminder } from "../services/api";
 
 interface User {
@@ -102,7 +103,7 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
       const now = new Date();
       setSelectedDate(now);
       setSelectedTime(now);
-      
+
       setReminder({
         DateTime: "",
         Assignees: "",
@@ -114,6 +115,16 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
         },
       });
     }
+
+    // Cleanup function to reset nested modal states when main modal changes
+    return () => {
+      if (!visible) {
+        setShowDatePicker(false);
+        setShowTimePicker(false);
+        setShowAssigneeSelect(false);
+        setShowUnitSelect(false);
+      }
+    };
   }, [reminderToEdit, leadId, visible]);
 
   const updateDateTime = () => {
@@ -128,14 +139,14 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
 
     // Format for local timezone without Z suffix
     const year = combinedDateTime.getFullYear();
-    const month = String(combinedDateTime.getMonth() + 1).padStart(2, '0');
-    const day = String(combinedDateTime.getDate()).padStart(2, '0');
-    const hours = String(combinedDateTime.getHours()).padStart(2, '0');
-    const minutes = String(combinedDateTime.getMinutes()).padStart(2, '0');
-    const seconds = String(combinedDateTime.getSeconds()).padStart(2, '0');
-    
+    const month = String(combinedDateTime.getMonth() + 1).padStart(2, "0");
+    const day = String(combinedDateTime.getDate()).padStart(2, "0");
+    const hours = String(combinedDateTime.getHours()).padStart(2, "0");
+    const minutes = String(combinedDateTime.getMinutes()).padStart(2, "0");
+    const seconds = String(combinedDateTime.getSeconds()).padStart(2, "0");
+
     const localDateTimeString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-    setReminder(prev => ({ ...prev, DateTime: localDateTimeString }));
+    setReminder((prev) => ({ ...prev, DateTime: localDateTimeString }));
   };
 
   useEffect(() => {
@@ -158,16 +169,16 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
 
   const formatDateTime = (date: Date, time: Date) => {
     const dateStr = date.toLocaleDateString();
-    const timeStr = time.toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    const timeStr = time.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
     });
     return `${dateStr} ${timeStr}`;
   };
 
   const getSelectedAssignee = () => {
     if (!reminder.Assignees) return null;
-    return assigneesOptions.find(user => user._id === reminder.Assignees);
+    return assigneesOptions.find((user) => user._id === reminder.Assignees);
   };
 
   const onSubmit = async () => {
@@ -193,7 +204,9 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
           !reminderData.DateTime.includes("+") &&
           !reminderData.DateTime.includes("-", 10)
         ) {
-          reminderData.DateTime = `${reminderData.DateTime}${getTimezoneOffsetString()}`;
+          reminderData.DateTime = `${
+            reminderData.DateTime
+          }${getTimezoneOffsetString()}`;
         }
       }
 
@@ -203,12 +216,16 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
       } else {
         result = await addReminder(reminderData);
       }
-      
-      Alert.alert(
-        "Success", 
-        isEditMode ? "Reminder updated successfully" : "Reminder added successfully"
+
+      Toast.show(
+        isEditMode
+          ? "Reminder updated successfully"
+          : "Reminder added successfully",
+        {
+          duration: Toast.durations.SHORT,
+        }
       );
-      
+
       if (onSuccess) onSuccess();
       onClose();
     } catch (error: any) {
@@ -216,8 +233,9 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
         isEditMode ? "Error updating reminder:" : "Error adding reminder:",
         error
       );
-      
-      const errorMessage = error.message || `Failed to ${isEditMode ? "update" : "add"} reminder`;
+
+      const errorMessage =
+        error.message || `Failed to ${isEditMode ? "update" : "add"} reminder`;
       Alert.alert("Error", errorMessage);
     } finally {
       setLoading(false);
@@ -255,35 +273,45 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
             <Text className="text-sm font-medium text-gray-700 mb-2">
               Date & Time <Text className="text-red-500">*</Text>
             </Text>
-            
+
             <View className="flex-row gap-2">
               {/* Date Selection */}
               <TouchableOpacity
                 className="flex-1 bg-white border border-gray-300 rounded-lg p-3 flex-row items-center justify-center"
                 onPress={() => setShowDatePicker(true)}
               >
-                <Ionicons name="calendar" size={16} color="#6B7280" className="mr-2" />
+                <Ionicons
+                  name="calendar"
+                  size={16}
+                  color="#6B7280"
+                  className="mr-2"
+                />
                 <Text className="text-base text-gray-900">
-                  {selectedDate.toLocaleDateString([], { 
-                    weekday: 'short',
-                    month: 'short', 
-                    day: 'numeric',
-                    year: 'numeric'
+                  {selectedDate.toLocaleDateString([], {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
                   })}
                 </Text>
               </TouchableOpacity>
-              
+
               {/* Time Selection */}
               <TouchableOpacity
                 className="bg-white border border-gray-300 rounded-lg p-3 flex-row items-center justify-center min-w-[100px]"
                 onPress={() => setShowTimePicker(true)}
               >
-                <Ionicons name="time" size={16} color="#6B7280" className="mr-2" />
+                <Ionicons
+                  name="time"
+                  size={16}
+                  color="#6B7280"
+                  className="mr-2"
+                />
                 <Text className="text-base text-gray-900">
-                  {selectedTime.toLocaleTimeString([], { 
-                    hour: '2-digit', 
-                    minute: '2-digit',
-                    hour12: true
+                  {selectedTime.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true,
                   })}
                 </Text>
               </TouchableOpacity>
@@ -314,7 +342,9 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
             <TextInput
               className="bg-white border border-gray-300 rounded-lg p-3 text-base text-gray-900"
               value={reminder.Comment}
-              onChangeText={(text) => setReminder(prev => ({ ...prev, Comment: text }))}
+              onChangeText={(text) =>
+                setReminder((prev) => ({ ...prev, Comment: text }))
+              }
               placeholder="Reminder description"
               multiline
               numberOfLines={3}
@@ -332,8 +362,8 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
                 <TextInput
                   className="flex-1 bg-white border border-gray-300 rounded-lg p-3 text-base text-gray-900"
                   value={reminder.notifyBefore.time.toString()}
-                  onChangeText={(text) => 
-                    setReminder(prev => ({
+                  onChangeText={(text) =>
+                    setReminder((prev) => ({
                       ...prev,
                       notifyBefore: {
                         ...prev.notifyBefore,
@@ -349,7 +379,9 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
                   onPress={() => setShowUnitSelect(true)}
                 >
                   <Text className="text-base text-gray-900">
-                    {unitOptions.find(u => u.value === reminder.notifyBefore.unit)?.label || "Minutes"}
+                    {unitOptions.find(
+                      (u) => u.value === reminder.notifyBefore.unit
+                    )?.label || "Minutes"}
                   </Text>
                   <Ionicons name="chevron-down" size={16} color="#6B7280" />
                 </TouchableOpacity>
@@ -362,9 +394,7 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
         <View className="p-4 border-t border-gray-200">
           <TouchableOpacity
             className={`rounded-lg p-4 items-center flex-row justify-center ${
-              loading || !reminder.DateTime 
-                ? "bg-gray-300" 
-                : "bg-miles-500"
+              loading || !reminder.DateTime ? "bg-gray-300" : "bg-miles-500"
             }`}
             onPress={onSubmit}
             disabled={loading || !reminder.DateTime}
@@ -404,6 +434,7 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
 
         {/* Assignee Select Modal */}
         <Modal
+          key="assignee-select-modal"
           visible={showAssigneeSelect}
           animationType="slide"
           transparent={true}
@@ -419,14 +450,14 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
                   <Ionicons name="close" size={24} color="#6B7280" />
                 </TouchableOpacity>
               </View>
-              
+
               <ScrollView className="max-h-96">
                 <TouchableOpacity
                   className={`flex-row items-center p-4 ${
                     !reminder.Assignees ? "bg-miles-50" : ""
                   }`}
                   onPress={() => {
-                    setReminder(prev => ({ ...prev, Assignees: "" }));
+                    setReminder((prev) => ({ ...prev, Assignees: "" }));
                     setShowAssigneeSelect(false);
                   }}
                 >
@@ -444,16 +475,26 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
                       reminder.Assignees === user._id ? "bg-miles-50" : ""
                     }`}
                     onPress={() => {
-                      setReminder(prev => ({ ...prev, Assignees: user._id }));
+                      setReminder((prev) => ({ ...prev, Assignees: user._id }));
                       setShowAssigneeSelect(false);
                     }}
                   >
-                    <Text className="text-base text-gray-900 flex-1">
-                      {user.username}
-                    </Text>
-                    {reminder.Assignees === user._id && (
-                      <Ionicons name="checkmark" size={20} color="#3B82F6" />
-                    )}
+                    <View className="text-base text-gray-900 justify-between flex-1 flex-row">
+                      <Text>{user.username}</Text>
+                      <Text className="mr-2">
+                        {user.Role ? ` (${user.Role})` : ""}
+                      </Text>
+                    </View>
+                    <Ionicons
+                      className={`${
+                        reminder.Assignees === user._id
+                          ? "visible"
+                          : "invisible"
+                      }`}
+                      name="checkmark"
+                      size={20}
+                      color="#3B82F6"
+                    />
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -463,6 +504,7 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
 
         {/* Unit Select Modal */}
         <Modal
+          key="unit-select-modal"
           visible={showUnitSelect}
           animationType="slide"
           transparent={true}
@@ -478,16 +520,18 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
                   <Ionicons name="close" size={24} color="#6B7280" />
                 </TouchableOpacity>
               </View>
-              
+
               <ScrollView>
                 {unitOptions.map((unit) => (
                   <TouchableOpacity
                     key={unit.value}
                     className={`flex-row items-center p-4 ${
-                      reminder.notifyBefore.unit === unit.value ? "bg-miles-50" : ""
+                      reminder.notifyBefore.unit === unit.value
+                        ? "bg-miles-50"
+                        : ""
                     }`}
                     onPress={() => {
-                      setReminder(prev => ({
+                      setReminder((prev) => ({
                         ...prev,
                         notifyBefore: {
                           ...prev.notifyBefore,

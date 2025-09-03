@@ -39,8 +39,9 @@ import tailwindConfig from "../../tailwind.config";
 import { UserContext } from "../_layout";
 
 // Services and utilities
-import { fetchTagOptions, getUsers, updateLead } from "@/services/api";
+import { fetchTagOptions, updateLead } from "@/services/api";
 import { SEARCH_BOX_OPTIONS, COUNT_OPTIONS, DEFAULT_PAGINATION } from "@/utils/constants";
+import ModalManager from "@/utils/ModalManager";
 
 const fullConfig = resolveConfig(tailwindConfig);
 const miles600 = fullConfig.theme.colors.miles[600];
@@ -132,7 +133,6 @@ export default function Tab() {
   // Reminder modal state
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [reminderLeadId, setReminderLeadId] = useState<string | null>(null);
-  const [users, setUsers] = useState<any[]>([]);
   const [reminderCallback, setReminderCallback] = useState<(() => void) | null>(null);
   
   // Meeting modal state
@@ -250,19 +250,91 @@ export default function Tab() {
     setCurrentPage(data.currentPage - 1); // Convert to 0-based
   };
   
-  // Fetch users for reminder assignee options
-  useEffect(() => {
-    const fetchUsersData = async () => {
-      try {
-        const usersData = await getUsers();
-        setUsers(usersData);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-      }
+  // Convert agents to user format for assignee options (excludes non-assigned)
+  const getUsersFromAgents = (agentsList: any[]): any[] => {
+    const flattenAgents = (agentList: any[]): any[] => {
+      let result: any[] = [];
+      agentList.forEach(agent => {
+        // Skip non-assigned option for modal assignee selections
+        if (agent.value === 'non-assigned') {
+          return;
+        }
+        
+        // Convert agent format to user format
+        result.push({
+          _id: agent.value,
+          username: agent.label,
+          Role: agent.role || 'agent' // Use actual role from data, fallback to 'agent'
+        });
+        if (agent.children) {
+          result = result.concat(flattenAgents(agent.children));
+        }
+      });
+      return result;
     };
-
-    fetchUsersData();
-  }, []);
+    
+    return flattenAgents(agentsList);
+  };
+  
+  // Convert agents to user format including non-assigned (for filters)
+  const getAllUsersFromAgents = (agentsList: any[]): any[] => {
+    const flattenAgents = (agentList: any[]): any[] => {
+      let result: any[] = [];
+      agentList.forEach(agent => {
+        // Include all agents including non-assigned for filters
+        result.push({
+          _id: agent.value,
+          username: agent.label,
+          Role: agent.role || 'agent',
+          value: agent.value, // Keep original value for filter compatibility
+          label: agent.label  // Keep original label for filter compatibility
+        });
+        if (agent.children) {
+          result = result.concat(flattenAgents(agent.children));
+        }
+      });
+      return result;
+    };
+    
+    return flattenAgents(agentsList);
+  };
+  
+  // Process agents data for filters - adds non-assigned option at top for admin users
+  const processAgentsForFilters = (agentsList: any[]): any[] => {
+    if (!user || !agentsList || agentsList.length === 0) {
+      return agentsList;
+    }
+    
+    // Check if user has admin role (admin, superAdmin, or any role containing 'admin')
+    const isAdmin = user.role && (
+      user.role === 'admin' || 
+      user.role === 'superAdmin' || 
+      user.role.toLowerCase().includes('admin')
+    );
+    
+    if (!isAdmin) {
+      return agentsList; // Return original list if not admin
+    }
+    
+    // Create a copy of the agents list
+    const processedAgents = [...agentsList];
+    
+    // Check if non-assigned already exists to avoid duplicates
+    const hasNonAssigned = processedAgents.some(agent => agent.value === 'non-assigned');
+    
+    if (!hasNonAssigned) {
+      // Add non-assigned option at the beginning
+      processedAgents.unshift({
+        value: 'non-assigned',
+        title: 'Non Assigned',
+        label: 'Non Assigned',
+        role: 'system', // Special role to identify this as a system option
+        children: undefined
+      });
+    }
+    
+    return processedAgents;
+  };
   
   // Update totalPages when totalLeads changes
   useEffect(() => {
@@ -379,13 +451,31 @@ onOpenModal={(type, callback) => {
                   console.log('Opening modal:', type, 'for lead:', lead._id);
                   
                   if (type === 'Add Reminder') {
-                    setReminderLeadId(lead._id);
-                    setReminderCallback(() => callback);
-                    setShowReminderModal(true);
+                    const modalId = 'reminder-modal';
+                    if (ModalManager.canOpenModal(modalId)) {
+                      ModalManager.closeAllExcept(modalId);
+                      setReminderLeadId(lead._id);
+                      setReminderCallback(() => callback);
+                      setShowReminderModal(true);
+                      ModalManager.registerModal(modalId, () => {
+                        setShowReminderModal(false);
+                        setReminderLeadId(null);
+                        setReminderCallback(null);
+                      });
+                    }
                   } else if (type === 'Add Meeting') {
-                    setMeetingLeadId(lead._id);
-                    setMeetingCallback(() => callback);
-                    setShowMeetingModal(true);
+                    const modalId = 'meeting-modal';
+                    if (ModalManager.canOpenModal(modalId)) {
+                      ModalManager.closeAllExcept(modalId);
+                      setMeetingLeadId(lead._id);
+                      setMeetingCallback(() => callback);
+                      setShowMeetingModal(true);
+                      ModalManager.registerModal(modalId, () => {
+                        setShowMeetingModal(false);
+                        setMeetingLeadId(null);
+                        setMeetingCallback(null);
+                      });
+                    }
                   } else {
                     if (callback) callback();
                   }
@@ -442,7 +532,7 @@ onOpenModal={(type, callback) => {
         statusOptions={statusOptions}
         sourceOptions={sourceOptions}
         tagOptions={tagOptions}
-        agents={agents}
+        agents={processAgentsForFilters(agents)}
         searchBoxOptions={SEARCH_BOX_OPTIONS}
         countOptions={COUNT_OPTIONS}
         leadsData={{
@@ -457,18 +547,23 @@ onOpenModal={(type, callback) => {
       <ReminderModal
         visible={showReminderModal}
         onClose={() => {
-          setShowReminderModal(false);
-          setReminderLeadId(null);
-          setReminderCallback(null);
+          ModalManager.unregisterModal('reminder-modal');
+          setTimeout(() => {
+            setShowReminderModal(false);
+            setReminderLeadId(null);
+            setReminderCallback(null);
+          }, 100);
         }}
         leadId={reminderLeadId || ''}
-        assigneesOptions={users}
+        assigneesOptions={getUsersFromAgents(agents)}
         onSuccess={() => {
           console.log('✅ Reminder added successfully');
           
           // Execute callback if provided (for status changes requiring reminders)
           if (reminderCallback) {
-            reminderCallback();
+            setTimeout(() => {
+              reminderCallback();
+            }, 200);
           }
           
           // Show success message
@@ -476,10 +571,13 @@ onOpenModal={(type, callback) => {
             duration: Toast.durations.SHORT,
           });
           
-          // Close modal
-          setShowReminderModal(false);
-          setReminderLeadId(null);
-          setReminderCallback(null);
+          // Close modal with delay to prevent view registration conflicts
+          ModalManager.unregisterModal('reminder-modal');
+          setTimeout(() => {
+            setShowReminderModal(false);
+            setReminderLeadId(null);
+            setReminderCallback(null);
+          }, 300);
         }}
       />
       
@@ -487,19 +585,24 @@ onOpenModal={(type, callback) => {
       <MeetingModal
         visible={showMeetingModal}
         onClose={() => {
-          setShowMeetingModal(false);
-          setMeetingLeadId(null);
-          setMeetingCallback(null);
+          ModalManager.unregisterModal('meeting-modal');
+          setTimeout(() => {
+            setShowMeetingModal(false);
+            setMeetingLeadId(null);
+            setMeetingCallback(null);
+          }, 100);
         }}
         leadId={meetingLeadId || ''}
-        assigneeOptions={users}
+        assigneeOptions={getUsersFromAgents(agents)}
         statusOptions={statusOptions}
         onSuccess={() => {
           console.log('✅ Meeting scheduled successfully');
           
           // Execute callback if provided (for status changes requiring meetings)
           if (meetingCallback) {
-            meetingCallback();
+            setTimeout(() => {
+              meetingCallback();
+            }, 200);
           }
           
           // Show success message
@@ -507,10 +610,13 @@ onOpenModal={(type, callback) => {
             duration: Toast.durations.SHORT,
           });
           
-          // Close modal
-          setShowMeetingModal(false);
-          setMeetingLeadId(null);
-          setMeetingCallback(null);
+          // Close modal with delay to prevent view registration conflicts
+          ModalManager.unregisterModal('meeting-modal');
+          setTimeout(() => {
+            setShowMeetingModal(false);
+            setMeetingLeadId(null);
+            setMeetingCallback(null);
+          }, 300);
         }}
       />
     </View>

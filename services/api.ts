@@ -337,19 +337,8 @@ export const buildLeadsRequestBody = (
   if (filters?.selectedAgents && filters.selectedAgents.length > 0) {
     selectedAgents = filters.selectedAgents;
 
-    // Check if 'non-assigned' is selected and add special flags
-    const hasNonAssigned = filters.selectedAgents.includes('non-assigned');
-    if (hasNonAssigned) {
-      console.log('Filters: non-assigned leads selected via agents dropdown');
-      requestOptions.includeNonAssigned = true;
-      if (
-        user.permissions?.lead?.includes('view_non_assigned') ||
-        user.permissions?.lead?.includes('view_all') ||
-        user.role === 'superAdmin'
-      ) {
-        requestOptions.viewAllLeads = true;
-      }
-    }
+    // Remove non-assigned from selected agents if it exists
+    selectedAgents = filters.selectedAgents.filter(agent => agent !== 'non-assigned');
   } else if (user.role === 'superAdmin') {
     // For superAdmin with no explicit selection, let backend decide scope
     selectedAgents = [];
@@ -549,11 +538,16 @@ export const transformAgentsDataToTreeSelect = (data: any[]): any[] => {
     value: userData._id,
     title: userData.username,
     label: userData.username,
+    role: userData.role || userData.Role, // Preserve role information
+    email: userData.email,
+    personalEmail: userData.personalemail,
+    isVerified: userData.isVerified,
     children: userData.subordinates
       ? userData.subordinates.map((subordinate: any) => ({
           value: subordinate._id,
           title: subordinate.username,
           label: subordinate.username,
+          role: subordinate.role || subordinate.Role, // Preserve role information
           email: subordinate.email,
           personalEmail: subordinate.personalemail,
           isVerified: subordinate.isVerified,
@@ -619,24 +613,7 @@ export const fetchAgents = async (user: any): Promise<any[]> => {
       const data = await response.json();
       const treeData = transformAgentsDataToTreeSelect(data.data);
 
-      // Add non-assigned option as the first option if user has appropriate permissions OR is superAdmin
-      const hasViewAllPermission =
-        user.permissions?.lead?.includes('view_all') ||
-        user.permissions?.lead?.includes('view_non_assigned') ||
-        user.role === 'superAdmin';
-
-      const agentsWithNonAssigned = hasViewAllPermission
-        ? [
-            {
-              value: 'non-assigned',
-              title: 'Non-Assigned Leads',
-              label: 'Non-Assigned Leads',
-            },
-            ...treeData,
-          ]
-        : treeData;
-
-      return agentsWithNonAssigned;
+      return treeData;
     } else {
       console.error('Failed to fetch agents:', response.status);
       return [];
@@ -711,6 +688,56 @@ export const fetchLeadComments = async (leadId: string): Promise<any[]> => {
   console.log('✅ Comments fetched successfully:', { leadId, count: data.data?.length || 0 });
   
   return data.data || [];
+};
+
+/**
+ * Search developers using Algolia API
+ */
+export const searchDevelopers = async (query: string = ''): Promise<any[]> => {
+  try {
+    const response = await fetch(
+      'https://ll8iz711cs-dsn.algolia.net/1/indexes/*/queries?x-algolia-agent=Algolia%20for%20JavaScript%20(3.35.1)%3B%20Browser%20(lite)&x-algolia-application-id=LL8IZ711CS&x-algolia-api-key=15cb8b0a2d2d435c6613111d860ecfc5',
+      {
+        method: 'POST',
+        headers: {
+          'Accept-Language': 'en-GB,en-US;q=0.9,en;q=0.8',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          requests: [
+            {
+              indexName: 'bayut-production-agencies-en',
+              params: `page=0&hitsPerPage=100&query=${encodeURIComponent(
+                query
+              )}&optionalWords=&facets=%5B%5D&maxValuesPerFacet=100&attributesToHighlight=%5B%22name%22%5D&attributesToRetrieve=%5B%22name%22%2C%22stats.adsCount%22%5D&filters=(type%3A%22developer%22)&numericFilters=stats.adsCount%3E%3D1`,
+            },
+          ],
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Developer search failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // Process and sort the results
+    const developerOptions = data.results[0].hits
+      .sort((a: any, b: any) => b.stats.adsCount - a.stats.adsCount)
+      .slice(0, 20)
+      .map((developer: any) => ({
+        value: developer.name,
+        label: developer.name,
+        adsCount: developer.stats.adsCount,
+      }));
+
+    return developerOptions;
+  } catch (error) {
+    console.error('Error searching developers:', error);
+    // Return empty array on error instead of throwing
+    return [];
+  }
 };
 
 /**
@@ -862,7 +889,7 @@ export const updateMeeting = async (meetingId: string, meetingData: any) => {
  * @returns Promise<any[]> - Array of meetings
  */
 export const getLeadMeetings = async (leadId: string) => {
-  console.log('📝 Fetching meetings for lead:', leadId);
+  console.log('📝 API: Starting getLeadMeetings for leadId:', leadId);
   
   if (!(await validateAuthToken())) {
     throw new Error('Authentication failed. Please login again.');
@@ -872,21 +899,63 @@ export const getLeadMeetings = async (leadId: string) => {
     const headers = await createAuthHeaders();
     const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Meeting/get/${leadId}`;
     
+    console.log('📝 API: Making request to URL:', url);
+    console.log('📝 API: Request headers:', headers);
+    
     const response = await fetch(url, {
       method: 'GET',
       headers,
     });
     
+    console.log('📝 API: Response status:', response.status);
+    console.log('📝 API: Response headers:', Object.fromEntries(response.headers.entries()));
+    
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+      const errorText = await response.text();
+      console.error('📝 API: Error response body:', errorText);
+      
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch (e) {
+        errorData = { error: errorText || `HTTP ${response.status}` };
+      }
+      
       throw new Error(errorData.error || `Failed to fetch meetings: HTTP ${response.status}`);
     }
     
-    const result = await response.json();
-    console.log('✅ Lead meetings fetched successfully:', result.data?.length || 0, 'meetings');
-    return result.data || [];
+    const responseText = await response.text();
+    console.log('📝 API: Raw response text:', responseText);
+    
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch (e) {
+      console.error('📝 API: Failed to parse JSON response:', e);
+      throw new Error('Invalid JSON response from server');
+    }
+    
+    console.log('📝 API: Parsed response object:', {
+      result,
+      hasData: 'data' in result,
+      dataType: typeof result.data,
+      dataIsArray: Array.isArray(result.data),
+      dataLength: Array.isArray(result.data) ? result.data.length : 'N/A'
+    });
+    
+    const meetings = result.data || [];
+    console.log('✅ API: Lead meetings fetched successfully:', {
+      count: meetings.length,
+      meetings: meetings.slice(0, 2) // Log first 2 meetings for inspection
+    });
+    
+    return meetings;
   } catch (error) {
-    console.error('❌ Error fetching lead meetings:', error);
+    console.error('❌ API: Error fetching lead meetings:', {
+      error,
+      message: error.message,
+      stack: error.stack
+    });
     throw error;
   }
 };
