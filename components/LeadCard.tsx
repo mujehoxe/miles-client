@@ -80,7 +80,8 @@ const LeadCard: React.FC<LeadCardProps> = ({
   const [avatarError, setAvatarError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [updateBody, setUpdateBody] = useState<any>({});
-  const [reminderAddedForRequiredStatus, setReminderAddedForRequiredStatus] = useState(false);
+  const [reminderAddedForRequiredStatus, setReminderAddedForRequiredStatus] =
+    useState(false);
 
   useEffect(() => {
     setUpdateBody({
@@ -202,8 +203,8 @@ const LeadCard: React.FC<LeadCardProps> = ({
         Toast.show("Description must exceed 2 words on status change.", {
           duration: Toast.durations.LONG,
           position: Toast.positions.BOTTOM,
-          backgroundColor: '#EF4444',
-          textColor: '#FFFFFF',
+          backgroundColor: "#EF4444",
+          textColor: "#FFFFFF",
           shadow: true,
         });
         setLoading(false);
@@ -225,11 +226,11 @@ const LeadCard: React.FC<LeadCardProps> = ({
       const newStatus = statusOptions.find(
         (o) => o.value === updateBody.LeadStatus?._id
       );
-      console.log('🔍 Debug requiresReminder:', {
+      console.log("🔍 Debug requiresReminder:", {
         statusChanged,
         newStatusLabel: newStatus?.label,
         requiresReminder: newStatus?.requiresReminder,
-        leadName: lead.Name
+        leadName: lead.Name,
       });
       if (statusChanged && newStatus?.requiresReminder) {
         if (newStatus.requiresReminder === "yes") {
@@ -421,16 +422,6 @@ const LeadCard: React.FC<LeadCardProps> = ({
                   {formatTimestamp(lead.lastCalled)}
                 </Text>
               </View>
-            )}
-            {lead.timestamp && (
-              <Text className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full font-medium">
-                Created: {formatTimestamp(lead.timestamp)}
-              </Text>
-            )}
-            {lead.LeadAssignedDate && (
-              <Text className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full font-medium">
-                Assigned: {formatTimestamp(lead.LeadAssignedDate)}
-              </Text>
             )}
           </View>
         )}

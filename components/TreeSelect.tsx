@@ -370,6 +370,7 @@ export default function TreeSelect({
         visible={isOpen}
         animationType="slide"
         presentationStyle="pageSheet"
+        onRequestClose={() => setIsOpen(false)}
       >
         <View className="flex-1 bg-gray-50">
           <View className="flex-row items-center justify-between p-4 bg-white border-b border-gray-200">

@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-root-toast';
 import SearchableDropdown from './SearchableDropdown';
+import MultiSelectModal from './MultiSelectModal';
 import { fetchTagOptions, bulkUpdateLeads } from '@/services/api';
 
 interface BulkModalProps {
@@ -69,7 +70,6 @@ const BulkModal: React.FC<BulkModalProps> = ({
   const [selfAssignWarning, setSelfAssignWarning] = useState(false);
   const [selectedTags, setSelectedTags] = useState<any[]>([]);
   const [tagOptions, setTagOptions] = useState(initialTagOptions || []);
-  const [tagSearchLoading, setTagSearchLoading] = useState(false);
 
   // Update local tag options when initialTagOptions change
   useEffect(() => {
@@ -227,28 +227,6 @@ const BulkModal: React.FC<BulkModalProps> = ({
     setBulkData((prev) => ({ ...prev, [field]: !prev[field] }));
   }, []);
 
-  // Handle tag search
-  const handleTagSearch = useCallback(async (searchValue: string) => {
-    if (!searchValue || searchValue.length < 2) {
-      setTagOptions(initialTagOptions);
-      return;
-    }
-
-    setTagSearchLoading(true);
-    try {
-      const searchResponse = await fetchTagOptions(1, 50, searchValue);
-      const formattedResults = searchResponse.options.map((tag: any) => ({
-        value: `${tag.label}::${tag.value.split('::')[1] || tag.value}`,
-        label: tag.label,
-      }));
-      setTagOptions(formattedResults);
-    } catch (error) {
-      console.error('Error searching tags:', error);
-      setTagOptions(initialTagOptions);
-    } finally {
-      setTagSearchLoading(false);
-    }
-  }, [initialTagOptions]);
 
   // Perform bulk action
   const doBulkAction = async (leads: any[], bulkDataParam: BulkData) => {
@@ -432,26 +410,51 @@ const BulkModal: React.FC<BulkModalProps> = ({
                 <Text className="text-sm font-medium text-gray-700 mb-2">
                   Tags
                 </Text>
-                <SearchableDropdown
-                  data={tagOptions}
-                  onSelect={(item) => {
-                    // Toggle selection: add if not selected, remove if already selected
-                    const isAlreadySelected = selectedTags.some(tag => tag.value === item.value);
-                    let newTags;
-                    if (isAlreadySelected) {
-                      // Remove the tag
-                      newTags = selectedTags.filter(tag => tag.value !== item.value);
-                    } else {
-                      // Add the tag
-                      newTags = [...selectedTags, item];
-                    }
-                    handleChange('tags')(newTags);
+                <MultiSelectModal
+                  title="Tags"
+                  options={tagOptions}
+                  selectedValues={selectedTags.map(tag => tag.value)}
+                  onSelectionChange={(selectedValues) => {
+                    // Convert selected values back to tag objects
+                    const newSelectedTags = selectedValues.map(value => {
+                      const foundTag = tagOptions.find(tag => tag.value === value);
+                      return foundTag || { value, label: value };
+                    });
+                    handleChange('tags')(newSelectedTags);
                   }}
                   placeholder="Add/Remove tags..."
-                  multiSelect={true}
-                  selectedItems={selectedTags}
-                  onSearch={handleTagSearch}
-                  loading={tagSearchLoading}
+                  showColors={false}
+                  lazyLoad={true}
+                  onFetchOptions={async (page, search) => {
+                    if (!search || search.length < 2) {
+                      return {
+                        options: initialTagOptions || [],
+                        hasMore: false,
+                        totalCount: initialTagOptions?.length || 0
+                      };
+                    }
+                    
+                    try {
+                      const searchResponse = await fetchTagOptions(page, 50, search);
+                      const formattedResults = searchResponse.options.map((tag: any) => ({
+                        value: `${tag.label}::${tag.value.split('::')[1] || tag.value}`,
+                        label: tag.label,
+                      }));
+                      
+                      return {
+                        options: formattedResults,
+                        hasMore: searchResponse.hasMore,
+                        totalCount: searchResponse.totalCount
+                      };
+                    } catch (error) {
+                      console.error('Error searching tags:', error);
+                      return {
+                        options: initialTagOptions || [],
+                        hasMore: false,
+                        totalCount: initialTagOptions?.length || 0
+                      };
+                    }
+                  }}
                 />
                 
                 {/* Tag Action Checkboxes */}

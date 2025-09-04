@@ -16,7 +16,7 @@ interface FilterOption {
   color?: string;
 }
 
-interface FilterDropdownProps {
+interface MultiSelectModalProps {
   title: string;
   options: FilterOption[];
   selectedValues: string[];
@@ -35,7 +35,7 @@ interface FilterDropdownProps {
   }>;
 }
 
-export default function FilterDropdown({
+export default function MultiSelectModal({
   title,
   options,
   selectedValues,
@@ -44,7 +44,7 @@ export default function FilterDropdown({
   showColors = false,
   lazyLoad = false,
   onFetchOptions,
-}: FilterDropdownProps) {
+}: MultiSelectModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [localOptions, setLocalOptions] = useState<FilterOption[]>(options);
@@ -202,11 +202,12 @@ export default function FilterDropdown({
         visible={isOpen}
         animationType="slide"
         presentationStyle="pageSheet"
+        onRequestClose={() => setIsOpen(false)}
       >
         <View className="flex-1 bg-gray-50">
           <View className="flex-row items-center justify-between p-4 bg-white border-b border-gray-200">
             <TouchableOpacity onPress={() => setIsOpen(false)}>
-              <Ionicons name="close" size={24} color="#6B7280" />
+              <Ionicons name="arrow-back" size={24} color="#6B7280" />
             </TouchableOpacity>
             <Text className="text-lg font-semibold text-gray-900">{title}</Text>
             <View className="w-6" />
