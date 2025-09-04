@@ -18,7 +18,8 @@ interface DropdownOption {
 }
 
 interface SearchableDropdownProps {
-  options: DropdownOption[];
+  options?: DropdownOption[];
+  data?: DropdownOption[]; // Support both options and data props
   value?: string;
   placeholder?: string;
   onSelect: (option: DropdownOption | null) => void;
@@ -26,10 +27,15 @@ interface SearchableDropdownProps {
   loading?: boolean;
   allowClear?: boolean;
   className?: string;
+  // Multi-select support
+  multiSelect?: boolean;
+  selectedItems?: DropdownOption[];
+  defaultValue?: string;
 }
 
 const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   options = [],
+  data = [],
   value,
   placeholder = "Select an option",
   onSelect,
@@ -37,21 +43,38 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   loading = false,
   allowClear = false,
   className = "",
+  multiSelect = false,
+  selectedItems = [],
+  defaultValue,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [displayValue, setDisplayValue] = useState("");
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Use data prop if provided, otherwise fallback to options
+  const dropdownOptions = data.length > 0 ? data : options;
+
   // Update display value when value prop changes
   useEffect(() => {
-    if (value) {
-      const selectedOption = options.find((opt) => opt.value === value);
-      setDisplayValue(selectedOption?.label || value);
+    const valueToUse = value || defaultValue;
+    if (valueToUse) {
+      const selectedOption = dropdownOptions.find(
+        (opt) => opt.value === valueToUse
+      );
+      setDisplayValue(selectedOption?.label || valueToUse);
+    } else if (multiSelect && selectedItems.length > 0) {
+      if (selectedItems.length === 1) {
+        setDisplayValue(selectedItems[0].label);
+      } else if (selectedItems.length <= 3) {
+        setDisplayValue(selectedItems.map((item) => item.label).join(", "));
+      } else {
+        setDisplayValue(`${selectedItems.length} tags selected`);
+      }
     } else {
       setDisplayValue("");
     }
-  }, [value, options]);
+  }, [value, defaultValue, dropdownOptions, multiSelect, selectedItems]);
 
   // Handle search with debounce
   const handleSearchChange = (text: string) => {
@@ -70,10 +93,24 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
 
   // Handle option selection
   const handleOptionSelect = (option: DropdownOption) => {
-    setDisplayValue(option.label);
-    setSearchQuery("");
+    if (multiSelect) {
+      // In multi-select mode, don't close modal, just call onSelect
+      onSelect(option);
+      setSearchQuery(""); // Clear search but keep modal open
+    } else {
+      // Single select mode - close modal
+      setDisplayValue(option.label);
+      setSearchQuery("");
+      setIsOpen(false);
+      onSelect(option);
+      Keyboard.dismiss();
+    }
+  };
+
+  // Handle multi-select modal close
+  const handleMultiSelectDone = () => {
     setIsOpen(false);
-    onSelect(option);
+    setSearchQuery("");
     Keyboard.dismiss();
   };
 
@@ -92,7 +129,7 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   };
 
   // Filter options based on search query (client-side filtering for fallback)
-  const filteredOptions = options.filter((option) =>
+  const filteredOptions = dropdownOptions.filter((option) =>
     option.label.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -146,12 +183,17 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
         <View className="flex-1 bg-white">
           {/* Header */}
           <View className="flex-row items-center justify-between p-4 border-b border-gray-200">
-            <TouchableOpacity onPress={handleModalClose}>
+            <TouchableOpacity
+              onPress={multiSelect ? handleMultiSelectDone : handleModalClose}
+            >
               <Ionicons name="close" size={24} color="#6B7280" />
             </TouchableOpacity>
             <Text className="text-lg font-semibold text-gray-900">
-              Search Options
+              {multiSelect
+                ? `Select Tags (${selectedItems.length})`
+                : "Search Options"}
             </Text>
+
             <View className="w-6" />
           </View>
 
@@ -190,24 +232,31 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
                 <Text className="text-gray-500 mt-2">Searching...</Text>
               </View>
             ) : filteredOptions.length > 0 ? (
-              filteredOptions.map((option) => (
-                <TouchableOpacity
-                  key={option.value}
-                  className={`p-4 border-b border-gray-100 flex-row items-center justify-between ${
-                    value === option.value ? "bg-miles-50" : ""
-                  }`}
-                  onPress={() => handleOptionSelect(option)}
-                >
-                  <View className="flex-1">
-                    <Text className="text-base text-gray-900 font-medium">
-                      {option.label}
-                    </Text>
-                  </View>
-                  {value === option.value && (
-                    <Ionicons name="checkmark" size={20} color="#176298" />
-                  )}
-                </TouchableOpacity>
-              ))
+              filteredOptions.map((option) => {
+                // Check if option is selected (for both single and multi-select)
+                const isSelected = multiSelect
+                  ? selectedItems.some((item) => item.value === option.value)
+                  : value === option.value;
+
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    className={`p-4 border-b border-gray-100 flex-row items-center justify-between ${
+                      isSelected ? "bg-miles-50" : ""
+                    }`}
+                    onPress={() => handleOptionSelect(option)}
+                  >
+                    <View className="flex-1">
+                      <Text className="text-base text-gray-900 font-medium">
+                        {option.label}
+                      </Text>
+                    </View>
+                    {isSelected && (
+                      <Ionicons name="checkmark" size={20} color="#176298" />
+                    )}
+                  </TouchableOpacity>
+                );
+              })
             ) : (
               <View className="p-4 items-center">
                 <Ionicons name="search-outline" size={48} color="#9CA3AF" />

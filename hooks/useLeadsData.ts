@@ -126,20 +126,23 @@ export const useLeadsData = ({
       console.log('📥 Loading filter options...');
       
       // Load all filter options in parallel
-      const [statusOpts, sourceOpts, agentsData] = await Promise.all([
+      const [statusOpts, sourceOpts, agentsData, tagsResponse] = await Promise.all([
         fetchStatusOptions(),
         fetchSourceOptions(),
         fetchAgents(user),
+        fetchTagOptions(1, 100), // Load initial tag options
       ]);
 
       setStatusOptions(statusOpts);
       setSourceOptions(sourceOpts);
       setAgents(agentsData);
+      setTagOptions(tagsResponse.options);
       
       console.log('✅ Filter options loaded:', {
         statusOptions: statusOpts.length,
         sourceOptions: sourceOpts.length,
         agents: agentsData.length,
+        tagOptions: tagsResponse.options.length,
       });
     } catch (error) {
       console.error('Error loading filter options:', error);

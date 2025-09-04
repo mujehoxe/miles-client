@@ -3,6 +3,8 @@
 // =============================================
 
 // Component imports
+import ActionButtons from "@/components/ActionButtons";
+import BulkModal from "@/components/BulkModal";
 import FiltersModal from "@/components/FiltersModal";
 import LeadCard from "@/components/LeadCard";
 import LoadingView from "@/components/LoadingView";
@@ -17,7 +19,7 @@ import { useFilters } from "@/hooks/useFilters";
 import { usePagination } from "@/hooks/usePagination";
 import { useLeadsSelection } from "@/hooks/useLeadsSelection";
 import { useSearchDebounce } from "@/hooks/useSearchDebounce";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useCallback, useMemo } from "react";
 
 // React Native imports
 import {
@@ -39,7 +41,7 @@ import tailwindConfig from "../../tailwind.config";
 import { UserContext } from "../_layout";
 
 // Services and utilities
-import { fetchTagOptions, updateLead } from "@/services/api";
+import { fetchTagOptions, updateLead, exportLeads, deleteLeads } from "@/services/api";
 import { SEARCH_BOX_OPTIONS, COUNT_OPTIONS, DEFAULT_PAGINATION } from "@/utils/constants";
 import ModalManager from "@/utils/ModalManager";
 
@@ -101,6 +103,7 @@ export default function Tab() {
     selectedLeads,
     toggleLeadSelection,
     clearSelection,
+    selectAll,
     isLeadSelected,
     selectedCount
   } = useLeadsSelection();
@@ -139,6 +142,51 @@ export default function Tab() {
   const [showMeetingModal, setShowMeetingModal] = useState(false);
   const [meetingLeadId, setMeetingLeadId] = useState<string | null>(null);
   const [meetingCallback, setMeetingCallback] = useState<(() => void) | null>(null);
+  
+  // ActionButtons state
+  const [isExporting, setIsExporting] = useState(false);
+  
+  // Bulk modal state
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkOperationMade, setBulkOperationMade] = useState(false);
+  
+  // User permissions for ActionButtons
+  const userPermissions = useMemo(() => {
+    if (!user) return {};
+    
+    // Default permissions for regular users
+    const permissions = {
+      export: false,
+      delete: false,
+      mapLeads: false,
+    };
+    
+    // Grant permissions based on user role
+    if (user.role) {
+      const role = user.role.toLowerCase();
+      
+      // Admin and superAdmin get all permissions
+      if (role === 'admin' || role === 'superadmin' || role.includes('admin')) {
+        permissions.export = true;
+        permissions.delete = true;
+        permissions.mapLeads = true;
+      }
+      // Team leads might get some permissions
+      else if (role.includes('lead') || role.includes('manager')) {
+        permissions.export = true;
+        permissions.mapLeads = true;
+        // Delete permission could be restricted for leads
+      }
+      // Regular agents get limited permissions
+      else {
+        permissions.export = true; // Allow agents to export their own leads
+        // Other permissions remain false
+      }
+    }
+    
+    console.log('👮 User permissions:', { role: user.role, permissions });
+    return permissions;
+  }, [user]);
   
   // Sync localLeads with leads from hook
   useEffect(() => {
@@ -276,6 +324,32 @@ export default function Tab() {
     return flattenAgents(agentsList);
   };
   
+  // Flatten agents for BulkModal (keeps original format but flattened)
+  const getFlattenedAgents = (agentsList: any[]): any[] => {
+    const flattenAgents = (agentList: any[]): any[] => {
+      let result: any[] = [];
+      agentList.forEach(agent => {
+        // Skip non-assigned option 
+        if (agent.value === 'non-assigned') {
+          return;
+        }
+        
+        // Keep original agent format
+        result.push({
+          value: agent.value,
+          label: agent.label,
+          role: agent.role
+        });
+        if (agent.children) {
+          result = result.concat(flattenAgents(agent.children));
+        }
+      });
+      return result;
+    };
+    
+    return flattenAgents(agentsList);
+  };
+  
   // Convert agents to user format including non-assigned (for filters)
   const getAllUsersFromAgents = (agentsList: any[]): any[] => {
     const flattenAgents = (agentList: any[]): any[] => {
@@ -336,6 +410,150 @@ export default function Tab() {
     return processedAgents;
   };
   
+  // =============================================
+  // ACTION BUTTON HANDLERS
+  // =============================================
+  
+  /**
+   * Handle select all toggle for ActionButtons
+   */
+  const handleSelectAll = useCallback(() => {
+    if (selectedLeads.length === localLeads.length && localLeads.length > 0) {
+      // If all current page leads are selected, clear selection
+      clearSelection();
+    } else {
+      // Select all current page leads
+      selectAll(localLeads);
+    }
+  }, [selectedLeads.length, localLeads, clearSelection, selectAll]);
+  
+  /**
+   * Handle export action
+   */
+  const handleExport = useCallback(async () => {
+    try {
+      setIsExporting(true);
+      
+      let blob: Blob;
+      if (selectedLeads.length > 0) {
+        // Export selected leads
+        const leadIds = selectedLeads.map(lead => lead._id);
+        blob = await exportLeads(leadIds, undefined, undefined, 'cold');
+        console.log(`✅ Exported ${selectedLeads.length} selected leads`);
+      } else {
+        // Export filtered leads
+        blob = await exportLeads(undefined, filters, user, 'cold');
+        console.log('✅ Exported filtered leads');
+      }
+      
+      // Handle blob download (React Native doesn't have direct download, but we'll show success)
+      Toast.show(
+        selectedLeads.length > 0 
+          ? `${selectedLeads.length} leads exported successfully` 
+          : 'Leads exported successfully',
+        {
+          duration: Toast.durations.SHORT,
+        }
+      );
+      
+    } catch (error) {
+      console.error('Export failed:', error);
+      Toast.show(`Export failed: ${error.message}`, {
+        duration: Toast.durations.LONG,
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }, [selectedLeads, filters, user]);
+  
+  /**
+   * Handle delete action
+   */
+  const handleDelete = useCallback(async () => {
+    if (selectedLeads.length === 0) return;
+    
+    try {
+      const leadIds = selectedLeads.map(lead => lead._id);
+      await deleteLeads(leadIds);
+      
+      // Remove deleted leads from local state
+      setLocalLeads(prevLeads => 
+        prevLeads.filter(lead => !leadIds.includes(lead._id))
+      );
+      
+      // Clear selection
+      clearSelection();
+      
+      // Refresh leads data to get updated totals
+      await refreshLeads();
+      
+      Toast.show(`${leadIds.length} lead${leadIds.length > 1 ? 's' : ''} deleted successfully`, {
+        duration: Toast.durations.SHORT,
+      });
+      
+    } catch (error) {
+      console.error('Delete failed:', error);
+      Toast.show(`Delete failed: ${error.message}`, {
+        duration: Toast.durations.LONG,
+      });
+    }
+  }, [selectedLeads, clearSelection, refreshLeads]);
+  
+  /**
+   * Handle bulk actions - opens the bulk modal
+   */
+  const handleBulkActions = useCallback(() => {
+    if (selectedLeads.length === 0) {
+      Toast.show('Please select leads for bulk actions', {
+        duration: Toast.durations.SHORT,
+      });
+      return;
+    }
+    
+    setShowBulkModal(true);
+  }, [selectedLeads.length]);
+  
+  /**
+   * Handle bulk operation completion
+   */
+  const handleBulkOperationComplete = useCallback(async () => {
+    // Clear selection after bulk operation
+    clearSelection();
+    
+    // Refresh leads data to reflect changes
+    await refreshLeads();
+    
+    // Toggle bulk operation flag to trigger any necessary updates
+    setBulkOperationMade(prev => !prev);
+  }, [clearSelection, refreshLeads]);
+  
+  /**
+   * Handle history action (placeholder for now)
+   */
+  const handleHistory = useCallback(() => {
+    // This could open a history modal or navigate to history page
+    Toast.show('History feature coming soon', {
+      duration: Toast.durations.SHORT,
+    });
+  }, []);
+  
+  /**
+   * Handle deal submission for selected lead
+   */
+  const handleDealSubmission = useCallback(() => {
+    if (selectedLeads.length !== 1) return;
+    
+    const selectedLead = selectedLeads[0];
+    if (selectedLead.LeadStatus?.Status !== 'Closure') return;
+    
+    // This could navigate to a deal submission form or open a modal
+    Toast.show(`Opening deal submission for ${selectedLead.Name || 'selected lead'}`, {
+      duration: Toast.durations.SHORT,
+    });
+    
+    console.log('🤝 Deal submission for lead:', selectedLead._id);
+  }, [selectedLeads]);
+  
   // Update totalPages when totalLeads changes
   useEffect(() => {
     const calculatedPages = Math.ceil(totalLeads / leadsPerPage);
@@ -389,6 +607,23 @@ export default function Tab() {
         )}
       </View>
 
+      {/* Action Buttons - Show when there are leads available */}
+      {!loading && leads?.length > 0 && (
+        <ActionButtons
+          selectedLeads={selectedLeads}
+          totalLeads={localLeads.length}
+          onSelectAll={handleSelectAll}
+          onClearSelection={clearSelection}
+          onExport={userPermissions.export ? handleExport : undefined}
+          onDelete={userPermissions.delete ? handleDelete : undefined}
+          onBulkActions={userPermissions.mapLeads ? handleBulkActions : undefined}
+          onHistory={userPermissions.mapLeads ? handleHistory : undefined}
+          onDealSubmission={handleDealSubmission}
+          isExporting={isExporting}
+          userPermissions={userPermissions}
+        />
+      )}
+      
       {/* Content */}
       {loading ? (
         <View className="flex-1 justify-center items-center gap-4">
@@ -618,6 +853,19 @@ onOpenModal={(type, callback) => {
             setMeetingCallback(null);
           }, 300);
         }}
+      />
+      
+      {/* Bulk Modal */}
+      <BulkModal
+        visible={showBulkModal}
+        onClose={() => setShowBulkModal(false)}
+        selectedLeads={selectedLeads}
+        onBulkOperationComplete={handleBulkOperationComplete}
+        statusOptions={statusOptions}
+        sourceOptions={sourceOptions}
+        agents={getFlattenedAgents(agents)}
+        tagOptions={tagOptions || []}
+        currentUser={user}
       />
     </View>
   );

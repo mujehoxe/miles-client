@@ -508,9 +508,9 @@ export const fetchTagOptions = async (
 
     if (response.ok) {
       const data = await response.json();
-      const tagOpts = data.data.map((tag: any, index: number) => ({
+      const tagOpts = data.data.map((tag: any) => ({
         label: tag.Tag,
-        value: tag.Tag + '::' + (page - 1) * limit + index, // Ensure unique values across pages
+        value: `${tag.Tag}::${tag._id}`, // Use actual tag ID
       }));
 
       return {
@@ -738,6 +738,176 @@ export const searchDevelopers = async (query: string = ''): Promise<any[]> => {
     // Return empty array on error instead of throwing
     return [];
   }
+};
+
+/**
+ * Export leads to CSV
+ * @param leadIds - Array of lead IDs to export (optional - if not provided, exports all filtered leads)
+ * @param filters - Current filter state for exporting filtered leads
+ * @param user - Current user data
+ * @returns Promise<Blob> - CSV file blob
+ */
+export const exportLeads = async (
+  leadIds?: string[],
+  filters?: any,
+  user?: any,
+  leadType: string = 'cold'
+): Promise<Blob> => {
+  if (!(await validateAuthToken())) {
+    throw new Error('Authentication failed');
+  }
+
+  const headers = await createAuthHeaders();
+  
+  const requestData: any = {};
+  
+  // If specific leads are selected, only export those
+  if (leadIds && leadIds.length > 0) {
+    requestData.leadIds = leadIds;
+    console.log(`Exporting ${leadIds.length} selected leads`);
+  } else if (filters && user) {
+    // Export filtered leads
+    if (filters.selectedAgents && filters.selectedAgents.length > 0) {
+      requestData.selectedAgents = filters.selectedAgents.filter(
+        (agent: string) => agent !== 'non-assigned' && agent !== 'select-all'
+      );
+    }
+    
+    if (filters.selectedStatuses && filters.selectedStatuses.length > 0) {
+      requestData.selectedStatuses = filters.selectedStatuses.filter(
+        (status: string) => status !== 'select-all'
+      );
+    }
+    
+    if (filters.selectedSources && filters.selectedSources.length > 0) {
+      requestData.selectedSources = filters.selectedSources.filter(
+        (source: string) => source !== 'select-all'
+      );
+    }
+    
+    if (filters.selectedTags && filters.selectedTags.length > 0) {
+      requestData.selectedTags = filters.selectedTags.filter(
+        (tag: string) => tag !== 'select-all'
+      ).map((tag: string) => {
+        // If tag has :: format, extract just the tag name part
+        const parts = tag.split('::');
+        return parts.length > 1 ? parts[0] : tag;
+      });
+    }
+    
+    if (filters.searchTerm) requestData.searchTerm = filters.searchTerm;
+    if (filters.dateRange && filters.dateRange.length === 2) {
+      requestData.date = filters.dateRange.map((date: Date | null) =>
+        date instanceof Date ? date.toISOString() : date
+      ).filter(Boolean);
+    }
+    if (filters.dateFor) requestData.dateFor = filters.dateFor;
+    if (filters.searchBoxFilters) requestData.searchBoxFilters = filters.searchBoxFilters;
+    if (user?.id) requestData.userid = user.id;
+  }
+
+  console.log('📤 Exporting leads:', requestData);
+
+  const response = await fetch(
+    `${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/export/${leadType}`,
+    {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(requestData),
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`Export failed with status ${response.status}:`, errorText);
+    throw new Error(`Failed to export leads: ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  
+  if (!blob || blob.size === 0) {
+    throw new Error('No data to export');
+  }
+
+  console.log('✅ Leads exported successfully');
+  return blob;
+};
+
+/**
+ * Delete multiple leads
+ * @param leadIds - Array of lead IDs to delete
+ * @returns Promise<any> - API response
+ */
+export const deleteLeads = async (leadIds: string[]): Promise<any> => {
+  if (!leadIds || leadIds.length === 0) {
+    throw new Error('Lead IDs are required');
+  }
+
+  if (!(await validateAuthToken())) {
+    throw new Error('Authentication failed');
+  }
+
+  const headers = await createAuthHeaders();
+  
+  console.log('📤 Deleting leads:', { count: leadIds.length });
+
+  const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/delete`, {
+    method: 'DELETE',
+    headers,
+    body: JSON.stringify({ leadIds }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`Delete failed with status ${response.status}:`, errorText);
+    throw new Error(`Failed to delete leads: ${response.status}`);
+  }
+
+  const data = await response.json();
+  console.log('✅ Leads deleted successfully:', { count: leadIds.length });
+  
+  return data;
+};
+
+/**
+ * Bulk update multiple leads
+ * @param bulkData - Bulk update data containing leads and updates
+ * @returns Promise<any> - API response with possible skipped leads
+ */
+export const bulkUpdateLeads = async (bulkData: any): Promise<any> => {
+  if (!bulkData.leads || bulkData.leads.length === 0) {
+    throw new Error('Lead IDs are required for bulk update');
+  }
+
+  if (!(await validateAuthToken())) {
+    throw new Error('Authentication failed');
+  }
+
+  const headers = await createAuthHeaders();
+  
+  console.log('📤 Bulk updating leads:', { count: bulkData.leads.length, operations: Object.keys(bulkData).filter(key => key !== 'leads' && bulkData[key]) });
+
+  const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/bulk`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(bulkData),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`Bulk update failed with status ${response.status}:`, errorText);
+    throw new Error(`Failed to bulk update leads: ${response.status}`);
+  }
+
+  const data = await response.json();
+  
+  if (data.skippedLeads && data.skippedLeads.length > 0) {
+    console.log('⚠️ Some leads were skipped during bulk update:', { skipped: data.skippedLeads.length });
+  } else {
+    console.log('✅ Bulk update completed successfully:', { count: bulkData.leads.length });
+  }
+  
+  return data;
 };
 
 /**
