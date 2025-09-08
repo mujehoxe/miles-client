@@ -62,6 +62,7 @@ interface LeadCardProps {
     lead?: string[];
   };
   onOpenModal?: (type: string, callback?: () => void) => void;
+  scrollToCard?: (leadId: string) => void;
 }
 
 const LeadCard: React.FC<LeadCardProps> = ({
@@ -74,6 +75,7 @@ const LeadCard: React.FC<LeadCardProps> = ({
   onLeadUpdate,
   userPermissions,
   onOpenModal,
+  scrollToCard,
 }) => {
   const [showContact, setShowContact] = useState(false);
   const [showCommentInput, setShowCommentInput] = useState(false);
@@ -158,6 +160,12 @@ const LeadCard: React.FC<LeadCardProps> = ({
     if (option.value !== lead.LeadStatus?._id) {
       setShowCommentInput(true);
       setShowContact(false);
+      // Scroll to this card when comment input opens due to status change
+      if (scrollToCard) {
+        setTimeout(() => {
+          scrollToCard(lead._id);
+        }, 400);
+      }
     }
   };
 
@@ -175,6 +183,12 @@ const LeadCard: React.FC<LeadCardProps> = ({
     if (option.value !== lead.Source?._id) {
       setShowCommentInput(true);
       setShowContact(false);
+      // Scroll to this card when comment input opens due to source change
+      if (scrollToCard) {
+        setTimeout(() => {
+          scrollToCard(lead._id);
+        }, 400);
+      }
     }
   };
 
@@ -308,9 +322,17 @@ const LeadCard: React.FC<LeadCardProps> = ({
   };
 
   const toggleCommentInput = () => {
+    const wasClosedBefore = !showCommentInput;
     setShowCommentInput(!showCommentInput);
     if (!showCommentInput) {
       setShowContact(false);
+      // Scroll to this card when comment input opens
+      if (scrollToCard) {
+        // Use setTimeout to ensure the animation and layout have settled
+        setTimeout(() => {
+          scrollToCard(lead._id);
+        }, 400);
+      }
     }
   };
 
@@ -338,14 +360,16 @@ const LeadCard: React.FC<LeadCardProps> = ({
   };
 
   return (
-    <TouchableOpacity
-      className={`bg-white rounded-lg mb-3 shadow-sm border min-h-[340px] ${
+    <View
+      className={`bg-white rounded-lg mb-3 shadow-sm border ${
         selected ? "border-miles-500 border-2" : "border-gray-200"
       }`}
-      onPress={onCardPress}
     >
-      {/* Header */}
-      <View className="w-full p-3 border-b border-gray-200">
+      {/* Header - Touchable for card selection */}
+      <TouchableOpacity
+        onPress={onCardPress}
+        className="w-full p-3 border-b border-gray-200"
+      >
         <View className="flex-row justify-between">
           <View className="flex-1">
             <Text
@@ -425,10 +449,14 @@ const LeadCard: React.FC<LeadCardProps> = ({
             )}
           </View>
         )}
-      </View>
+      </TouchableOpacity>
 
-      {/* Body */}
-      <View className="p-3 flex-1 min-h-12">
+      {/* Body - Also touchable for card selection */}
+      <TouchableOpacity
+        onPress={onCardPress}
+        className="p-3"
+        activeOpacity={0.7}
+      >
         {/* Status and Source Row */}
         <View className="flex-row mb-3 gap-3">
           <View className="flex-1">
@@ -462,34 +490,8 @@ const LeadCard: React.FC<LeadCardProps> = ({
           </View>
         </View>
 
-        {/* Tags - Read Only Display */}
-        {lead.tags && lead.tags.length > 0 && (
-          <View className="mb-3">
-            <Text className="text-xs font-medium text-gray-500 mb-1">
-              Tags:
-            </Text>
-            <View className="flex-row flex-wrap gap-1">
-              {lead.tags.slice(0, 3).map((tag, index) => (
-                <View
-                  key={index}
-                  className="bg-miles-50 px-2 py-1 rounded-xl border border-miles-200"
-                >
-                  <Text className="text-xs text-miles-700 font-medium">
-                    {tag.Tag}
-                  </Text>
-                </View>
-              ))}
-              {lead.tags.length > 3 && (
-                <Text className="text-xs text-gray-500 italic">
-                  +{lead.tags.length - 3} more
-                </Text>
-              )}
-            </View>
-          </View>
-        )}
-
         {/* Description */}
-        {lead.Description && (
+        {lead.Description && lead.LeadStatus?.Status == "New" && (
           <View className="mb-3">
             <Text className="text-xs font-medium text-gray-500 mb-1">
               Description:
@@ -518,16 +520,39 @@ const LeadCard: React.FC<LeadCardProps> = ({
             )}
           </View>
         )}
-      </View>
+
+        {/* Tags - Read Only Display */}
+        {lead.tags && lead.tags.length > 0 && (
+          <View className="flex-1">
+            <Text className="text-xs font-medium text-gray-500 mb-1">
+              Tags:
+            </Text>
+            <View className="flex-row flex-wrap gap-1">
+              {lead.tags.slice(0, 3).map((tag, index) => (
+                <View
+                  key={index}
+                  className="bg-miles-50 px-2 py-1 rounded-xl border border-miles-200"
+                >
+                  <Text className="text-xs text-miles-700 font-medium">
+                    {tag.Tag}
+                  </Text>
+                </View>
+              ))}
+              {lead.tags.length > 3 && (
+                <Text className="text-xs text-gray-500 italic">
+                  +{lead.tags.length - 3} more
+                </Text>
+              )}
+            </View>
+          </View>
+        )}
+      </TouchableOpacity>
 
       {/* Footer Actions */}
-      <View className="flex-row border-t border-gray-200 mt-auto">
+      <View className="flex-row border-t border-gray-200 divide-x-2 divide-gray-200">
         <TouchableOpacity
           className="flex-1 flex-row justify-center items-center py-2.5"
-          onPress={(e) => {
-            e.stopPropagation();
-            toggleContactInfo();
-          }}
+          onPress={toggleContactInfo}
         >
           <Ionicons name="call" size={18} color="#6B7280" />
           <Text className="ml-1.5 text-gray-500 text-sm font-medium">
@@ -535,14 +560,9 @@ const LeadCard: React.FC<LeadCardProps> = ({
           </Text>
         </TouchableOpacity>
 
-        <View className="w-px bg-gray-200" />
-
         <TouchableOpacity
           className="flex-1 flex-row justify-center items-center py-2.5"
-          onPress={(e) => {
-            e.stopPropagation();
-            toggleCommentInput();
-          }}
+          onPress={toggleCommentInput}
         >
           <Ionicons name="chatbubble" size={18} color="#6B7280" />
           <Text className="ml-1.5 text-gray-500 text-sm font-medium">
@@ -550,14 +570,9 @@ const LeadCard: React.FC<LeadCardProps> = ({
           </Text>
         </TouchableOpacity>
 
-        <View className="w-px bg-gray-200" />
-
         <TouchableOpacity
           className="flex-1 flex-row justify-center items-center py-2.5"
-          onPress={(e) => {
-            e.stopPropagation();
-            router.push(`/lead-details/${lead._id}`);
-          }}
+          onPress={() => router.push(`/lead-details/${lead._id}`)}
         >
           <Ionicons name="information-circle" size={18} color="#6B7280" />
           <Text className="ml-1.5 text-gray-500 text-sm font-medium">
@@ -571,7 +586,7 @@ const LeadCard: React.FC<LeadCardProps> = ({
         <Animated.View
           entering={SlideInDown.duration(300)}
           exiting={SlideOutUp.duration(300)}
-          className="p-3 bg-gray-50 gap-2"
+          className="p-3 bg-gray-50 gap-2 border-t border-gray-200"
         >
           <View className="flex-row gap-2">
             <TouchableOpacity
@@ -696,29 +711,39 @@ const LeadCard: React.FC<LeadCardProps> = ({
       )}
 
       {/* Update Description Input */}
-      <UpdateDescriptionInput
-        isUpdateDescriptionInput={showCommentInput}
-        loading={loading}
-        onDescriptionChange={handleDescriptionChange}
-        onSubmit={handleUpdateSubmit}
-        onReminderPress={handleReminderPress}
-        showReminderButton={
-          // Show for non-status changes (regular comments)
-          !updateBody?.LeadStatus ||
-          (updateBody.LeadStatus && !updateBody.originalLeadStatus) ||
-          (updateBody.LeadStatus &&
-            updateBody.originalLeadStatus &&
-            updateBody.LeadStatus._id === updateBody.originalLeadStatus._id) ||
-          // Show for status changes with requiresReminder: 'optional'
-          (updateBody?.LeadStatus &&
-            updateBody.originalLeadStatus &&
-            updateBody.LeadStatus._id !== updateBody.originalLeadStatus._id &&
-            statusOptions &&
-            statusOptions.find((s) => s.value === updateBody.LeadStatus._id)
-              ?.requiresReminder === "optional")
-        }
-      />
-    </TouchableOpacity>
+      {showCommentInput && (
+        <Animated.View
+          entering={SlideInDown.duration(300)}
+          exiting={SlideOutUp.duration(300)}
+          className="border-t border-gray-200"
+        >
+          <UpdateDescriptionInput
+            isUpdateDescriptionInput={showCommentInput}
+            loading={loading}
+            onDescriptionChange={handleDescriptionChange}
+            onSubmit={handleUpdateSubmit}
+            onReminderPress={handleReminderPress}
+            showReminderButton={
+              // Show for non-status changes (regular comments)
+              !updateBody?.LeadStatus ||
+              (updateBody.LeadStatus && !updateBody.originalLeadStatus) ||
+              (updateBody.LeadStatus &&
+                updateBody.originalLeadStatus &&
+                updateBody.LeadStatus._id ===
+                  updateBody.originalLeadStatus._id) ||
+              // Show for status changes with requiresReminder: 'optional'
+              (updateBody?.LeadStatus &&
+                updateBody.originalLeadStatus &&
+                updateBody.LeadStatus._id !==
+                  updateBody.originalLeadStatus._id &&
+                statusOptions &&
+                statusOptions.find((s) => s.value === updateBody.LeadStatus._id)
+                  ?.requiresReminder === "optional")
+            }
+          />
+        </Animated.View>
+      )}
+    </View>
   );
 };
 

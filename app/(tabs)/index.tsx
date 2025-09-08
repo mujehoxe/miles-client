@@ -19,11 +19,13 @@ import { useFilters } from "@/hooks/useFilters";
 import { usePagination } from "@/hooks/usePagination";
 import { useLeadsSelection } from "@/hooks/useLeadsSelection";
 import { useSearchDebounce } from "@/hooks/useSearchDebounce";
-import { useContext, useEffect, useState, useCallback, useMemo } from "react";
+import { useContext, useEffect, useState, useCallback, useMemo, useRef } from "react";
 
 // React Native imports
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   Text,
   TextInput,
@@ -149,6 +151,10 @@ export default function Tab() {
   // Bulk modal state
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkOperationMade, setBulkOperationMade] = useState(false);
+  
+  // ScrollView ref for focusing on comment inputs
+  const scrollViewRef = useRef<ScrollView>(null);
+  const leadCardRefs = useRef<{ [key: string]: View | null }>({});
   
   // User permissions for ActionButtons
   const userPermissions = useMemo(() => {
@@ -560,6 +566,70 @@ export default function Tab() {
     setTotalPages(calculatedPages);
   }, [totalLeads, leadsPerPage, setTotalPages]);
   
+  // Function to scroll to a specific lead card when comment input opens
+  const scrollToCard = useCallback((leadId: string) => {
+    const cardRef = leadCardRefs.current[leadId];
+    const scrollView = scrollViewRef.current;
+    
+    if (!cardRef || !scrollView) {
+      console.warn('❌ Missing refs for scrolling:', { cardRef: !!cardRef, scrollView: !!scrollView });
+      return;
+    }
+    
+    console.log('🎯 Attempting to scroll to card:', leadId);
+    
+    // Try measureLayout first (more accurate for ScrollView)
+    cardRef.measureLayout(
+      scrollView as any,
+      (x, y, width, height) => {
+        console.log('📏 Card measurement (measureLayout):', { leadId, x, y, width, height });
+        
+        // Calculate optimal scroll position
+        // Account for header (~140px), action buttons (~60px), and padding
+        const headerHeight = 140;
+        const actionButtonsHeight = 60;
+        const padding = 50;
+        const totalOffset = headerHeight + actionButtonsHeight + padding;
+        
+        const targetY = Math.max(0, y - totalOffset);
+        
+        console.log('📍 Scrolling to position (measureLayout):', targetY);
+        
+        scrollView.scrollTo({
+          y: targetY,
+          animated: true,
+        });
+      },
+      (error) => {
+        console.warn('❌ measureLayout failed, trying measureInWindow:', error);
+        
+        // Fallback: measureInWindow approach
+        cardRef.measureInWindow((x, y, width, height) => {
+          console.log('📏 Card measurement (measureInWindow):', { leadId, x, y, width, height });
+          
+          // For measureInWindow, we need to calculate differently
+          // Get current scroll position first
+          scrollView.scrollTo({ y: 0, animated: false }); // Reset to get baseline
+          
+          setTimeout(() => {
+            cardRef.measureInWindow((newX, newY, newWidth, newHeight) => {
+              console.log('📏 Card measurement after reset:', { leadId, newX, newY, newWidth, newHeight });
+              
+              const targetScrollY = Math.max(0, newY - 200);
+              
+              console.log('📍 Scrolling to position (measureInWindow):', targetScrollY);
+              
+              scrollView.scrollTo({
+                y: targetScrollY,
+                animated: true,
+              });
+            });
+          }, 50);
+        });
+      }
+    );
+  }, []);
+  
   // Early return if user not available
   if (!user) return <LoadingView />;
 
@@ -631,21 +701,35 @@ export default function Tab() {
           <Text className="text-base text-gray-500">Loading leads...</Text>
         </View>
       ) : leads?.length > 0 ? (
-        <View className="flex-1">
+        <KeyboardAvoidingView 
+          className="flex-1"
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+        >
           <ScrollView
+            ref={scrollViewRef}
             className="flex-1 px-4 pt-4"
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 100 }}
+            contentContainerStyle={{ paddingBottom: 20 }}
+            keyboardShouldPersistTaps="handled"
           >
             {localLeads.map((lead, index) => (
-              <LeadCard
+              <View 
                 key={lead._id || index}
-                lead={lead}
+                ref={(ref) => {
+                  if (ref) {
+                    leadCardRefs.current[lead._id] = ref;
+                  }
+                }}
+              >
+                <LeadCard
+                  lead={lead}
                 selected={isLeadSelected(lead)}
                 onCardPress={() => toggleLeadSelection(lead)}
                 onDetailsPress={() => console.log("details", lead._id)}
                 statusOptions={statusOptions}
                 sourceOptions={sourceOptions}
+                scrollToCard={scrollToCard}
                 onLeadUpdate={async (leadId, updates) => {
                   try {
                     console.log('🔄 Updating lead:', leadId, updates);
@@ -716,11 +800,10 @@ onOpenModal={(type, callback) => {
                   }
                 }}
               />
+              </View>
             ))}
-          </ScrollView>
-
-          {/* Pagination Controls */}
-          <View className="absolute bottom-0 left-0 right-0">
+            
+            {/* Pagination Controls - After all lead cards */}
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
@@ -729,8 +812,8 @@ onOpenModal={(type, callback) => {
               onPageChange={handlePageChange}
               loading={paginationLoading}
             />
-          </View>
-        </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       ) : (
         <View className="flex-1 justify-center items-center px-8 py-16">
           <View className="items-center max-w-72">
