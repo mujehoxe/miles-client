@@ -1054,6 +1054,71 @@ export const updateMeeting = async (meetingId: string, meetingData: any) => {
 };
 
 /**
+ * Fetch status counts for user with current filters applied
+ * @param user - Current user data
+ * @param filters - Current filter state
+ * @param searchTerm - Current search term
+ * @returns Promise<{[statusId: string]: {count: number, filteredCount: number}}
+ */
+export const fetchStatusCounts = async (
+  user: any,
+  filters: FilterOptions,
+  searchTerm: string
+): Promise<{[statusId: string]: {count: number, filteredCount: number}}> => {
+  if (!user || !user.id) {
+    throw new Error('User not available');
+  }
+
+  if (!(await validateAuthToken())) {
+    throw new Error('Authentication failed');
+  }
+
+  const headers = await createAuthHeaders();
+  
+  // Build payload similar to the web app
+  const payload = {
+    searchTerm: searchTerm.trim(),
+    selectedAgents: filters.selectedAgents || [user.id],
+    selectedStatuses: filters.selectedStatuses || [],
+    selectedSources: filters.selectedSources || [],
+    selectedTags: filters.selectedTags?.map(tag => {
+      const parts = tag.split('::');
+      return parts.length > 1 ? parts[0] : tag;
+    }) || [],
+    date: filters.dateRange && (filters.dateRange[0] || filters.dateRange[1])
+      ? filters.dateRange
+          .filter((date) => date !== null)
+          .map((date) => date!.toISOString())
+      : [],
+    dateFor: filters.dateFor || 'LeadIntroduction',
+    searchBoxFilters: filters.searchBoxFilters || ['LeadInfo'],
+    userid: user.id,
+  };
+
+  console.log('📤 Fetching status counts:', payload);
+
+  const response = await fetch(
+    `${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/statusCountsForUser`,
+    {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`Status counts fetch failed with status ${response.status}:`, errorText);
+    throw new Error(`Failed to fetch status counts: ${response.status}`);
+  }
+
+  const data = await response.json();
+  console.log('✅ Status counts fetched successfully:', Object.keys(data.statusCounts || {}).length, 'statuses');
+  
+  return data.statusCounts || {};
+};
+
+/**
  * Get meetings for a specific lead
  * @param leadId - The ID of the lead
  * @returns Promise<any[]> - Array of meetings
