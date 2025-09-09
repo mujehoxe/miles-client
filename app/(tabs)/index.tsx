@@ -596,13 +596,24 @@ export default function Tab() {
   }, [selectedLeads]);
 
   /**
-   * Handle status filter when clicking on status badge
+   * Handle status filter when clicking on status badge (supports multiple selection)
    */
   const handleStatusFilter = useCallback(
     (statusValue: string) => {
+      const currentSelectedStatuses = filters.selectedStatuses || [];
+      let newSelectedStatuses;
+      
+      if (currentSelectedStatuses.includes(statusValue)) {
+        // Remove status if already selected
+        newSelectedStatuses = currentSelectedStatuses.filter(status => status !== statusValue);
+      } else {
+        // Add status if not selected
+        newSelectedStatuses = [...currentSelectedStatuses, statusValue];
+      }
+      
       const newFilters = {
         ...filters,
-        selectedStatuses: [statusValue],
+        selectedStatuses: newSelectedStatuses,
       };
       updateFilters(newFilters);
       setCurrentPage(0);
@@ -833,8 +844,14 @@ export default function Tab() {
               statusCountsExpanded={statusCountsExpanded}
               onStatusCountsExpandedChange={setStatusCountsExpanded}
               onStatusFilter={handleStatusFilter}
+              onClearStatusFilter={() => {
+                const newFilters = { ...filters, selectedStatuses: [] };
+                updateFilters(newFilters);
+                setCurrentPage(0);
+              }}
+              selectedStatuses={filters.selectedStatuses || []}
+              dateRange={filters.dateRange || []}
             />
-
             <View className="px-4">
               {localLeads.map((lead, index) => (
                 <View

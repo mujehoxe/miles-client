@@ -8,8 +8,10 @@ interface StatusCountsProps {
   statusCountsExpanded: boolean;
   onStatusCountsExpandedChange: (expanded: boolean) => void;
   onStatusFilter: (statusValue: string) => void;
+  onClearStatusFilter: () => void;
+  selectedStatuses: string[];
+  dateRange: any[];
 }
-
 const StatusCounts: React.FC<StatusCountsProps> = ({
   statusOptions,
   statusCounts,
@@ -17,6 +19,8 @@ const StatusCounts: React.FC<StatusCountsProps> = ({
   statusCountsExpanded,
   onStatusCountsExpandedChange,
   onStatusFilter,
+  onClearStatusFilter,
+  selectedStatuses,
 }) => {
   const [isOverflowing, setIsOverflowing] = useState(false);
   const contentRef = useRef<View>(null);
@@ -53,6 +57,21 @@ const StatusCounts: React.FC<StatusCountsProps> = ({
     );
   };
 
+  // Sort statusOptions to show ones with counts first, then others
+  const sortedStatusOptions = [...statusOptions].sort((a, b) => {
+    const aData = statusCounts[a.value];
+    const bData = statusCounts[b.value];
+    const aCount = (aData?.count || 0) + (aData?.filteredCount || 0);
+    const bCount = (bData?.count || 0) + (bData?.filteredCount || 0);
+
+    // If both have counts or both don't, maintain original order
+    if ((aCount > 0 && bCount > 0) || (aCount === 0 && bCount === 0)) {
+      return 0;
+    }
+    // Show ones with counts first
+    return bCount - aCount;
+  });
+
   return (
     <View className="mx-4 my-4">
       <View
@@ -70,22 +89,36 @@ const StatusCounts: React.FC<StatusCountsProps> = ({
             style={{ gap: 8 }}
             onLayout={handleContentLayout}
           >
-            {statusOptions.map((status) => {
-              const statusData = statusCounts[status.value];
-              if (
-                !statusData ||
-                (statusData.count === 0 && statusData.filteredCount === 0)
-              )
-                return null;
+            {/* Clear filter button if any status is selected */}
+            {selectedStatuses.length > 0 && (
+              <TouchableOpacity
+                className="px-1.5 py-0.5 rounded-full border border-gray-300 bg-gray-100"
+                onPress={onClearStatusFilter}
+              >
+                <View className="flex-row items-center">
+                  <Text className="text-xs text-gray-600">Clear</Text>
+                  <Text className="text-xs text-gray-600 ml-1">×</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+
+            {sortedStatusOptions.map((status) => {
+              const isSelected = selectedStatuses.includes(status.value);
 
               return (
                 <TouchableOpacity
                   key={status.value}
-                  className="px-1.5 py-0.5 rounded-full border"
-                  style={{
-                    backgroundColor: (status.color || "#3B82F6") + "16",
-                    borderColor: (status.color || "#3B82F6") + "44",
-                  }}
+                  className={`px-1.5 py-0.5 rounded-full border ${
+                    isSelected ? "border-miles-500 bg-miles-100" : ""
+                  }`}
+                  style={
+                    !isSelected
+                      ? {
+                          backgroundColor: (status.color || "#3B82F6") + "16",
+                          borderColor: (status.color || "#3B82F6") + "44",
+                        }
+                      : {}
+                  }
                   onPress={() => onStatusFilter(status.value)}
                 >
                   {statusBadgeContent(status)}
