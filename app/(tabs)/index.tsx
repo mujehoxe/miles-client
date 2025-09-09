@@ -833,9 +833,6 @@ export default function Tab() {
               statusCountsExpanded={statusCountsExpanded}
               onStatusCountsExpandedChange={setStatusCountsExpanded}
               onStatusFilter={handleStatusFilter}
-              hasDateFilter={
-                filters.dateRange && filters.dateRange.length === 2
-              }
             />
 
             <View className="px-4">
