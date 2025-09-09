@@ -523,7 +523,7 @@ const LeadCard: React.FC<LeadCardProps> = ({
 
         {/* Tags - Read Only Display */}
         {lead.tags && lead.tags.length > 0 && (
-          <View className="flex-1">
+          <View>
             <Text className="text-xs font-medium text-gray-500 mb-1">
               Tags:
             </Text>
