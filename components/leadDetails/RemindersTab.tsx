@@ -1,7 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, RefreshControl, ScrollView, Text, TouchableOpacity, View } from "react-native";
-import Toast from 'react-native-root-toast';
+import {
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Toast from "react-native-root-toast";
 import { getLeadReminders } from "../../services/api";
 
 interface Lead {
@@ -42,14 +49,12 @@ const RemindersTab: React.FC<RemindersTabProps> = ({ lead }) => {
       }
       setError(null);
 
-      console.log('📝 Fetching reminders for lead:', lead._id);
-      const leadReminders = await getLeadReminders(lead._id);
+            const leadReminders = await getLeadReminders(lead._id);
       setReminders(leadReminders);
-      console.log('✅ Loaded', leadReminders.length, 'reminders for lead');
-    } catch (err: any) {
-      console.error('❌ Error fetching reminders:', err);
-      setError(err.message || 'Failed to load reminders');
-      Toast.show('Failed to load reminders', {
+          } catch (err: any) {
+      console.error("API Error:", err);
+      setError(err.message || "Failed to load reminders");
+      Toast.show("Failed to load reminders", {
         duration: Toast.durations.SHORT,
       });
     } finally {
@@ -69,63 +74,78 @@ const RemindersTab: React.FC<RemindersTabProps> = ({ lead }) => {
   const formatDateTime = (dateTime: string) => {
     const date = new Date(dateTime);
     return {
-      date: date.toLocaleDateString([], { 
-        weekday: 'short',
-        month: 'short', 
-        day: 'numeric',
-        year: 'numeric'
+      date: date.toLocaleDateString([], {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
       }),
-      time: date.toLocaleTimeString([], { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: true
-      })
+      time: date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }),
     };
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Completed':
-        return 'text-green-600';
-      case 'Cancelled':
-        return 'text-red-600';
-      case 'Pending':
+      case "Completed":
+        return "text-green-600";
+      case "Cancelled":
+        return "text-red-600";
+      case "Pending":
       default:
-        return 'text-yellow-600';
+        return "text-yellow-600";
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'Completed':
-        return 'checkmark-circle';
-      case 'Cancelled':
-        return 'close-circle';
-      case 'Pending':
+      case "Completed":
+        return "checkmark-circle";
+      case "Cancelled":
+        return "close-circle";
+      case "Pending":
       default:
-        return 'time';
+        return "time";
     }
   };
 
   const renderReminder = (reminder: Reminder) => {
     const { date, time } = formatDateTime(reminder.DateTime);
-    
+
     return (
-      <View key={reminder._id} className="bg-white border border-gray-200 rounded-lg p-4 mb-3 shadow-sm">
+      <View
+        key={reminder._id}
+        className="bg-white border border-gray-200 rounded-lg p-4 mb-3 shadow-sm"
+      >
         {/* Header with date/time and status */}
         <View className="flex-row justify-between items-start mb-2">
           <View className="flex-1">
-            <Text className="text-base font-semibold text-gray-900">{date}</Text>
+            <Text className="text-base font-semibold text-gray-900">
+              {date}
+            </Text>
             <Text className="text-sm text-gray-600">{time}</Text>
           </View>
           <View className="flex-row items-center">
-            <Ionicons 
-              name={getStatusIcon(reminder.status)} 
-              size={16} 
-              color={reminder.status === 'Completed' ? '#16A34A' : reminder.status === 'Cancelled' ? '#DC2626' : '#CA8A04'}
+            <Ionicons
+              name={getStatusIcon(reminder.status)}
+              size={16}
+              color={
+                reminder.status === "Completed"
+                  ? "#16A34A"
+                  : reminder.status === "Cancelled"
+                  ? "#DC2626"
+                  : "#CA8A04"
+              }
               className="mr-1"
             />
-            <Text className={`text-sm font-medium ${getStatusColor(reminder.status)}`}>
+            <Text
+              className={`text-sm font-medium ${getStatusColor(
+                reminder.status
+              )}`}
+            >
               {reminder.status}
             </Text>
           </View>
@@ -141,7 +161,12 @@ const RemindersTab: React.FC<RemindersTabProps> = ({ lead }) => {
         {/* Assignee if present */}
         {reminder.Assignees && (
           <View className="flex-row items-center mt-2">
-            <Ionicons name="person" size={14} color="#6B7280" className="mr-1" />
+            <Ionicons
+              name="person"
+              size={14}
+              color="#6B7280"
+              className="mr-1"
+            />
             <Text className="text-xs text-gray-600">
               Assigned to: {reminder.Assignees.username}
             </Text>
@@ -150,7 +175,12 @@ const RemindersTab: React.FC<RemindersTabProps> = ({ lead }) => {
 
         {/* Created date */}
         <View className="flex-row items-center mt-1">
-          <Ionicons name="calendar" size={14} color="#6B7280" className="mr-1" />
+          <Ionicons
+            name="calendar"
+            size={14}
+            color="#6B7280"
+            className="mr-1"
+          />
           <Text className="text-xs text-gray-500">
             Created: {new Date(reminder.timestamp).toLocaleDateString()}
           </Text>
@@ -189,7 +219,7 @@ const RemindersTab: React.FC<RemindersTabProps> = ({ lead }) => {
   }
 
   return (
-    <ScrollView 
+    <ScrollView
       className="flex-1 bg-gray-50"
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />

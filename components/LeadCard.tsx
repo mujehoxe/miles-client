@@ -130,16 +130,7 @@ const LeadCard: React.FC<LeadCardProps> = ({
   const canUpdateSource =
     userPermissions?.lead?.includes("update_source") ?? true;
 
-  // Debug logging (limited to reduce spam)
-  if (statusOptions.length > 0 && lead.Name && lead._id) {
-    console.log("LeadCard Debug:", {
-      leadName: lead.Name,
-      statusOptionsCount: statusOptions.length,
-      sourceOptionsCount: sourceOptions.length,
-      hasStatusId: !!lead.LeadStatus?._id,
-      hasSourceId: !!lead.Source?._id,
-    });
-  }
+  // Status and source pickers are now properly populated with options
 
   const handleStatusChange = (value: string, option: any) => {
     setUpdateBody({
@@ -240,13 +231,7 @@ const LeadCard: React.FC<LeadCardProps> = ({
       const newStatus = statusOptions.find(
         (o) => o.value === updateBody.LeadStatus?._id
       );
-      console.log("🔍 Debug requiresReminder:", {
-        statusChanged,
-        newStatusLabel: newStatus?.label,
-        requiresReminder: newStatus?.requiresReminder,
-        leadName: lead.Name,
-      });
-      if (statusChanged && newStatus?.requiresReminder) {
+            if (statusChanged && newStatus?.requiresReminder) {
         if (newStatus.requiresReminder === "yes") {
           // Directly open reminder modal for required reminders
           onOpenModal?.("Add Reminder", () => {
@@ -280,7 +265,7 @@ const LeadCard: React.FC<LeadCardProps> = ({
           "Lead status changed to Closure. You can now create a deal from this lead."
         );
     } catch (e: any) {
-      console.error("Error updating lead:", e);
+      console.error(e);
       Alert.alert(
         "Error",
         `An error occurred while updating the lead: ${e.message}`
@@ -406,24 +391,10 @@ const LeadCard: React.FC<LeadCardProps> = ({
               }}
               className="size-10 rounded-full ml-2"
               onError={(error) => {
-                console.log(
-                  `Avatar loading error for ${lead.Assigned?.username}:`,
-                  {
-                    originalPath: lead.Assigned?.Avatar,
-                    encodedPath: encodeURI(lead.Assigned?.Avatar || ""),
-                    fullUri: `${
-                      process.env.EXPO_PUBLIC_BASE_URL || ""
-                    }${encodeURI(lead.Assigned?.Avatar || "")}`,
-                    error: error,
-                  }
-                );
-                setAvatarError(true);
+                                setAvatarError(true);
               }}
               onLoad={() => {
-                console.log(
-                  `Avatar loaded successfully for ${lead.Assigned?.username}: ${lead.Assigned?.Avatar}`
-                );
-              }}
+                              }}
               fallbackComponent={
                 <View className="size-10 rounded-full bg-gray-100 items-center justify-center ml-2">
                   <Ionicons name="person" size={16} color="#9CA3AF" />

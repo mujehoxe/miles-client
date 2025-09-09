@@ -13,8 +13,8 @@ import {
   View,
 } from "react-native";
 import Toast from "react-native-root-toast";
-import { addMeeting, updateMeeting, searchDevelopers } from "../services/api";
-import SearchableDropdown from './SearchableDropdown';
+import { addMeeting, searchDevelopers, updateMeeting } from "../services/api";
+import SearchableDropdown from "./SearchableDropdown";
 
 interface User {
   _id: string;
@@ -85,7 +85,7 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-  
+
   // Developer search state
   const [developers, setDevelopers] = useState<any[]>([]);
   const [developerSearchLoading, setDeveloperSearchLoading] = useState(false);
@@ -135,7 +135,7 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
       const results = await searchDevelopers(query);
       setDevelopers(results);
     } catch (error) {
-      console.error('Error searching developers:', error);
+      console.error(error);
       setDevelopers([]);
     } finally {
       setDeveloperSearchLoading(false);
@@ -186,7 +186,7 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
         },
       });
     }
-    
+
     // Cleanup function to reset nested modal states when main modal changes
     return () => {
       if (!visible) {
@@ -202,11 +202,11 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
       }
     };
   }, [meetingToEdit, leadId, visible]);
-  
+
   // Load initial developers when modal opens (separate useEffect)
   useEffect(() => {
     if (visible && developers.length === 0) {
-      handleDeveloperSearch('');
+      handleDeveloperSearch("");
     }
   }, [visible]);
 
@@ -307,9 +307,7 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
       if (onSuccess) onSuccess();
       onClose();
     } catch (error: any) {
-      console.error(
-        isEditMode ? "Error updating meeting:" : "Error adding meeting:",
-        error
+      console.error(error
       );
 
       const errorMessage =
@@ -547,7 +545,7 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
                   onSelect={(option) => {
                     setMeeting((prev) => ({
                       ...prev,
-                      Developer: option ? option.value : '',
+                      Developer: option ? option.value : "",
                     }));
                   }}
                   onSearch={handleDeveloperSearch}

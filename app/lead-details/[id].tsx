@@ -1,6 +1,6 @@
 import { getUserPermissions } from "@/utils/userPermissions";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter, useNavigation } from "expo-router";
+import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -82,7 +82,7 @@ export default function LeadDetailsPage() {
         const leadData = await fetchLeadById(id);
         setLead(leadData);
       } catch (err) {
-        console.error("Error fetching lead:", err);
+        console.error(err);
         setError("Failed to load lead details");
       } finally {
         setLoading(false);

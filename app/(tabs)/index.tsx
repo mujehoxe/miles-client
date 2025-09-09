@@ -64,7 +64,6 @@ import {
   SEARCH_BOX_OPTIONS,
 } from "@/utils/constants";
 import ModalManager from "@/utils/ModalManager";
-
 const fullConfig = resolveConfig(tailwindConfig);
 const miles600 = fullConfig.theme.colors.miles[600];
 
@@ -175,15 +174,16 @@ export default function Tab() {
   const scrollViewRef = useRef<ScrollView>(null);
   const leadCardRefs = useRef<{ [key: string]: View | null }>({});
 
-  // User permissions for ActionButtons
+  // User permissions for ActionButtons and LeadCard
   const userPermissions = useMemo(() => {
-    if (!user) return {};
+    if (!user) return { lead: [] };
 
     // Default permissions for regular users
     const permissions = {
       export: false,
       delete: false,
       mapLeads: false,
+      lead: ["update_status", "update_source"] as string[], // Default lead permissions
     };
 
     // Grant permissions based on user role
@@ -195,10 +195,12 @@ export default function Tab() {
         permissions.export = true;
         permissions.delete = true;
         permissions.mapLeads = true;
+        permissions.lead = ["update_status", "update_source", "update_assigned", "delete_lead"];
       }
       // Team leads might get some permissions
       else if (role.includes("lead") || role.includes("manager")) {
         permissions.export = true;
+        permissions.lead = ["update_status", "update_source", "update_assigned"];
         permissions.mapLeads = true;
         // Delete permission could be restricted for leads
       }
@@ -209,8 +211,7 @@ export default function Tab() {
       }
     }
 
-    console.log("👮 User permissions:", { role: user.role, permissions });
-    return permissions;
+        return permissions;
   }, [user]);
 
   // Sync localLeads with leads from hook
@@ -218,15 +219,12 @@ export default function Tab() {
     setLocalLeads(leads);
   }, [leads]);
 
+  // Options are now loaded from useLeadsData hook
+
   // Initialize filters with default agents when agents data loads
   useEffect(() => {
     if (agents.length > 0 && user && filters.selectedAgents.length === 0) {
-      console.log(
-        "🎯 Initializing filters with default agents for user:",
-        user.role || "regular user"
-      );
-
-      let defaultAgents: string[] = [];
+            let defaultAgents: string[] = [];
 
       if (user.role === "superAdmin") {
         // Select all agents for super admin
@@ -241,11 +239,7 @@ export default function Tab() {
           return result;
         };
         defaultAgents = flattenAgents(agents);
-        console.log(
-          "👑 Super admin: selecting all agents:",
-          defaultAgents.length
-        );
-      } else {
+              } else {
         // Find current user in agents list
         const flattenAgents = (agentList: any[]): any[] => {
           let result: any[] = [];
@@ -264,12 +258,8 @@ export default function Tab() {
         );
         if (currentUserAgent) {
           defaultAgents = [user.id];
-          console.log("👤 Regular user: selecting self:", user.id);
-        } else {
-          console.log(
-            "⚠️ Current user not found in agents list, using empty selection"
-          );
-        }
+                  } else {
+                  }
       }
 
       if (defaultAgents.length > 0) {
@@ -290,9 +280,7 @@ export default function Tab() {
    * Handle filter changes from the filters modal
    */
   const handleFiltersChange = (newFilters: any) => {
-    console.log("🔄 Applying new filters");
-
-    // Update filters and reset to first page
+        // Update filters and reset to first page
     updateFilters({ ...newFilters, searchTerm });
     setCurrentPage(0);
 
@@ -314,7 +302,7 @@ export default function Tab() {
     try {
       await refreshLeads();
     } catch (error) {
-      console.error("Error changing page:", error);
+      console.error(error);
       Toast.show("Error loading page", {
         duration: Toast.durations.SHORT,
       });
@@ -474,12 +462,10 @@ export default function Tab() {
         // Export selected leads
         const leadIds = selectedLeads.map((lead) => lead._id);
         blob = await exportLeads(leadIds, undefined, undefined, "cold");
-        console.log(`✅ Exported ${selectedLeads.length} selected leads`);
-      } else {
+              } else {
         // Export filtered leads
         blob = await exportLeads(undefined, filters, user, "cold");
-        console.log("✅ Exported filtered leads");
-      }
+              }
 
       // Handle blob download (React Native doesn't have direct download, but we'll show success)
       Toast.show(
@@ -491,7 +477,7 @@ export default function Tab() {
         }
       );
     } catch (error) {
-      console.error("Export failed:", error);
+      console.error(error);
       Toast.show(`Export failed: ${error.message}`, {
         duration: Toast.durations.LONG,
       });
@@ -530,7 +516,7 @@ export default function Tab() {
         }
       );
     } catch (error) {
-      console.error("Delete failed:", error);
+      console.error(error);
       Toast.show(`Delete failed: ${error.message}`, {
         duration: Toast.durations.LONG,
       });
@@ -592,8 +578,7 @@ export default function Tab() {
       }
     );
 
-    console.log("🤝 Deal submission for lead:", selectedLead._id);
-  }, [selectedLeads]);
+      }, [selectedLeads]);
 
   /**
    * Handle status filter when clicking on status badge (supports multiple selection)
@@ -602,15 +587,17 @@ export default function Tab() {
     (statusValue: string) => {
       const currentSelectedStatuses = filters.selectedStatuses || [];
       let newSelectedStatuses;
-      
+
       if (currentSelectedStatuses.includes(statusValue)) {
         // Remove status if already selected
-        newSelectedStatuses = currentSelectedStatuses.filter(status => status !== statusValue);
+        newSelectedStatuses = currentSelectedStatuses.filter(
+          (status) => status !== statusValue
+        );
       } else {
         // Add status if not selected
         newSelectedStatuses = [...currentSelectedStatuses, statusValue];
       }
-      
+
       const newFilters = {
         ...filters,
         selectedStatuses: newSelectedStatuses,
@@ -646,7 +633,7 @@ export default function Tab() {
         );
         setStatusCounts(statusCountsData);
       } catch (error) {
-        console.error("Error fetching status counts:", error);
+        console.error(error);
         setStatusCounts({});
       } finally {
         setStatusCountsLoading(false);
@@ -666,6 +653,36 @@ export default function Tab() {
     searchTerm,
   ]);
 
+  /**
+   * Handle lead update from LeadCard component
+   */
+  const handleLeadUpdate = useCallback(async (leadId: string, updates: any) => {
+    try {
+      await updateLead(user, leadId, updates);
+      
+      // Update local lead state
+      setLocalLeads((prevLeads) =>
+        prevLeads.map((lead) => 
+          lead._id === leadId ? { ...lead, ...updates } : lead
+        )
+      );
+      
+      // Show success message
+      Toast.show("Lead updated successfully", {
+        duration: Toast.durations.SHORT,
+      });
+      
+      // Refresh leads data to get updated status counts
+      await refreshLeads();
+    } catch (error) {
+      console.error("Failed to update lead:", error);
+      Toast.show(`Failed to update lead: ${error.message}`, {
+        duration: Toast.durations.LONG,
+      });
+      throw error; // Re-throw to let the LeadCard handle UI state
+    }
+  }, [user, refreshLeads]);
+
   // Function to scroll to a specific lead card when comment input opens
   const scrollToCard = useCallback((leadId: string) => {
     const cardRef = leadCardRefs.current[leadId];
@@ -679,21 +696,11 @@ export default function Tab() {
       return;
     }
 
-    console.log("🎯 Attempting to scroll to card:", leadId);
-
-    // Try measureLayout first (more accurate for ScrollView)
+        // Try measureLayout first (more accurate for ScrollView)
     cardRef.measureLayout(
       scrollView as any,
       (x, y, width, height) => {
-        console.log("📏 Card measurement (measureLayout):", {
-          leadId,
-          x,
-          y,
-          width,
-          height,
-        });
-
-        // Calculate optimal scroll position
+                // Calculate optimal scroll position
         // Account for header (~140px), action buttons (~60px), and padding
         const headerHeight = 140;
         const actionButtonsHeight = 60;
@@ -702,9 +709,7 @@ export default function Tab() {
 
         const targetY = Math.max(0, y - totalOffset);
 
-        console.log("📍 Scrolling to position (measureLayout):", targetY);
-
-        scrollView.scrollTo({
+                scrollView.scrollTo({
           y: targetY,
           animated: true,
         });
@@ -714,36 +719,15 @@ export default function Tab() {
 
         // Fallback: measureInWindow approach
         cardRef.measureInWindow((x, y, width, height) => {
-          console.log("📏 Card measurement (measureInWindow):", {
-            leadId,
-            x,
-            y,
-            width,
-            height,
-          });
-
-          // For measureInWindow, we need to calculate differently
+                    // For measureInWindow, we need to calculate differently
           // Get current scroll position first
           scrollView.scrollTo({ y: 0, animated: false }); // Reset to get baseline
 
           setTimeout(() => {
             cardRef.measureInWindow((newX, newY, newWidth, newHeight) => {
-              console.log("📏 Card measurement after reset:", {
-                leadId,
-                newX,
-                newY,
-                newWidth,
-                newHeight,
-              });
+                            const targetScrollY = Math.max(0, newY - 200);
 
-              const targetScrollY = Math.max(0, newY - 200);
-
-              console.log(
-                "📍 Scrolling to position (measureInWindow):",
-                targetScrollY
-              );
-
-              scrollView.scrollTo({
+                            scrollView.scrollTo({
                 y: targetScrollY,
                 animated: true,
               });
@@ -788,8 +772,7 @@ export default function Tab() {
         {selectedLeads.length > 0 && (
           <View className="flex-row items-center justify-between mt-3 px-1">
             <Text className="text-sm font-medium text-miles-500">
-              {selectedLeads.length} lead{selectedLeads.length > 1 ? "s" : ""}{" "}
-              selected
+              {selectedLeads.length} selected
             </Text>
             <TouchableOpacity className="py-1 px-2" onPress={clearSelection}>
               <Text className="text-sm text-gray-500">Clear</Text>
@@ -866,58 +849,17 @@ export default function Tab() {
                     lead={lead}
                     selected={isLeadSelected(lead)}
                     onCardPress={() => toggleLeadSelection(lead)}
-                    onDetailsPress={() => console.log("details", lead._id)}
+                    onDetailsPress={() => {
+                      // Navigate to lead details page
+                      // This should be a simple navigation function
+                    }}
                     statusOptions={statusOptions}
                     sourceOptions={sourceOptions}
+                    onLeadUpdate={handleLeadUpdate}
+                    userPermissions={userPermissions}
                     scrollToCard={scrollToCard}
-                    onLeadUpdate={async (leadId, updates) => {
-                      try {
-                        console.log("🔄 Updating lead:", leadId, updates);
-
-                        // Call API to update lead
-                        const updatedLead = await updateLead(leadId, updates);
-
-                        // Update local state immediately
-                        setLocalLeads((prevLeads) =>
-                          prevLeads.map((prevLead) =>
-                            prevLead._id === leadId
-                              ? {
-                                  ...updatedLead,
-                                  // Add comment info if description was provided
-                                  ...(updates.updateDescription &&
-                                  updates.updateDescription.length > 0
-                                    ? {
-                                        lastComment: {
-                                          Content: updates.updateDescription,
-                                        },
-                                        commentCount:
-                                          (prevLead.commentCount || 0) + 1,
-                                      }
-                                    : {}),
-                                }
-                              : prevLead
-                          )
-                        );
-
-                        Toast.show("Lead updated successfully", {
-                          duration: Toast.durations.SHORT,
-                        });
-                      } catch (error) {
-                        console.error("Failed to update lead:", error);
-                        Toast.show(`Failed to update lead: ${error.message}`, {
-                          duration: Toast.durations.LONG,
-                        });
-                      }
-                    }}
                     onOpenModal={(type, callback) => {
-                      console.log(
-                        "Opening modal:",
-                        type,
-                        "for lead:",
-                        lead._id
-                      );
-
-                      if (type === "Add Reminder") {
+                                            if (type === "Add Reminder") {
                         const modalId = "reminder-modal";
                         if (ModalManager.canOpenModal(modalId)) {
                           ModalManager.closeAllExcept(modalId);
@@ -1024,9 +966,7 @@ export default function Tab() {
         leadId={reminderLeadId || ""}
         assigneesOptions={getUsersFromAgents(agents)}
         onSuccess={() => {
-          console.log("✅ Reminder added successfully");
-
-          // Execute callback if provided (for status changes requiring reminders)
+                    // Execute callback if provided (for status changes requiring reminders)
           if (reminderCallback) {
             setTimeout(() => {
               reminderCallback();
@@ -1063,9 +1003,7 @@ export default function Tab() {
         assigneeOptions={getUsersFromAgents(agents)}
         statusOptions={statusOptions}
         onSuccess={() => {
-          console.log("✅ Meeting scheduled successfully");
-
-          // Execute callback if provided (for status changes requiring meetings)
+                    // Execute callback if provided (for status changes requiring meetings)
           if (meetingCallback) {
             setTimeout(() => {
               meetingCallback();

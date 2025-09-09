@@ -48,7 +48,7 @@ const CommentsTab: React.FC<CommentsTabProps> = ({ lead }) => {
         const fetchedComments = await fetchLeadComments(lead._id);
         setComments(fetchedComments);
       } catch (error) {
-        console.error("Error fetching comments:", error);
+        console.error(error);
         Toast.show("Failed to load comments", {
           duration: Toast.durations.SHORT,
         });
@@ -77,7 +77,7 @@ const CommentsTab: React.FC<CommentsTabProps> = ({ lead }) => {
         duration: Toast.durations.SHORT,
       });
     } catch (error) {
-      console.error("Error adding comment:", error);
+      console.error(error);
       Toast.show("Failed to add comment", {
         duration: Toast.durations.SHORT,
       });
@@ -141,7 +141,7 @@ const CommentsTab: React.FC<CommentsTabProps> = ({ lead }) => {
         ) : (
           <View className="pb-4">
             {comments.map((comment, index) => renderComment(comment, index))}
-            
+
             {adding && (
               <View className="mt-4 bg-white border border-gray-200 rounded-lg p-4">
                 <Text className="text-sm font-medium text-gray-700 mb-2">

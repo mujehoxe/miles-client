@@ -73,14 +73,9 @@ export const useLeadsData = ({
    */
   const refreshLeads = useCallback(async () => {
     if (!user || !user.id || !shouldFetchLeads) {
-      if (!shouldFetchLeads) {
-        console.log('⏸️ Skipping leads fetch - waiting for filter initialization');
-      }
       setLoading(false);
       return;
     }
-
-    console.log('🚀 Refreshing leads data...');
     setLoading(true);
 
     try {
@@ -97,14 +92,7 @@ export const useLeadsData = ({
       const calculatedTotalPages = Math.ceil(response.totalLeads / leadsPerPage);
       setTotalPages(calculatedTotalPages);
 
-      console.log('✅ Leads data refreshed:', {
-        totalLeads: response.totalLeads,
-        totalPages: calculatedTotalPages,
-        currentPage: currentPage + 1,
-        leadsOnThisPage: response.data.length,
-      });
     } catch (error) {
-      console.error('Error fetching leads:', error);
       Toast.show(`Error fetching leads: ${error.message}`, {
         duration: Toast.durations.LONG,
       });
@@ -123,7 +111,6 @@ export const useLeadsData = ({
     if (!user || !user.id) return;
 
     try {
-      console.log('📥 Loading filter options...');
       
       // Load all filter options in parallel
       const [statusOpts, sourceOpts, agentsData, tagsResponse] = await Promise.all([
@@ -138,14 +125,7 @@ export const useLeadsData = ({
       setAgents(agentsData);
       setTagOptions(tagsResponse.options);
       
-      console.log('✅ Filter options loaded:', {
-        statusOptions: statusOpts.length,
-        sourceOptions: sourceOpts.length,
-        agents: agentsData.length,
-        tagOptions: tagsResponse.options.length,
-      });
     } catch (error) {
-      console.error('Error loading filter options:', error);
       Toast.show('Error loading filter options', {
         duration: Toast.durations.SHORT,
       });

@@ -1,7 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import React, { useState } from "react";
 import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
-
 interface StatusOption {
   value: string;
   label: string;
@@ -24,17 +23,6 @@ const StatusPicker: React.FC<StatusPickerProps> = ({
 }) => {
   const [isVisible, setIsVisible] = useState(false);
 
-  // Debug logging (only if we have a value and options to reduce spam)
-  if (value && options.length > 0) {
-    console.log("StatusPicker Debug:", {
-      value,
-      optionsCount: options.length,
-      firstFewOptions: options.slice(0, 2),
-      selectedOption: selectedOption
-        ? { value: selectedOption.value, label: selectedOption.label }
-        : null,
-    });
-  }
 
   const selectedOption = options.find((opt) => opt.value === value);
 

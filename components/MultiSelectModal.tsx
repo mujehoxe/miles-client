@@ -81,7 +81,7 @@ export default function MultiSelectModal({
       setCurrentPage(1);
       setHasLoadedOnce(true);
     } catch (error) {
-      console.error("Error fetching initial options:", error);
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -102,7 +102,7 @@ export default function MultiSelectModal({
       setHasMore(result.hasMore);
       setCurrentPage(nextPage);
     } catch (error) {
-      console.error("❌ Error loading more options:", error);
+      console.error(error);
     } finally {
       setLoadingMore(false);
     }
@@ -128,7 +128,7 @@ export default function MultiSelectModal({
         setHasMore(result.hasMore);
         setCurrentPage(1);
       } catch (error) {
-        console.error("Error searching options:", error);
+        console.error(error);
       } finally {
         setLoading(false);
       }
@@ -266,23 +266,8 @@ export default function MultiSelectModal({
                 layoutMeasurement.height + contentOffset.y >=
                 contentSize.height - loadMoreBuffer;
 
-              console.log("📜 Scroll event:", {
-                layoutHeight: layoutMeasurement.height,
-                contentOffset: contentOffset.y,
-                contentSize: contentSize.height,
-                remainingScroll:
-                  contentSize.height -
-                  (layoutMeasurement.height + contentOffset.y),
-                loadMoreBuffer,
-                isNearBottom,
-                hasMore,
-                loadingMore,
-                lazyLoad,
-              });
-
-              if (isNearBottom && lazyLoad && hasMore && !loadingMore) {
-                console.log("📜 Triggering load more from scroll...");
-                loadMoreOptions();
+                            if (isNearBottom && lazyLoad && hasMore && !loadingMore) {
+                                loadMoreOptions();
               }
             }}
             onScrollEndDrag={({ nativeEvent }) => {
@@ -294,16 +279,8 @@ export default function MultiSelectModal({
                 layoutMeasurement.height + contentOffset.y >=
                 contentSize.height - loadMoreBuffer;
 
-              console.log("📜 Scroll end drag:", {
-                isNearBottom,
-                hasMore,
-                loadingMore,
-                lazyLoad,
-              });
-
-              if (isNearBottom && lazyLoad && hasMore && !loadingMore) {
-                console.log("📜 Triggering load more from scroll end drag...");
-                loadMoreOptions();
+                            if (isNearBottom && lazyLoad && hasMore && !loadingMore) {
+                                loadMoreOptions();
               }
             }}
             onMomentumScrollEnd={({ nativeEvent }) => {
@@ -315,18 +292,8 @@ export default function MultiSelectModal({
                 layoutMeasurement.height + contentOffset.y >=
                 contentSize.height - loadMoreBuffer;
 
-              console.log("📜 Momentum scroll end:", {
-                isNearBottom,
-                hasMore,
-                loadingMore,
-                lazyLoad,
-              });
-
-              if (isNearBottom && lazyLoad && hasMore && !loadingMore) {
-                console.log(
-                  "📜 Triggering load more from momentum scroll end..."
-                );
-                loadMoreOptions();
+                            if (isNearBottom && lazyLoad && hasMore && !loadingMore) {
+                                loadMoreOptions();
               }
             }}
             scrollEventThrottle={100}

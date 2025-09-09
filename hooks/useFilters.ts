@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { FilterOptions } from '@/services/api';
+import { FilterOptions } from "@/services/api";
+import { useCallback, useState } from "react";
 
 export interface UseFiltersProps {
   initialFilters?: Partial<FilterOptions>;
@@ -10,7 +10,7 @@ export interface UseFiltersReturn {
   // Filter state
   filters: FilterOptions;
   showFilters: boolean;
-  
+
   // Filter actions
   updateFilters: (newFilters: FilterOptions) => void;
   setShowFilters: (show: boolean) => void;
@@ -23,18 +23,18 @@ export interface UseFiltersReturn {
  */
 export const useFilters = ({
   initialFilters = {},
-  onFiltersChange
+  onFiltersChange,
 }: UseFiltersProps = {}): UseFiltersReturn => {
   // Default filter values
   const defaultFilters: FilterOptions = {
-    searchTerm: '',
-    searchBoxFilters: ['LeadInfo'],
+    searchTerm: "",
+    searchBoxFilters: ["LeadInfo"],
     selectedAgents: [],
     selectedStatuses: [],
     selectedSources: [],
     selectedTags: [],
     dateRange: [null, null],
-    dateFor: 'LeadIntroduction',
+    dateFor: "LeadIntroduction",
     ...initialFilters,
   };
 
@@ -44,18 +44,19 @@ export const useFilters = ({
   /**
    * Update filters with new values
    */
-  const updateFilters = useCallback((newFilters: FilterOptions) => {
-    console.log('🔄 Updating filters:', JSON.stringify(newFilters, null, 2));
-    setFilters(newFilters);
-    onFiltersChange?.(newFilters);
-  }, [onFiltersChange]);
+  const updateFilters = useCallback(
+    (newFilters: FilterOptions) => {
+            setFilters(newFilters);
+      onFiltersChange?.(newFilters);
+    },
+    [onFiltersChange]
+  );
 
   /**
    * Clear all filters to default values
    */
   const clearFilters = useCallback(() => {
-    console.log('🧹 Clearing filters');
-    const clearedFilters = { ...defaultFilters };
+        const clearedFilters = { ...defaultFilters };
     setFilters(clearedFilters);
     onFiltersChange?.(clearedFilters);
   }, [defaultFilters, onFiltersChange]);
@@ -64,7 +65,7 @@ export const useFilters = ({
     // Filter state
     filters,
     showFilters,
-    
+
     // Filter actions
     updateFilters,
     setShowFilters,

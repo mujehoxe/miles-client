@@ -15,7 +15,6 @@ import Toast from "react-native-root-toast";
 interface Lead {
   _id: string;
   Name: string;
-  // Add other lead properties as needed
 }
 
 interface Meeting {
@@ -47,30 +46,14 @@ const MeetingsTab: React.FC<MeetingsTabProps> = ({ lead }) => {
 
   const fetchMeetings = useCallback(async () => {
     try {
-      console.log("📅 MeetingsTab: Starting to fetch meetings for lead:", {
-        leadId: lead._id,
-        leadName: lead.Name,
-      });
+            const meetingsData = await getLeadMeetings(lead._id);
 
-      const meetingsData = await getLeadMeetings(lead._id);
-
-      console.log("📅 MeetingsTab: Raw meetings data received:", {
-        meetingsData,
-        type: typeof meetingsData,
-        isArray: Array.isArray(meetingsData),
-        length: Array.isArray(meetingsData) ? meetingsData.length : "N/A",
-      });
-
-      const finalMeetings = meetingsData || [];
+            const finalMeetings = meetingsData || [];
       setMeetings(finalMeetings);
       setError(null);
 
-      console.log("📅 MeetingsTab: Final meetings state set:", {
-        count: finalMeetings.length,
-        meetings: finalMeetings,
-      });
-    } catch (err: any) {
-      console.error("❌ MeetingsTab: Error fetching meetings:", {
+          } catch (err: any) {
+      console.error({
         error: err,
         message: err.message,
         stack: err.stack,

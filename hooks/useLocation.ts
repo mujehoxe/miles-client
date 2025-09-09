@@ -36,7 +36,7 @@ export default function useLocation(user) {
       const backgroundStatus =
         await Location.requestBackgroundPermissionsAsync();
       if (backgroundStatus.status !== "granted") {
-        console.warn("Background location access denied");
+        logger.warn("Background location access denied");
       }
 
       await startLocationUpdates();
@@ -89,7 +89,7 @@ export default function useLocation(user) {
       previousLocationRef.current = { latitude, longitude };
       await sendLocationToServer(user.id, latitude, longitude);
     } catch (err) {
-      console.error("Location update failed:", err);
+      console.error(err);
       setError(`Location update failed: ${err.message}`);
     }
   };
@@ -130,7 +130,7 @@ export default function useLocation(user) {
 
       throw new Error("No address data found");
     } catch (err) {
-      console.error("Geocoding error:", err);
+      console.error(err);
       return {
         city: "Error fetching city",
         street: "Error fetching street",
@@ -160,13 +160,11 @@ export default function useLocation(user) {
       const contentType = response.headers.get("content-type");
       if (contentType && contentType.includes("application/json")) {
         const result = await response.json();
-        console.log("Server response:", result);
-      } else {
+              } else {
         const text = await response.text();
-        console.log("Server response:", text);
-      }
+              }
     } catch (error) {
-      console.error("Error sending location:", error);
+      console.error(error);
       throw error;
     }
   };

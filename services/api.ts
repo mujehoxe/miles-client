@@ -1,6 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
 import Toast from 'react-native-root-toast';
-
 export interface FilterOptions {
   searchTerm: string;
   searchBoxFilters: string[];
@@ -66,9 +65,7 @@ export const createAuthHeaders = async () => {
  * @returns Promise<any> - API response
  */
 export const addReminder = async (reminderData: any) => {
-  console.log('📝 Adding reminder:', { leadId: reminderData.Leadid, dateTime: reminderData.DateTime });
-  
-  if (!(await validateAuthToken())) {
+    if (!(await validateAuthToken())) {
     throw new Error('Authentication failed. Please login again.');
   }
   
@@ -88,10 +85,8 @@ export const addReminder = async (reminderData: any) => {
     }
     
     const result = await response.json();
-    console.log('✅ Reminder added successfully');
     return result;
   } catch (error) {
-    console.error('❌ Error adding reminder:', error);
     throw error;
   }
 };
@@ -103,9 +98,7 @@ export const addReminder = async (reminderData: any) => {
  * @returns Promise<any> - API response
  */
 export const updateReminder = async (reminderId: string, reminderData: any) => {
-  console.log('📝 Updating reminder:', { reminderId, dateTime: reminderData.DateTime });
-  
-  if (!(await validateAuthToken())) {
+    if (!(await validateAuthToken())) {
     throw new Error('Authentication failed. Please login again.');
   }
   
@@ -125,10 +118,8 @@ export const updateReminder = async (reminderId: string, reminderData: any) => {
     }
     
     const result = await response.json();
-    console.log('✅ Reminder updated successfully');
     return result;
   } catch (error) {
-    console.error('❌ Error updating reminder:', error);
     throw error;
   }
 };
@@ -139,9 +130,7 @@ export const updateReminder = async (reminderId: string, reminderData: any) => {
  * @returns Promise<any[]> - Array of reminders
  */
 export const getLeadReminders = async (leadId: string) => {
-  console.log('📝 Fetching reminders for lead:', leadId);
-  
-  if (!(await validateAuthToken())) {
+    if (!(await validateAuthToken())) {
     throw new Error('Authentication failed. Please login again.');
   }
   
@@ -160,10 +149,8 @@ export const getLeadReminders = async (leadId: string) => {
     }
     
     const result = await response.json();
-    console.log('✅ Lead reminders fetched successfully:', result.data?.length || 0, 'reminders');
     return result.data || [];
   } catch (error) {
-    console.error('❌ Error fetching lead reminders:', error);
     throw error;
   }
 };
@@ -173,9 +160,7 @@ export const getLeadReminders = async (leadId: string) => {
  * @returns Promise<User[]> - Array of users
  */
 export const getUsers = async () => {
-  console.log('👥 Fetching users for assignee selection');
-  
-  if (!(await validateAuthToken())) {
+    if (!(await validateAuthToken())) {
     throw new Error('Authentication failed. Please login again.');
   }
   
@@ -194,10 +179,8 @@ export const getUsers = async () => {
     }
     
     const result = await response.json();
-    console.log('✅ Users fetched successfully:', result.data?.length || 0, 'users');
     return result.data || [];
   } catch (error) {
-    console.error('❌ Error fetching users:', error);
     throw error;
   }
 };
@@ -209,8 +192,7 @@ const refreshAuthToken = async (): Promise<string | null> => {
   try {
     const refreshToken = await SecureStore.getItemAsync('refreshToken');
     if (!refreshToken) {
-      console.log('No refresh token available');
-      return null;
+            return null;
     }
 
     const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/auth/refresh`, {
@@ -232,15 +214,13 @@ const refreshAuthToken = async (): Promise<string | null> => {
           await SecureStore.setItemAsync('refreshToken', result.refreshToken);
         }
         
-        console.log('✅ Token refreshed successfully');
-        return result.token;
+                return result.token;
       }
     }
     
-    console.log('❌ Token refresh failed');
-    return null;
+        return null;
   } catch (error) {
-    console.error('Error refreshing token:', error);
+    console.error(error);
     return null;
   }
 };
@@ -252,8 +232,7 @@ const refreshAuthToken = async (): Promise<string | null> => {
 export const clearAuthData = async (): Promise<void> => {
   await SecureStore.deleteItemAsync('userToken');
   await SecureStore.deleteItemAsync('refreshToken');
-  console.log('✅ Authentication data cleared');
-};
+  };
 
 /**
  * Validate token and attempt refresh if needed
@@ -263,8 +242,7 @@ export const validateAuthToken = async (): Promise<boolean> => {
   try {
     const storedToken = await SecureStore.getItemAsync('userToken');
     if (!storedToken) {
-      console.log('No access token found');
-      return false;
+            return false;
     }
 
     // Check if current token is valid
@@ -275,8 +253,7 @@ export const validateAuthToken = async (): Promise<boolean> => {
 
     // If token expires within 5 minutes, try to refresh it
     if (timeUntilExpiry < 300) {
-      console.log(`Token expires in ${timeUntilExpiry} seconds, attempting refresh...`);
-      const newToken = await refreshAuthToken();
+            const newToken = await refreshAuthToken();
       
       if (newToken) {
         return true; // Successfully refreshed
@@ -296,8 +273,7 @@ export const validateAuthToken = async (): Promise<boolean> => {
     }
 
     // Token is expired, try to refresh
-    console.log('Token expired, attempting refresh...');
-    const newToken = await refreshAuthToken();
+        const newToken = await refreshAuthToken();
     
     if (newToken) {
       return true; // Successfully refreshed
@@ -311,7 +287,7 @@ export const validateAuthToken = async (): Promise<boolean> => {
     }
     
   } catch (tokenError) {
-    console.error('Token validation error:', tokenError);
+    console.error(tokenError);
     await clearAuthData();
     Toast.show('Invalid session. Please login again.', {
       duration: Toast.durations.LONG,
@@ -390,37 +366,18 @@ export const fetchLeads = async (
   const headers = await createAuthHeaders();
   const requestBody = buildLeadsRequestBody(user, filters, searchText, pagination, options);
 
-  console.log('📤 API Request Body:', {
-    selectedAgents: requestBody.selectedAgents,
-    selectedStatuses: requestBody.selectedStatuses,
-    selectedSources: requestBody.selectedSources,
-    selectedTags: requestBody.selectedTags,
-    searchTerm: requestBody.searchTerm,
-    dateRange: requestBody.date,
-    page: requestBody.page,
-    limit: requestBody.limit,
-  });
-
-  const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/get`, {
+    const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/get`, {
     method: 'POST',
     headers,
     body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`API request failed with status ${response.status}:`, errorText);
     throw new Error(`Failed to fetch leads: ${response.status}`);
   }
 
   const data = await response.json();
-  console.log('✅ Processing API response:', {
-    keys: Object.keys(data),
-    totalLeads: data.totalLeads,
-    dataLength: Array.isArray(data.data) ? data.data.length : 0,
-  });
-
-  return {
+    return {
     data: Array.isArray(data.data) ? data.data : [],
     totalLeads: data.totalLeads || 0,
   };
@@ -446,11 +403,9 @@ export const fetchStatusOptions = async (): Promise<FilterOption[]> => {
         requiresReminder: status.requiresReminder,
       }));
     } else {
-      console.error('Failed to fetch status options:', response.status);
       return [];
     }
   } catch (error) {
-    console.error('Error fetching status options:', error);
     return [];
   }
 };
@@ -473,11 +428,9 @@ export const fetchSourceOptions = async (): Promise<FilterOption[]> => {
         label: source.Source,
       }));
     } else {
-      console.error('Failed to fetch source options:', response.status);
       return [];
     }
   } catch (error) {
-    console.error('Error fetching source options:', error);
     return [];
   }
 };
@@ -519,11 +472,9 @@ export const fetchTagOptions = async (
         totalCount: data.totalTags || data.total || tagOpts.length,
       };
     } else {
-      console.error('Failed to fetch tag options:', response.status);
       return { options: [], hasMore: false, totalCount: 0 };
     }
   } catch (error) {
-    console.error('Error fetching tag options:', error);
     return { options: [], hasMore: false, totalCount: 0 };
   }
 };
@@ -573,24 +524,18 @@ export const updateLead = async (leadId: string, updates: any): Promise<any> => 
 
   const headers = await createAuthHeaders();
   
-  console.log('📤 Updating lead:', { leadId, updates });
-
-  const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/update/${leadId}`, {
+    const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/update/${leadId}`, {
     method: 'PATCH',
     headers,
     body: JSON.stringify(updates),
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`Lead update failed with status ${response.status}:`, errorText);
     throw new Error(`Failed to update lead: ${response.status}`);
   }
 
   const data = await response.json();
-  console.log('✅ Lead updated successfully:', { leadId, data: data.data });
-  
-  return data.data;
+    return data.data;
 };
 
 /**
@@ -615,11 +560,9 @@ export const fetchAgents = async (user: any): Promise<any[]> => {
 
       return treeData;
     } else {
-      console.error('Failed to fetch agents:', response.status);
       return [];
     }
   } catch (error) {
-    console.error('Error fetching agents:', error);
     return [];
   }
 };
@@ -638,23 +581,17 @@ export const fetchLeadById = async (leadId: string): Promise<any> => {
 
   const headers = await createAuthHeaders();
   
-  console.log('📤 Fetching lead details:', { leadId });
-
-  const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/${leadId}`, {
+    const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/${leadId}`, {
     method: 'GET',
     headers,
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`Fetch lead failed with status ${response.status}:`, errorText);
     throw new Error(`Failed to fetch lead: ${response.status}`);
   }
 
   const data = await response.json();
-  console.log('✅ Lead details fetched successfully:', { leadId });
-  
-  return data.data || data;
+    return data.data || data;
 };
 
 /**
@@ -671,23 +608,17 @@ export const fetchLeadComments = async (leadId: string): Promise<any[]> => {
 
   const headers = await createAuthHeaders();
   
-  console.log('📤 Fetching lead comments:', { leadId });
-
-  const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/comment/get/${leadId}`, {
+    const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/comment/get/${leadId}`, {
     method: 'GET',
     headers,
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`Fetch comments failed with status ${response.status}:`, errorText);
     throw new Error(`Failed to fetch comments: ${response.status}`);
   }
 
   const data = await response.json();
-  console.log('✅ Comments fetched successfully:', { leadId, count: data.data?.length || 0 });
-  
-  return data.data || [];
+    return data.data || [];
 };
 
 /**
@@ -734,7 +665,7 @@ export const searchDevelopers = async (query: string = ''): Promise<any[]> => {
 
     return developerOptions;
   } catch (error) {
-    console.error('Error searching developers:', error);
+    console.error(error);
     // Return empty array on error instead of throwing
     return [];
   }
@@ -764,8 +695,7 @@ export const exportLeads = async (
   // If specific leads are selected, only export those
   if (leadIds && leadIds.length > 0) {
     requestData.leadIds = leadIds;
-    console.log(`Exporting ${leadIds.length} selected leads`);
-  } else if (filters && user) {
+      } else if (filters && user) {
     // Export filtered leads
     if (filters.selectedAgents && filters.selectedAgents.length > 0) {
       requestData.selectedAgents = filters.selectedAgents.filter(
@@ -806,9 +736,7 @@ export const exportLeads = async (
     if (user?.id) requestData.userid = user.id;
   }
 
-  console.log('📤 Exporting leads:', requestData);
-
-  const response = await fetch(
+    const response = await fetch(
     `${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/export/${leadType}`,
     {
       method: 'POST',
@@ -818,8 +746,6 @@ export const exportLeads = async (
   );
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`Export failed with status ${response.status}:`, errorText);
     throw new Error(`Failed to export leads: ${response.status}`);
   }
 
@@ -829,8 +755,7 @@ export const exportLeads = async (
     throw new Error('No data to export');
   }
 
-  console.log('✅ Leads exported successfully');
-  return blob;
+    return blob;
 };
 
 /**
@@ -849,24 +774,18 @@ export const deleteLeads = async (leadIds: string[]): Promise<any> => {
 
   const headers = await createAuthHeaders();
   
-  console.log('📤 Deleting leads:', { count: leadIds.length });
-
-  const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/delete`, {
+    const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/delete`, {
     method: 'DELETE',
     headers,
     body: JSON.stringify({ leadIds }),
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`Delete failed with status ${response.status}:`, errorText);
     throw new Error(`Failed to delete leads: ${response.status}`);
   }
 
   const data = await response.json();
-  console.log('✅ Leads deleted successfully:', { count: leadIds.length });
-  
-  return data;
+    return data;
 };
 
 /**
@@ -885,27 +804,21 @@ export const bulkUpdateLeads = async (bulkData: any): Promise<any> => {
 
   const headers = await createAuthHeaders();
   
-  console.log('📤 Bulk updating leads:', { count: bulkData.leads.length, operations: Object.keys(bulkData).filter(key => key !== 'leads' && bulkData[key]) });
-
-  const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/bulk`, {
+    const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/bulk`, {
     method: 'PUT',
     headers,
     body: JSON.stringify(bulkData),
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`Bulk update failed with status ${response.status}:`, errorText);
     throw new Error(`Failed to bulk update leads: ${response.status}`);
   }
 
   const data = await response.json();
   
   if (data.skippedLeads && data.skippedLeads.length > 0) {
-    console.log('⚠️ Some leads were skipped during bulk update:', { skipped: data.skippedLeads.length });
-  } else {
-    console.log('✅ Bulk update completed successfully:', { count: bulkData.leads.length });
-  }
+      } else {
+      }
   
   return data;
 };
@@ -924,9 +837,7 @@ export const addLeadComment = async (leadId: string, content: string): Promise<a
 
   const headers = await createAuthHeaders();
   
-  console.log('📤 Adding lead comment:', { leadId, contentLength: content.length });
-
-  const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/comment/add`, {
+    const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/comment/add`, {
     method: 'POST',
     headers,
     body: JSON.stringify({
@@ -936,15 +847,11 @@ export const addLeadComment = async (leadId: string, content: string): Promise<a
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`Add comment failed with status ${response.status}:`, errorText);
     throw new Error(`Failed to add comment: ${response.status}`);
   }
 
   const data = await response.json();
-  console.log('✅ Comment added successfully:', { leadId });
-  
-  return data;
+    return data;
 };
 
 /**
@@ -961,23 +868,17 @@ export const deleteLeadComment = async (commentId: string): Promise<any> => {
 
   const headers = await createAuthHeaders();
   
-  console.log('📤 Deleting comment:', { commentId });
-
-  const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/comment/delete/${commentId}`, {
+    const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/comment/delete/${commentId}`, {
     method: 'DELETE',
     headers,
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`Delete comment failed with status ${response.status}:`, errorText);
     throw new Error(`Failed to delete comment: ${response.status}`);
   }
 
   const data = await response.json();
-  console.log('✅ Comment deleted successfully:', { commentId });
-  
-  return data;
+    return data;
 };
 
 /**
@@ -986,9 +887,7 @@ export const deleteLeadComment = async (commentId: string): Promise<any> => {
  * @returns Promise<any> - API response
  */
 export const addMeeting = async (meetingData: any) => {
-  console.log('📝 Adding meeting:', { leadId: meetingData.Lead, subject: meetingData.Subject });
-  
-  if (!(await validateAuthToken())) {
+    if (!(await validateAuthToken())) {
     throw new Error('Authentication failed. Please login again.');
   }
   
@@ -1008,10 +907,8 @@ export const addMeeting = async (meetingData: any) => {
     }
     
     const result = await response.json();
-    console.log('✅ Meeting added successfully');
     return result;
   } catch (error) {
-    console.error('❌ Error adding meeting:', error);
     throw error;
   }
 };
@@ -1023,9 +920,7 @@ export const addMeeting = async (meetingData: any) => {
  * @returns Promise<any> - API response
  */
 export const updateMeeting = async (meetingId: string, meetingData: any) => {
-  console.log('📝 Updating meeting:', { meetingId, subject: meetingData.Subject });
-  
-  if (!(await validateAuthToken())) {
+    if (!(await validateAuthToken())) {
     throw new Error('Authentication failed. Please login again.');
   }
   
@@ -1045,10 +940,8 @@ export const updateMeeting = async (meetingId: string, meetingData: any) => {
     }
     
     const result = await response.json();
-    console.log('✅ Meeting updated successfully');
     return result;
   } catch (error) {
-    console.error('❌ Error updating meeting:', error);
     throw error;
   }
 };
@@ -1095,9 +988,7 @@ export const fetchStatusCounts = async (
     userid: user.id,
   };
 
-  console.log('📤 Fetching status counts:', payload);
-
-  const response = await fetch(
+    const response = await fetch(
     `${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/statusCountsForUser`,
     {
       method: 'POST',
@@ -1107,15 +998,11 @@ export const fetchStatusCounts = async (
   );
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`Status counts fetch failed with status ${response.status}:`, errorText);
     throw new Error(`Failed to fetch status counts: ${response.status}`);
   }
 
   const data = await response.json();
-  console.log('✅ Status counts fetched successfully:', Object.keys(data.statusCounts || {}).length, 'statuses');
-  
-  return data.statusCounts || {};
+    return data.statusCounts || {};
 };
 
 /**
@@ -1124,9 +1011,7 @@ export const fetchStatusCounts = async (
  * @returns Promise<any[]> - Array of meetings
  */
 export const getLeadMeetings = async (leadId: string) => {
-  console.log('📝 API: Starting getLeadMeetings for leadId:', leadId);
-  
-  if (!(await validateAuthToken())) {
+    if (!(await validateAuthToken())) {
     throw new Error('Authentication failed. Please login again.');
   }
   
@@ -1134,63 +1019,26 @@ export const getLeadMeetings = async (leadId: string) => {
     const headers = await createAuthHeaders();
     const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Meeting/get/${leadId}`;
     
-    console.log('📝 API: Making request to URL:', url);
-    console.log('📝 API: Request headers:', headers);
-    
-    const response = await fetch(url, {
+            const response = await fetch(url, {
       method: 'GET',
       headers,
     });
     
-    console.log('📝 API: Response status:', response.status);
-    console.log('📝 API: Response headers:', Object.fromEntries(response.headers.entries()));
-    
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('📝 API: Error response body:', errorText);
-      
-      let errorData;
-      try {
-        errorData = JSON.parse(errorText);
-      } catch (e) {
-        errorData = { error: errorText || `HTTP ${response.status}` };
-      }
-      
-      throw new Error(errorData.error || `Failed to fetch meetings: HTTP ${response.status}`);
+      throw new Error(`Failed to fetch meetings: HTTP ${response.status}`);
     }
     
     const responseText = await response.text();
-    console.log('📝 API: Raw response text:', responseText);
-    
     let result;
     try {
       result = JSON.parse(responseText);
     } catch (e) {
-      console.error('📝 API: Failed to parse JSON response:', e);
       throw new Error('Invalid JSON response from server');
     }
     
-    console.log('📝 API: Parsed response object:', {
-      result,
-      hasData: 'data' in result,
-      dataType: typeof result.data,
-      dataIsArray: Array.isArray(result.data),
-      dataLength: Array.isArray(result.data) ? result.data.length : 'N/A'
-    });
-    
-    const meetings = result.data || [];
-    console.log('✅ API: Lead meetings fetched successfully:', {
-      count: meetings.length,
-      meetings: meetings.slice(0, 2) // Log first 2 meetings for inspection
-    });
-    
-    return meetings;
+        const meetings = result.data || [];
+        return meetings;
   } catch (error) {
-    console.error('❌ API: Error fetching lead meetings:', {
-      error,
-      message: error.message,
-      stack: error.stack
-    });
     throw error;
   }
 };

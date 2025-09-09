@@ -229,9 +229,7 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
       if (onSuccess) onSuccess();
       onClose();
     } catch (error: any) {
-      console.error(
-        isEditMode ? "Error updating reminder:" : "Error adding reminder:",
-        error
+      console.error(error
       );
 
       const errorMessage =

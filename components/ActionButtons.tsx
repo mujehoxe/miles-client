@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
   ActivityIndicator,
-  Alert,
   ScrollView,
   Text,
   TouchableOpacity,
@@ -47,32 +46,6 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
   const handleSelectAll = () => {
     if (isAllSelected) onClearSelection();
     else onSelectAll();
-  };
-
-  const handleDelete = () => {
-    if (selectedCount === 0) {
-      Toast.show("Please select leads to delete", {
-        duration: Toast.durations.SHORT,
-      });
-      return;
-    }
-
-    Alert.alert(
-      "Delete Leads",
-      `Are you sure you want to delete ${selectedCount} lead${
-        selectedCount > 1 ? "s" : ""
-      }? This action cannot be undone.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            if (onDelete) onDelete();
-          },
-        },
-      ]
-    );
   };
 
   const handleExport = () => {
@@ -178,19 +151,17 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
               </Text>
             </TouchableOpacity>
           )}
+
+          {/* Selection Info */}
+          {selectedCount > 0 && (
+            <View className="bg-miles-50 border border-miles-200 px-4 py-2 rounded-lg">
+              <Text className="text-sm font-medium text-miles-600 text-center">
+                {selectedCount} selected
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
-
-      {/* Selection Info */}
-      {selectedCount > 0 && (
-        <View className="px-4 pb-3">
-          <View className="bg-miles-50 px-3 py-2 rounded-lg">
-            <Text className="text-sm font-medium text-miles-700 text-center">
-              {selectedCount} lead{selectedCount > 1 ? "s" : ""} selected
-            </Text>
-          </View>
-        </View>
-      )}
     </View>
   );
 };
