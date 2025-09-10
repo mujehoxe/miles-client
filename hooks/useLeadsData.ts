@@ -1,15 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
-import Toast from 'react-native-root-toast';
-import { 
-  fetchLeads, 
-  fetchStatusOptions, 
-  fetchSourceOptions, 
-  fetchTagOptions, 
+import {
   fetchAgents,
-  FilterOptions,
+  fetchLeads,
+  fetchSourceOptions,
+  fetchStatusOptions,
+  fetchTagOptions,
   FilterOption,
-  TagsResponse 
-} from '@/services/api';
+  FilterOptions,
+} from "@/services/api";
+import { useCallback, useEffect, useState } from "react";
+import Toast from "react-native-root-toast";
 
 export interface UseLeadsDataProps {
   user: any;
@@ -25,17 +24,17 @@ export interface UseLeadsDataReturn {
   leads: any[];
   totalLeads: number;
   totalPages: number;
-  
+
   // Filter options
   statusOptions: FilterOption[];
   sourceOptions: FilterOption[];
   tagOptions: FilterOption[];
   agents: any[];
-  
+
   // Loading states
   loading: boolean;
   paginationLoading: boolean;
-  
+
   // Functions
   refreshLeads: () => Promise<void>;
   setPaginationLoading: (loading: boolean) => void;
@@ -51,19 +50,19 @@ export const useLeadsData = ({
   searchTerm,
   currentPage,
   leadsPerPage,
-  shouldFetchLeads = true
+  shouldFetchLeads = true,
 }: UseLeadsDataProps): UseLeadsDataReturn => {
   // Core data state
   const [leads, setLeads] = useState<any[]>([]);
   const [totalLeads, setTotalLeads] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  
+
   // Filter options state
   const [statusOptions, setStatusOptions] = useState<FilterOption[]>([]);
   const [sourceOptions, setSourceOptions] = useState<FilterOption[]>([]);
   const [tagOptions, setTagOptions] = useState<FilterOption[]>([]);
   const [agents, setAgents] = useState<any[]>([]);
-  
+
   // Loading states
   const [loading, setLoading] = useState(true);
   const [paginationLoading, setPaginationLoading] = useState(false);
@@ -79,19 +78,18 @@ export const useLeadsData = ({
     setLoading(true);
 
     try {
-      const response = await fetchLeads(
-        user,
-        filters,
-        searchTerm,
-        { page: currentPage, limit: leadsPerPage }
-      );
+      const response = await fetchLeads(user, filters, searchTerm, {
+        page: currentPage,
+        limit: leadsPerPage,
+      });
 
       setLeads(response.data);
       setTotalLeads(response.totalLeads);
-      
-      const calculatedTotalPages = Math.ceil(response.totalLeads / leadsPerPage);
-      setTotalPages(calculatedTotalPages);
 
+      const calculatedTotalPages = Math.ceil(
+        response.totalLeads / leadsPerPage
+      );
+      setTotalPages(calculatedTotalPages);
     } catch (error) {
       Toast.show(`Error fetching leads: ${error.message}`, {
         duration: Toast.durations.LONG,
@@ -111,22 +109,21 @@ export const useLeadsData = ({
     if (!user || !user.id) return;
 
     try {
-      
       // Load all filter options in parallel
-      const [statusOpts, sourceOpts, agentsData, tagsResponse] = await Promise.all([
-        fetchStatusOptions(),
-        fetchSourceOptions(),
-        fetchAgents(user),
-        fetchTagOptions(1, 100), // Load initial tag options
-      ]);
+      const [statusOpts, sourceOpts, agentsData, tagsResponse] =
+        await Promise.all([
+          fetchStatusOptions(),
+          fetchSourceOptions(),
+          fetchAgents(user),
+          fetchTagOptions(1, 100), // Load initial tag options
+        ]);
 
       setStatusOptions(statusOpts);
       setSourceOptions(sourceOpts);
       setAgents(agentsData);
       setTagOptions(tagsResponse.options);
-      
     } catch (error) {
-      Toast.show('Error loading filter options', {
+      Toast.show("Error loading filter options", {
         duration: Toast.durations.SHORT,
       });
     }
@@ -138,7 +135,7 @@ export const useLeadsData = ({
       loadFilterOptions();
     }
   }, [user, loadFilterOptions]);
-  
+
   // Fetch leads when user and shouldFetchLeads conditions are met
   useEffect(() => {
     if (user && user.id && shouldFetchLeads) {
@@ -151,17 +148,17 @@ export const useLeadsData = ({
     leads,
     totalLeads,
     totalPages,
-    
+
     // Filter options
     statusOptions,
     sourceOptions,
     tagOptions,
     agents,
-    
+
     // Loading states
     loading,
     paginationLoading,
-    
+
     // Functions
     refreshLeads,
     setPaginationLoading,

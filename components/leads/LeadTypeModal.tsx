@@ -71,18 +71,12 @@ export default function LeadTypeModal({
                     onPress={() => handleOptionSelect(option.value)}
                   >
                     <View className="flex-1 mr-3">
-                      <Text
-                        className={`text-base font-medium ${
-                          isSelected ? "text-miles-700" : "text-gray-800"
-                        }`}
-                      >
+                      <Text className={`text-base font-medium`}>
                         {option.label}
                       </Text>
                     </View>
 
-                    {isSelected && (
-                      <Ionicons name="checkmark" size={20} color="#059669" />
-                    )}
+                    {isSelected && <Ionicons name="checkmark" size={20} />}
                   </TouchableOpacity>
                 );
               })}
