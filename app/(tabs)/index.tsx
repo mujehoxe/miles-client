@@ -7,6 +7,7 @@ import ActionButtons from "@/components/ActionButtons";
 import BulkModal from "@/components/BulkModal";
 import FiltersModal from "@/components/FiltersModal";
 import LeadCard from "@/components/LeadCard";
+import { LeadType } from "@/components/LeadTypeDropdown";
 import LoadingView from "@/components/LoadingView";
 import MeetingModal from "@/components/MeetingModal";
 import Pagination from "@/components/Pagination";
@@ -33,7 +34,9 @@ import {
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Modal,
   Platform,
+  Pressable,
   ScrollView,
   Text,
   TextInput,
@@ -43,6 +46,8 @@ import {
 
 // Third-party imports
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect, useNavigation } from "expo-router";
+import React from "react";
 import Toast from "react-native-root-toast";
 import resolveConfig from "tailwindcss/resolveConfig";
 import tailwindConfig from "../../tailwind.config";
@@ -82,6 +87,7 @@ const miles600 = fullConfig.theme.colors.miles[600];
  */
 export default function Tab() {
   const user = useContext(UserContext);
+  const navigation = useNavigation();
   useOneSignal(user);
 
   // Initialize search with debounce
@@ -142,6 +148,9 @@ export default function Tab() {
   // Additional state for leads management
   const [localLeads, setLocalLeads] = useState<any[]>([]);
 
+  // Header dropdown control state
+  const [headerDropdownOpen, setHeaderDropdownOpen] = useState(false);
+
   // Reminder modal state
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [reminderLeadId, setReminderLeadId] = useState<string | null>(null);
@@ -195,12 +204,21 @@ export default function Tab() {
         permissions.export = true;
         permissions.delete = true;
         permissions.mapLeads = true;
-        permissions.lead = ["update_status", "update_source", "update_assigned", "delete_lead"];
+        permissions.lead = [
+          "update_status",
+          "update_source",
+          "update_assigned",
+          "delete_lead",
+        ];
       }
       // Team leads might get some permissions
       else if (role.includes("lead") || role.includes("manager")) {
         permissions.export = true;
-        permissions.lead = ["update_status", "update_source", "update_assigned"];
+        permissions.lead = [
+          "update_status",
+          "update_source",
+          "update_assigned",
+        ];
         permissions.mapLeads = true;
         // Delete permission could be restricted for leads
       }
@@ -211,7 +229,7 @@ export default function Tab() {
       }
     }
 
-        return permissions;
+    return permissions;
   }, [user]);
 
   // Sync localLeads with leads from hook
@@ -224,7 +242,7 @@ export default function Tab() {
   // Initialize filters with default agents when agents data loads
   useEffect(() => {
     if (agents.length > 0 && user && filters.selectedAgents.length === 0) {
-            let defaultAgents: string[] = [];
+      let defaultAgents: string[] = [];
 
       if (user.role === "superAdmin") {
         // Select all agents for super admin
@@ -239,7 +257,7 @@ export default function Tab() {
           return result;
         };
         defaultAgents = flattenAgents(agents);
-              } else {
+      } else {
         // Find current user in agents list
         const flattenAgents = (agentList: any[]): any[] => {
           let result: any[] = [];
@@ -258,8 +276,8 @@ export default function Tab() {
         );
         if (currentUserAgent) {
           defaultAgents = [user.id];
-                  } else {
-                  }
+        } else {
+        }
       }
 
       if (defaultAgents.length > 0) {
@@ -280,7 +298,7 @@ export default function Tab() {
    * Handle filter changes from the filters modal
    */
   const handleFiltersChange = (newFilters: any) => {
-        // Update filters and reset to first page
+    // Update filters and reset to first page
     updateFilters({ ...newFilters, searchTerm });
     setCurrentPage(0);
 
@@ -318,6 +336,41 @@ export default function Tab() {
     setLeadsPerPage(data.leadsPerPage);
     setCurrentPage(data.currentPage - 1); // Convert to 0-based
   };
+
+  /**
+   * Handle lead type change from dropdown
+   */
+  const handleLeadTypeChange = useCallback(
+    (leadType: LeadType) => {
+      // Find the appropriate sources based on lead type
+      let newSelectedSources: string[] = [];
+
+      if (leadType === "community") {
+        // Find the source with "leads" name (case insensitive)
+        const communitySource = sourceOptions.find((source) =>
+          source.label.toLowerCase().includes("lead")
+        );
+        if (communitySource) {
+          newSelectedSources = [communitySource.value];
+        }
+      } else {
+        // For marketing, select all sources except the "leads" source
+        newSelectedSources = sourceOptions
+          .filter((source) => !source.label.toLowerCase().includes("lead"))
+          .map((source) => source.value);
+      }
+
+      const newFilters = {
+        ...filters,
+        leadType,
+        selectedSources: newSelectedSources,
+      };
+
+      updateFilters(newFilters);
+      setCurrentPage(0); // Reset to first page
+    },
+    [filters, sourceOptions, updateFilters]
+  );
 
   // Convert agents to user format for assignee options (excludes non-assigned)
   const getUsersFromAgents = (agentsList: any[]): any[] => {
@@ -462,10 +515,10 @@ export default function Tab() {
         // Export selected leads
         const leadIds = selectedLeads.map((lead) => lead._id);
         blob = await exportLeads(leadIds, undefined, undefined, "cold");
-              } else {
+      } else {
         // Export filtered leads
         blob = await exportLeads(undefined, filters, user, "cold");
-              }
+      }
 
       // Handle blob download (React Native doesn't have direct download, but we'll show success)
       Toast.show(
@@ -577,8 +630,7 @@ export default function Tab() {
         duration: Toast.durations.SHORT,
       }
     );
-
-      }, [selectedLeads]);
+  }, [selectedLeads]);
 
   /**
    * Handle status filter when clicking on status badge (supports multiple selection)
@@ -656,32 +708,35 @@ export default function Tab() {
   /**
    * Handle lead update from LeadCard component
    */
-  const handleLeadUpdate = useCallback(async (leadId: string, updates: any) => {
-    try {
-      await updateLead(user, leadId, updates);
-      
-      // Update local lead state
-      setLocalLeads((prevLeads) =>
-        prevLeads.map((lead) => 
-          lead._id === leadId ? { ...lead, ...updates } : lead
-        )
-      );
-      
-      // Show success message
-      Toast.show("Lead updated successfully", {
-        duration: Toast.durations.SHORT,
-      });
-      
-      // Refresh leads data to get updated status counts
-      await refreshLeads();
-    } catch (error) {
-      console.error("Failed to update lead:", error);
-      Toast.show(`Failed to update lead: ${error.message}`, {
-        duration: Toast.durations.LONG,
-      });
-      throw error; // Re-throw to let the LeadCard handle UI state
-    }
-  }, [user, refreshLeads]);
+  const handleLeadUpdate = useCallback(
+    async (leadId: string, updates: any) => {
+      try {
+        await updateLead(user, leadId, updates);
+
+        // Update local lead state
+        setLocalLeads((prevLeads) =>
+          prevLeads.map((lead) =>
+            lead._id === leadId ? { ...lead, ...updates } : lead
+          )
+        );
+
+        // Show success message
+        Toast.show("Lead updated successfully", {
+          duration: Toast.durations.SHORT,
+        });
+
+        // Refresh leads data to get updated status counts
+        await refreshLeads();
+      } catch (error) {
+        console.error("Failed to update lead:", error);
+        Toast.show(`Failed to update lead: ${error.message}`, {
+          duration: Toast.durations.LONG,
+        });
+        throw error; // Re-throw to let the LeadCard handle UI state
+      }
+    },
+    [user, refreshLeads]
+  );
 
   // Function to scroll to a specific lead card when comment input opens
   const scrollToCard = useCallback((leadId: string) => {
@@ -696,11 +751,11 @@ export default function Tab() {
       return;
     }
 
-        // Try measureLayout first (more accurate for ScrollView)
+    // Try measureLayout first (more accurate for ScrollView)
     cardRef.measureLayout(
       scrollView as any,
       (x, y, width, height) => {
-                // Calculate optimal scroll position
+        // Calculate optimal scroll position
         // Account for header (~140px), action buttons (~60px), and padding
         const headerHeight = 140;
         const actionButtonsHeight = 60;
@@ -709,7 +764,7 @@ export default function Tab() {
 
         const targetY = Math.max(0, y - totalOffset);
 
-                scrollView.scrollTo({
+        scrollView.scrollTo({
           y: targetY,
           animated: true,
         });
@@ -719,15 +774,15 @@ export default function Tab() {
 
         // Fallback: measureInWindow approach
         cardRef.measureInWindow((x, y, width, height) => {
-                    // For measureInWindow, we need to calculate differently
+          // For measureInWindow, we need to calculate differently
           // Get current scroll position first
           scrollView.scrollTo({ y: 0, animated: false }); // Reset to get baseline
 
           setTimeout(() => {
             cardRef.measureInWindow((newX, newY, newWidth, newHeight) => {
-                            const targetScrollY = Math.max(0, newY - 200);
+              const targetScrollY = Math.max(0, newY - 200);
 
-                            scrollView.scrollTo({
+              scrollView.scrollTo({
                 y: targetScrollY,
                 animated: true,
               });
@@ -738,12 +793,49 @@ export default function Tab() {
     );
   }, []);
 
+  // Set native header title with current lead type, chevron, and make it tappable
+  useFocusEffect(
+    useCallback(() => {
+      const currentLeadType = filters.leadType || "marketing";
+      const displayType =
+        currentLeadType.charAt(0).toUpperCase() + currentLeadType.slice(1);
+
+      navigation.setOptions({
+        headerTitle: () => (
+          <Pressable
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingVertical: 8,
+            }}
+            onPress={() => {
+              setHeaderDropdownOpen(true);
+            }}
+          >
+            <Text
+              className=""
+              style={{
+                color: "#000000",
+                fontSize: 20,
+                fontWeight: "500",
+                marginRight: 5,
+              }}
+            >
+              {displayType} Leads
+            </Text>
+            <Ionicons name="chevron-down" size={16} color="#000000" />
+          </Pressable>
+        ),
+      });
+    }, [navigation, filters.leadType])
+  );
+
   // Early return if user not available
   if (!user) return <LoadingView />;
 
   return (
     <View className="flex-1 bg-gray-50">
-      {/* Header */}
+      {/* Search and Filter Header */}
       <View className="bg-white px-4 pt-3 pb-4 border-b border-gray-200">
         <View className="flex-row items-center gap-3">
           <View className="flex-1 flex-row items-center bg-gray-100 rounded-lg px-3 h-11">
@@ -859,7 +951,7 @@ export default function Tab() {
                     userPermissions={userPermissions}
                     scrollToCard={scrollToCard}
                     onOpenModal={(type, callback) => {
-                                            if (type === "Add Reminder") {
+                      if (type === "Add Reminder") {
                         const modalId = "reminder-modal";
                         if (ModalManager.canOpenModal(modalId)) {
                           ModalManager.closeAllExcept(modalId);
@@ -931,6 +1023,84 @@ export default function Tab() {
         </View>
       )}
 
+      {/* Lead Type Selection Modal */}
+      {headerDropdownOpen && (
+        <Modal
+          visible={headerDropdownOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setHeaderDropdownOpen(false)}
+        >
+          <Pressable
+            className="flex-1 bg-black/20"
+            onPress={() => setHeaderDropdownOpen(false)}
+          >
+            <View className="flex-1 justify-center items-center p-4">
+              <Pressable
+                className="bg-white rounded-lg shadow-lg w-full max-w-sm"
+                onPress={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <View className="px-4 py-3 border-b border-gray-200">
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-lg font-semibold text-gray-800">
+                      Select Lead Type
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => setHeaderDropdownOpen(false)}
+                      className="p-1"
+                    >
+                      <Ionicons name="close" size={20} color="#6B7280" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Options */}
+                <View className="py-2">
+                  <TouchableOpacity
+                    className={`px-4 py-3 flex-row items-center justify-between ${
+                      (filters.leadType || "marketing") === "community"
+                        ? "bg-miles-50"
+                        : ""
+                    }`}
+                    onPress={() => {
+                      handleLeadTypeChange("community");
+                      setHeaderDropdownOpen(false);
+                    }}
+                  >
+                    <View className="flex-1 mr-3">
+                      <Text className={`text-base font-medium`}>Community</Text>
+                    </View>
+                    {(filters.leadType || "marketing") === "community" && (
+                      <Ionicons name="checkmark" size={20} color="#176298" />
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    className={`px-4 py-3 flex-row items-center justify-between ${
+                      (filters.leadType || "marketing") === "marketing"
+                        ? "bg-miles-50"
+                        : ""
+                    }`}
+                    onPress={() => {
+                      handleLeadTypeChange("marketing");
+                      setHeaderDropdownOpen(false);
+                    }}
+                  >
+                    <View className="flex-1 mr-3">
+                      <Text className={`text-base font-medium`}>Marketing</Text>
+                    </View>
+                    {(filters.leadType || "marketing") === "marketing" && (
+                      <Ionicons name="checkmark" size={20} color="#176298" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Modal>
+      )}
+
       {/* Filters Modal */}
       <FiltersModal
         visible={showFilters}
@@ -966,7 +1136,7 @@ export default function Tab() {
         leadId={reminderLeadId || ""}
         assigneesOptions={getUsersFromAgents(agents)}
         onSuccess={() => {
-                    // Execute callback if provided (for status changes requiring reminders)
+          // Execute callback if provided (for status changes requiring reminders)
           if (reminderCallback) {
             setTimeout(() => {
               reminderCallback();
@@ -1003,7 +1173,7 @@ export default function Tab() {
         assigneeOptions={getUsersFromAgents(agents)}
         statusOptions={statusOptions}
         onSuccess={() => {
-                    // Execute callback if provided (for status changes requiring meetings)
+          // Execute callback if provided (for status changes requiring meetings)
           if (meetingCallback) {
             setTimeout(() => {
               meetingCallback();

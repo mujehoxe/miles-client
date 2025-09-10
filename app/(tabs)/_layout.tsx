@@ -18,6 +18,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Leads",
+          headerTitle: "Leads", // This can be overridden by the screen
           tabBarIcon: ({ color }) => (
             <Ionicons name="git-network-sharp" size={28} color={color} />
           ),

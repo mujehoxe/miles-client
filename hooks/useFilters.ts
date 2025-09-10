@@ -35,6 +35,7 @@ export const useFilters = ({
     selectedTags: [],
     dateRange: [null, null],
     dateFor: "LeadIntroduction",
+    leadType: 'marketing', // Default to marketing leads
     ...initialFilters,
   };
 

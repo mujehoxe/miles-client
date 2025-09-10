@@ -9,6 +9,7 @@ export interface FilterOptions {
   selectedTags: string[];
   dateRange: [Date | null, Date | null];
   dateFor: string;
+  leadType?: 'community' | 'marketing';
 }
 
 export interface LeadRequestOptions {
@@ -322,6 +323,7 @@ export const buildLeadsRequestBody = (
   } else {
     selectedAgents = [user.id];
   }
+
 
   return {
     searchTerm: searchText.trim(),
