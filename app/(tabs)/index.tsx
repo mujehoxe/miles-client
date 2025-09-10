@@ -6,18 +6,18 @@
 import ActionButtons from "@/components/ActionButtons";
 import BulkModal from "@/components/BulkModal";
 import FiltersModal from "@/components/FiltersModal";
-import LeadCard from "@/components/LeadCard";
-import { LeadType } from "@/components/LeadTypeDropdown";
 import LoadingView from "@/components/LoadingView";
 import MeetingModal from "@/components/MeetingModal";
-import Pagination from "@/components/Pagination";
 import ReminderModal from "@/components/ReminderModal";
-import StatusCounts from "@/components/StatusCounts";
+import LeadsHeader from "@/components/leads/LeadsHeader";
+import LeadsContent from "@/components/leads/LeadsContent";
+import LeadTypeModal from "@/components/leads/LeadTypeModal";
 
 // Hook imports
 import { useFilters } from "@/hooks/useFilters";
 import { useLeadsData } from "@/hooks/useLeadsData";
 import { useLeadsSelection } from "@/hooks/useLeadsSelection";
+import { useNavigationHeader } from "@/hooks/useNavigationHeader";
 import useOneSignal from "@/hooks/useOneSignal";
 import { usePagination } from "@/hooks/usePagination";
 import { useSearchDebounce } from "@/hooks/useSearchDebounce";
@@ -32,22 +32,11 @@ import {
 
 // React Native imports
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
   ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
 
 // Third-party imports
-import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect, useNavigation } from "expo-router";
-import React from "react";
 import Toast from "react-native-root-toast";
 import resolveConfig from "tailwindcss/resolveConfig";
 import tailwindConfig from "../../tailwind.config";
@@ -69,65 +58,58 @@ import {
   SEARCH_BOX_OPTIONS,
 } from "@/utils/constants";
 import ModalManager from "@/utils/ModalManager";
+import { LeadType } from "@/components/LeadTypeDropdown";
+
 const fullConfig = resolveConfig(tailwindConfig);
 const miles600 = fullConfig.theme.colors.miles[600];
 
 /**
  * Leads Page Component (Main Tab)
  *
- * Refactored component focused on UI rendering and user interactions.
- * Business logic has been extracted into custom hooks and services.
+ * Refactored component with improved structure and separation of concerns.
+ * Business logic has been extracted into custom hooks and reusable components.
  *
  * FEATURES:
  * - Lead listing with card-based display and pagination
  * - Debounced search functionality
  * - Advanced filtering with modal interface
  * - Multi-select lead operations
+ * - Lead type switching (Community/Marketing)
  * - Responsive loading states
  */
-export default function Tab() {
+export default function LeadsPage() {
   const user = useContext(UserContext);
-  const navigation = useNavigation();
   useOneSignal(user);
 
-  // Initialize search with debounce
-  const { searchTerm, setSearchTerm, clearSearch } = useSearchDebounce({
+  // Core state management hooks
+  const { searchTerm, setSearchTerm } = useSearchDebounce({
     delay: DEFAULT_PAGINATION.DEBOUNCE_DELAY,
   });
 
-  // Initialize filters
-  const { filters, showFilters, updateFilters, setShowFilters, clearFilters } =
-    useFilters();
+  const { filters, showFilters, updateFilters, setShowFilters } = useFilters();
 
-  // Initialize pagination
   const {
     currentPage,
     leadsPerPage,
-    totalPages,
     setCurrentPage,
     setLeadsPerPage,
-    setTotalPages,
-    canGoNext,
-    canGoPrevious,
   } = usePagination({
     initialPage: DEFAULT_PAGINATION.PAGE,
     initialPageSize: DEFAULT_PAGINATION.PAGE_SIZE,
   });
 
-  // Initialize lead selection
   const {
     selectedLeads,
     toggleLeadSelection,
     clearSelection,
     selectAll,
     isLeadSelected,
-    selectedCount,
   } = useLeadsSelection();
 
-  // Initialize leads data with all dependencies
   const {
     leads,
     totalLeads,
+    totalPages,
     statusOptions,
     sourceOptions,
     tagOptions,
@@ -145,43 +127,39 @@ export default function Tab() {
     shouldFetchLeads: filters.selectedAgents.length > 0,
   });
 
-  // Additional state for leads management
+  // Component state
   const [localLeads, setLocalLeads] = useState<any[]>([]);
-
-  // Header dropdown control state
   const [headerDropdownOpen, setHeaderDropdownOpen] = useState(false);
 
-  // Reminder modal state
+  // Modal states
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [reminderLeadId, setReminderLeadId] = useState<string | null>(null);
-  const [reminderCallback, setReminderCallback] = useState<(() => void) | null>(
-    null
-  );
+  const [reminderCallback, setReminderCallback] = useState<(() => void) | null>(null);
 
-  // Meeting modal state
   const [showMeetingModal, setShowMeetingModal] = useState(false);
   const [meetingLeadId, setMeetingLeadId] = useState<string | null>(null);
-  const [meetingCallback, setMeetingCallback] = useState<(() => void) | null>(
-    null
-  );
+  const [meetingCallback, setMeetingCallback] = useState<(() => void) | null>(null);
 
-  // ActionButtons state
-  const [isExporting, setIsExporting] = useState(false);
-
-  // Bulk modal state
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkOperationMade, setBulkOperationMade] = useState(false);
 
-  // Status counts state
+  // UI state
+  const [isExporting, setIsExporting] = useState(false);
   const [statusCountsExpanded, setStatusCountsExpanded] = useState(false);
   const [statusCounts, setStatusCounts] = useState<{
     [key: string]: { count: number; filteredCount: number };
   }>({});
   const [statusCountsLoading, setStatusCountsLoading] = useState(false);
 
-  // ScrollView ref for focusing on comment inputs
+  // Refs
   const scrollViewRef = useRef<ScrollView>(null);
   const leadCardRefs = useRef<{ [key: string]: View | null }>({});
+
+  // Navigation header setup
+  useNavigationHeader({
+    leadType: filters.leadType || 'marketing',
+    onHeaderPress: () => setHeaderDropdownOpen(true),
+  });
 
   // User permissions for ActionButtons and LeadCard
   const userPermissions = useMemo(() => {
@@ -665,11 +643,6 @@ export default function Tab() {
     [filters, updateFilters, setCurrentPage, statusCountsExpanded]
   );
 
-  // Update totalPages when totalLeads changes
-  useEffect(() => {
-    const calculatedPages = Math.ceil(totalLeads / leadsPerPage);
-    setTotalPages(calculatedPages);
-  }, [totalLeads, leadsPerPage, setTotalPages]);
 
   // Fetch status counts from API when filters change
   useEffect(() => {
@@ -793,85 +766,19 @@ export default function Tab() {
     );
   }, []);
 
-  // Set native header title with current lead type, chevron, and make it tappable
-  useFocusEffect(
-    useCallback(() => {
-      const currentLeadType = filters.leadType || "marketing";
-      const displayType =
-        currentLeadType.charAt(0).toUpperCase() + currentLeadType.slice(1);
-
-      navigation.setOptions({
-        headerTitle: () => (
-          <Pressable
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              paddingVertical: 8,
-            }}
-            onPress={() => {
-              setHeaderDropdownOpen(true);
-            }}
-          >
-            <Text
-              className=""
-              style={{
-                color: "#000000",
-                fontSize: 20,
-                fontWeight: "500",
-                marginRight: 5,
-              }}
-            >
-              {displayType} Leads
-            </Text>
-            <Ionicons name="chevron-down" size={16} color="#000000" />
-          </Pressable>
-        ),
-      });
-    }, [navigation, filters.leadType])
-  );
-
   // Early return if user not available
   if (!user) return <LoadingView />;
 
   return (
     <View className="flex-1 bg-gray-50">
       {/* Search and Filter Header */}
-      <View className="bg-white px-4 pt-3 pb-4 border-b border-gray-200">
-        <View className="flex-row items-center gap-3">
-          <View className="flex-1 flex-row items-center bg-gray-100 rounded-lg px-3 h-11">
-            <Ionicons
-              name="search"
-              size={20}
-              color="#6B7280"
-              className="mr-2"
-            />
-            <TextInput
-              className="flex-1 text-base text-gray-800"
-              placeholder="Search leads..."
-              value={searchTerm}
-              onChangeText={setSearchTerm}
-              returnKeyType="search"
-            />
-          </View>
-          <TouchableOpacity
-            className="w-11 h-11 rounded-lg bg-gray-100 items-center justify-center"
-            onPress={() => setShowFilters(true)}
-          >
-            <Ionicons name="filter" size={20} color="#6B7280" />
-          </TouchableOpacity>
-        </View>
-
-        {selectedLeads.length > 0 && (
-          <View className="flex-row items-center justify-between mt-3 px-1">
-            <Text className="text-sm font-medium text-miles-500">
-              {selectedLeads.length} selected
-            </Text>
-            <TouchableOpacity className="py-1 px-2" onPress={clearSelection}>
-              <Text className="text-sm text-gray-500">Clear</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
+      <LeadsHeader
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        onFiltersPress={() => setShowFilters(true)}
+        selectedLeads={selectedLeads}
+        onClearSelection={clearSelection}
+      />
 
       {/* Action Buttons - Show when there are leads available */}
       {!loading && leads?.length > 0 && (
@@ -882,9 +789,7 @@ export default function Tab() {
           onClearSelection={clearSelection}
           onExport={userPermissions.export ? handleExport : undefined}
           onDelete={userPermissions.delete ? handleDelete : undefined}
-          onBulkActions={
-            userPermissions.mapLeads ? handleBulkActions : undefined
-          }
+          onBulkActions={userPermissions.mapLeads ? handleBulkActions : undefined}
           onHistory={userPermissions.mapLeads ? handleHistory : undefined}
           onDealSubmission={handleDealSubmission}
           isExporting={isExporting}
@@ -892,214 +797,83 @@ export default function Tab() {
         />
       )}
 
-      {/* Content */}
-      {loading ? (
-        <View className="flex-1 justify-center items-center gap-4">
-          <ActivityIndicator size="large" color={miles600} />
-          <Text className="text-base text-gray-500">Loading leads...</Text>
-        </View>
-      ) : leads?.length > 0 ? (
-        <KeyboardAvoidingView
-          className="flex-1"
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-        >
-          <ScrollView
-            ref={scrollViewRef}
-            className="flex-1"
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 20 }}
-            keyboardShouldPersistTaps="handled"
-          >
-            {/* Status counts display */}
-            <StatusCounts
-              statusOptions={statusOptions}
-              statusCounts={statusCounts}
-              statusCountsLoading={statusCountsLoading}
-              statusCountsExpanded={statusCountsExpanded}
-              onStatusCountsExpandedChange={setStatusCountsExpanded}
-              onStatusFilter={handleStatusFilter}
-              onClearStatusFilter={() => {
-                const newFilters = { ...filters, selectedStatuses: [] };
-                updateFilters(newFilters);
-                setCurrentPage(0);
-              }}
-              selectedStatuses={filters.selectedStatuses || []}
-              dateRange={filters.dateRange || []}
-            />
-            <View className="px-4">
-              {localLeads.map((lead, index) => (
-                <View
-                  key={lead._id || index}
-                  ref={(ref) => {
-                    if (ref) {
-                      leadCardRefs.current[lead._id] = ref;
-                    }
-                  }}
-                >
-                  <LeadCard
-                    lead={lead}
-                    selected={isLeadSelected(lead)}
-                    onCardPress={() => toggleLeadSelection(lead)}
-                    onDetailsPress={() => {
-                      // Navigate to lead details page
-                      // This should be a simple navigation function
-                    }}
-                    statusOptions={statusOptions}
-                    sourceOptions={sourceOptions}
-                    onLeadUpdate={handleLeadUpdate}
-                    userPermissions={userPermissions}
-                    scrollToCard={scrollToCard}
-                    onOpenModal={(type, callback) => {
-                      if (type === "Add Reminder") {
-                        const modalId = "reminder-modal";
-                        if (ModalManager.canOpenModal(modalId)) {
-                          ModalManager.closeAllExcept(modalId);
-                          setReminderLeadId(lead._id);
-                          setReminderCallback(() => callback);
-                          setShowReminderModal(true);
-                          ModalManager.registerModal(modalId, () => {
-                            setShowReminderModal(false);
-                            setReminderLeadId(null);
-                            setReminderCallback(null);
-                          });
-                        }
-                      } else if (type === "Add Meeting") {
-                        const modalId = "meeting-modal";
-                        if (ModalManager.canOpenModal(modalId)) {
-                          ModalManager.closeAllExcept(modalId);
-                          setMeetingLeadId(lead._id);
-                          setMeetingCallback(() => callback);
-                          setShowMeetingModal(true);
-                          ModalManager.registerModal(modalId, () => {
-                            setShowMeetingModal(false);
-                            setMeetingLeadId(null);
-                            setMeetingCallback(null);
-                          });
-                        }
-                      } else {
-                        if (callback) callback();
-                      }
-                    }}
-                  />
-                </View>
-              ))}
-
-              {/* Pagination Controls - After all lead cards */}
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={totalLeads}
-                itemsPerPage={leadsPerPage}
-                onPageChange={handlePageChange}
-                loading={paginationLoading}
-              />
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      ) : (
-        <View className="flex-1 justify-center items-center px-8 py-16">
-          <View className="items-center max-w-72">
-            <Ionicons name="document-text-outline" size={64} color="#9CA3AF" />
-            <Text className="text-xl font-semibold text-gray-700 mt-4 mb-2 text-center">
-              No Leads Found
-            </Text>
-            <Text className="text-base text-gray-500 text-center leading-6 mb-6">
-              {searchTerm
-                ? `No leads match your search "${searchTerm}"`
-                : "No leads are available at the moment"}
-            </Text>
-            {searchTerm && (
-              <TouchableOpacity
-                className="bg-miles-500 px-5 py-2.5 rounded-lg mt-2"
-                onPress={() => setSearchTerm("")}
-              >
-                <Text className="text-white text-sm font-medium">
-                  Clear Search
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      )}
+      {/* Main Content */}
+      <LeadsContent
+        loading={loading}
+        leads={leads}
+        localLeads={localLeads}
+        searchTerm={searchTerm}
+        filters={filters}
+        statusOptions={statusOptions}
+        sourceOptions={sourceOptions}
+        statusCounts={statusCounts}
+        statusCountsLoading={statusCountsLoading}
+        statusCountsExpanded={statusCountsExpanded}
+        selectedLeads={selectedLeads}
+        userPermissions={userPermissions}
+        leadCardRefs={leadCardRefs}
+        scrollViewRef={scrollViewRef}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalLeads={totalLeads}
+        leadsPerPage={leadsPerPage}
+        paginationLoading={paginationLoading}
+        miles600={miles600}
+        onStatusCountsExpandedChange={setStatusCountsExpanded}
+        onStatusFilter={handleStatusFilter}
+        onClearStatusFilter={() => {
+          const newFilters = { ...filters, selectedStatuses: [] };
+          updateFilters(newFilters);
+          setCurrentPage(0);
+        }}
+        onLeadUpdate={handleLeadUpdate}
+        onPageChange={handlePageChange}
+        onModalOpen={(type, leadId, callback) => {
+          if (type === "Add Reminder") {
+            const modalId = "reminder-modal";
+            if (ModalManager.canOpenModal(modalId)) {
+              ModalManager.closeAllExcept(modalId);
+              setReminderLeadId(leadId);
+              setReminderCallback(() => callback);
+              setShowReminderModal(true);
+              ModalManager.registerModal(modalId, () => {
+                setShowReminderModal(false);
+                setReminderLeadId(null);
+                setReminderCallback(null);
+              });
+            }
+          } else if (type === "Add Meeting") {
+            const modalId = "meeting-modal";
+            if (ModalManager.canOpenModal(modalId)) {
+              ModalManager.closeAllExcept(modalId);
+              setMeetingLeadId(leadId);
+              setMeetingCallback(() => callback);
+              setShowMeetingModal(true);
+              ModalManager.registerModal(modalId, () => {
+                setShowMeetingModal(false);
+                setMeetingLeadId(null);
+                setMeetingCallback(null);
+              });
+            }
+          } else {
+            if (callback) callback();
+          }
+        }}
+        isLeadSelected={isLeadSelected}
+        toggleLeadSelection={toggleLeadSelection}
+        scrollToCard={scrollToCard}
+        setSearchTerm={setSearchTerm}
+        updateFilters={updateFilters}
+        setCurrentPage={setCurrentPage}
+      />
 
       {/* Lead Type Selection Modal */}
-      {headerDropdownOpen && (
-        <Modal
-          visible={headerDropdownOpen}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setHeaderDropdownOpen(false)}
-        >
-          <Pressable
-            className="flex-1 bg-black/20"
-            onPress={() => setHeaderDropdownOpen(false)}
-          >
-            <View className="flex-1 justify-center items-center p-4">
-              <Pressable
-                className="bg-white rounded-lg shadow-lg w-full max-w-sm"
-                onPress={(e) => e.stopPropagation()}
-              >
-                {/* Header */}
-                <View className="px-4 py-3 border-b border-gray-200">
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-lg font-semibold text-gray-800">
-                      Select Lead Type
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() => setHeaderDropdownOpen(false)}
-                      className="p-1"
-                    >
-                      <Ionicons name="close" size={20} color="#6B7280" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {/* Options */}
-                <View className="py-2">
-                  <TouchableOpacity
-                    className={`px-4 py-3 flex-row items-center justify-between ${
-                      (filters.leadType || "marketing") === "community"
-                        ? "bg-miles-50"
-                        : ""
-                    }`}
-                    onPress={() => {
-                      handleLeadTypeChange("community");
-                      setHeaderDropdownOpen(false);
-                    }}
-                  >
-                    <View className="flex-1 mr-3">
-                      <Text className={`text-base font-medium`}>Community</Text>
-                    </View>
-                    {(filters.leadType || "marketing") === "community" && (
-                      <Ionicons name="checkmark" size={20} color="#176298" />
-                    )}
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    className={`px-4 py-3 flex-row items-center justify-between ${
-                      (filters.leadType || "marketing") === "marketing"
-                        ? "bg-miles-50"
-                        : ""
-                    }`}
-                    onPress={() => {
-                      handleLeadTypeChange("marketing");
-                      setHeaderDropdownOpen(false);
-                    }}
-                  >
-                    <View className="flex-1 mr-3">
-                      <Text className={`text-base font-medium`}>Marketing</Text>
-                    </View>
-                    {(filters.leadType || "marketing") === "marketing" && (
-                      <Ionicons name="checkmark" size={20} color="#176298" />
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </Pressable>
-            </View>
-          </Pressable>
-        </Modal>
-      )}
+      <LeadTypeModal
+        visible={headerDropdownOpen}
+        selectedType={filters.leadType || 'marketing'}
+        onClose={() => setHeaderDropdownOpen(false)}
+        onTypeChange={handleLeadTypeChange}
+      />
 
       {/* Filters Modal */}
       <FiltersModal
