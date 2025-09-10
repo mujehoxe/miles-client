@@ -28,29 +28,32 @@ export const useNavigationHeader = ({
                 flexDirection: "row",
                 alignItems: "center",
                 paddingVertical: 8,
+                width: "100%",
               },
-              onPress: () => {
-                console.log("Header title pressed");
-                onHeaderPress();
-              },
+              onPress: () => onHeaderPress(),
             },
             [
               React.createElement(
                 Text,
                 {
+                  key: "header-text",
                   style: {
                     color: "#000000",
                     fontSize: 20,
                     fontWeight: "500",
-                    marginRight: 6,
                   },
                 },
                 `${displayType} Leads`
               ),
               React.createElement(Ionicons, {
+                key: "header-icon",
                 name: "chevron-down",
                 size: 16,
                 color: "#000000",
+                style: {
+                  marginLeft: 4,
+                  paddingRight: 20,
+                },
               }),
             ]
           ),
