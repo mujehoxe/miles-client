@@ -231,7 +231,7 @@ const LeadCard: React.FC<LeadCardProps> = ({
       const newStatus = statusOptions.find(
         (o) => o.value === updateBody.LeadStatus?._id
       );
-            if (statusChanged && newStatus?.requiresReminder) {
+      if (statusChanged && newStatus?.requiresReminder) {
         if (newStatus.requiresReminder === "yes") {
           // Directly open reminder modal for required reminders
           onOpenModal?.("Add Reminder", () => {
@@ -391,10 +391,9 @@ const LeadCard: React.FC<LeadCardProps> = ({
               }}
               className="size-10 rounded-full ml-2"
               onError={(error) => {
-                                setAvatarError(true);
+                setAvatarError(true);
               }}
-              onLoad={() => {
-                              }}
+              onLoad={() => {}}
               fallbackComponent={
                 <View className="size-10 rounded-full bg-gray-100 items-center justify-center ml-2">
                   <Ionicons name="person" size={16} color="#9CA3AF" />
@@ -462,16 +461,21 @@ const LeadCard: React.FC<LeadCardProps> = ({
         </View>
 
         {/* Description */}
-        {lead.Description && lead.LeadStatus?.Status == "New" && (
-          <View className="mb-3">
-            <Text className="text-xs font-medium text-gray-500 mb-1">
-              Description:
-            </Text>
-            <Text className="text-sm text-gray-700 leading-5" numberOfLines={2}>
-              {lead.Description}
-            </Text>
-          </View>
-        )}
+        {lead.Description &&
+          (lead.LeadStatus?.Status == "New" ||
+            lead.LeadStatus?.Status == "RNR") && (
+            <View className="mb-3">
+              <Text className="text-xs font-medium text-gray-500 mb-1">
+                Description:
+              </Text>
+              <Text
+                className="text-sm text-gray-700 leading-5"
+                numberOfLines={2}
+              >
+                {lead.Description}
+              </Text>
+            </View>
+          )}
 
         {/* Last Comment */}
         {lead.lastComment?.Content && lead.LeadStatus?.Status !== "New" && (
