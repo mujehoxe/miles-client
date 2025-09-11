@@ -1,625 +1,410 @@
-import ActionButtons from "@/components/ActionButtons";
-import BulkModal from "@/components/BulkModal";
-import FiltersModal from "@/components/FiltersModal";
-import LeadsContent from "@/components/leads/LeadsContent";
-import LeadsHeader from "@/components/leads/LeadsHeader";
-import LeadTypeModal from "@/components/leads/LeadTypeModal";
-import LoadingView from "@/components/LoadingView";
-import MeetingModal from "@/components/MeetingModal";
-import ReminderModal from "@/components/ReminderModal";
-
-import { useFilters } from "@/hooks/useFilters";
-import { useLeadsData } from "@/hooks/useLeadsData";
-import { useLeadsSelection } from "@/hooks/useLeadsSelection";
-import { useNavigationHeader } from "@/hooks/useNavigationHeader";
-import useOneSignal from "@/hooks/useOneSignal";
-import { usePagination } from "@/hooks/usePagination";
-import { useSearchDebounce } from "@/hooks/useSearchDebounce";
-import { useCallback, useContext, useEffect, useRef, useState } from "react";
-
-import { ScrollView, View } from "react-native";
-
+import { clearAuthData, fetchCampaignsWithCounts } from "@/services/api";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  RefreshControl,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import Toast from "react-native-root-toast";
-import resolveConfig from "tailwindcss/resolveConfig";
-import tailwindConfig from "../../tailwind.config";
-
 import { UserContext } from "../_layout";
 
-import { LeadType } from "@/components/LeadTypeDropdown";
-import {
-  ACTION_BUTTONS_HEIGHT,
-  CALLBACK_DELAY,
-  HEADER_HEIGHT,
-  MODAL_CLOSE_DELAY_LONG,
-  MODAL_CLOSE_DELAY_SHORT,
-  SCROLL_PADDING,
-} from "@/constants/ui";
-import useAgentInitialization from "@/hooks/useAgentInitialization";
-import useModalManager from "@/hooks/useModalManager";
-import useUserPermissions from "@/hooks/useUserPermissions";
-import {
-  deleteLeads,
-  exportLeads,
-  fetchStatusCounts,
-  fetchTagOptions,
-  updateLead,
-} from "@/services/api";
-import {
-  getFlattenedAgents,
-  getUsersFromAgents,
-  processAgentsForFilters,
-} from "@/utils/agents";
-import {
-  COUNT_OPTIONS,
-  DEFAULT_PAGINATION,
-  SEARCH_BOX_OPTIONS,
-} from "@/utils/constants";
-import ModalManager from "@/utils/ModalManager";
+interface Campaign {
+  _id: string;
+  Tag: string;
+  leadCount: number;
+  pendingLeadsCount?: number;
+}
 
-const fullConfig = resolveConfig(tailwindConfig);
-const miles600 = fullConfig.theme.colors.miles[600];
+interface PaginationInfo {
+  currentPage: number;
+  totalPages: number;
+  totalCount: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
 
-export default function LeadsPage() {
+export default function CampaignsTab() {
   const user = useContext(UserContext);
-  useOneSignal(user);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isLoadingTriggered, setIsLoadingTriggered] = useState(false);
+  const flatListRef = useRef<FlatList>(null);
 
-  const { searchTerm, setSearchTerm } = useSearchDebounce({
-    delay: DEFAULT_PAGINATION.DEBOUNCE_DELAY,
-  });
-
-  const { filters, updateFilters } = useFilters();
-
-  const { currentPage, leadsPerPage, setCurrentPage, setLeadsPerPage } =
-    usePagination({
-      initialPage: DEFAULT_PAGINATION.PAGE,
-      initialPageSize: DEFAULT_PAGINATION.PAGE_SIZE,
-    });
-
-  const {
-    selectedLeads,
-    toggleLeadSelection,
-    clearSelection,
-    selectAll,
-    isLeadSelected,
-  } = useLeadsSelection();
-
-  const {
-    leads,
-    totalLeads,
-    totalPages,
-    statusOptions,
-    sourceOptions,
-    tagOptions,
-    agents,
-    loading,
-    paginationLoading,
-    refreshLeads,
-    setPaginationLoading,
-  } = useLeadsData({
-    user,
-    filters,
-    searchTerm,
-    currentPage,
-    leadsPerPage,
-    shouldFetchLeads: filters.selectedAgents.length > 0,
-  });
-
-  const [localLeads, setLocalLeads] = useState<any[]>([]);
-
-  const {
-    showReminderModal,
-    reminderLeadId,
-    reminderCallback,
-    openReminderModal,
-    closeReminderModal,
-    showMeetingModal,
-    meetingLeadId,
-    meetingCallback,
-    openMeetingModal,
-    closeMeetingModal,
-    showBulkModal,
-    setShowBulkModal,
-    showFilters,
-    setShowFilters,
-    headerDropdownOpen,
-    setHeaderDropdownOpen,
-  } = useModalManager();
-
-  const [isExporting, setIsExporting] = useState(false);
-  const [statusCountsExpanded, setStatusCountsExpanded] = useState(false);
-  const [statusCounts, setStatusCounts] = useState<{
-    [key: string]: { count: number; filteredCount: number };
-  }>({});
-  const [statusCountsLoading, setStatusCountsLoading] = useState(false);
-
-  const scrollViewRef = useRef<ScrollView>(null);
-  const leadCardRefs = useRef<{ [key: string]: View | null }>({});
-
-  useNavigationHeader({
-    leadType: filters.leadType || "marketing",
-    onHeaderPress: () => setHeaderDropdownOpen(true),
-  });
-
-  const userPermissions = useUserPermissions(user);
-
-  useEffect(() => {
-    setLocalLeads(leads);
-  }, [leads]);
-
-  useAgentInitialization({ agents, user, filters, updateFilters });
-
-  const handleFiltersChange = (newFilters: any) => {
-    updateFilters({ ...newFilters, searchTerm });
-    setCurrentPage(0);
-
-    if (newFilters.searchTerm !== searchTerm) {
-      setSearchTerm(newFilters.searchTerm);
-    }
-  };
-
-  const handlePageChange = async (newPage: number) => {
-    if (newPage === currentPage || paginationLoading) return;
-
-    setPaginationLoading(true);
-    setCurrentPage(newPage);
-
-    try {
-      await refreshLeads();
-    } catch (error) {
-      console.error(error);
-      Toast.show("Error loading page", {
-        duration: Toast.durations.SHORT,
-      });
-    } finally {
-      setPaginationLoading(false);
-    }
-  };
-
-  const handleLeadsDataChange = (data: any) => {
-    setLeadsPerPage(data.leadsPerPage);
-    setCurrentPage(data.currentPage - 1);
-  };
-
-  const handleLeadTypeChange = useCallback(
-    (leadType: LeadType) => {
-      let newSelectedSources: string[] = [];
-
-      if (leadType === "community") {
-        const communitySource = sourceOptions.find((source) =>
-          source.label.toLowerCase().includes("lead")
-        );
-        if (communitySource) {
-          newSelectedSources = [communitySource.value];
-        }
-      } else {
-        // For marketing, select all sources except the "leads" source
-        newSelectedSources = sourceOptions
-          .filter((source) => !source.label.toLowerCase().includes("lead"))
-          .map((source) => source.value);
+  const loadCampaigns = useCallback(
+    async (page = 1, append = false) => {
+      if (!user) {
+        setError("Please log in to view campaigns");
+        setLoading(false);
+        return;
       }
 
-      const newFilters = {
-        ...filters,
-        leadType,
-        selectedSources: newSelectedSources,
-      };
-
-      updateFilters(newFilters);
-      setCurrentPage(0);
-    },
-    [filters, sourceOptions, updateFilters]
-  );
-
-  const handleSelectAll = useCallback(() => {
-    if (selectedLeads.length === localLeads.length && localLeads.length > 0) {
-      clearSelection();
-    } else {
-      selectAll(localLeads);
-    }
-  }, [selectedLeads.length, localLeads, clearSelection, selectAll]);
-
-  const showExportSuccess = useCallback((selectedCount: number) => {
-    const message =
-      selectedCount > 0
-        ? `${selectedCount} leads exported successfully`
-        : "Leads exported successfully";
-    Toast.show(message, { duration: Toast.durations.SHORT });
-  }, []);
-
-  const handleExport = useCallback(async () => {
-    try {
-      setIsExporting(true);
-
-      let blob: Blob;
-      if (selectedLeads.length > 0) {
-        const leadIds = selectedLeads.map((lead) => lead._id);
-        blob = await exportLeads(leadIds, undefined, undefined, "cold");
-      } else {
-        blob = await exportLeads(undefined, filters, user, "cold");
-      }
-
-      showExportSuccess(selectedLeads.length);
-    } catch (error) {
-      console.error(error);
-      Toast.show(`Export failed: ${error.message}`, {
-        duration: Toast.durations.LONG,
-      });
-    } finally {
-      setIsExporting(false);
-    }
-  }, [selectedLeads, filters, user, showExportSuccess]);
-
-  const handleDelete = useCallback(async () => {
-    if (selectedLeads.length === 0) return;
-
-    try {
-      const leadIds = selectedLeads.map((lead) => lead._id);
-      await deleteLeads(leadIds);
-
-      setLocalLeads((prevLeads) =>
-        prevLeads.filter((lead) => !leadIds.includes(lead._id))
-      );
-      clearSelection();
-      await refreshLeads();
-
-      Toast.show(
-        `${leadIds.length} lead${
-          leadIds.length > 1 ? "s" : ""
-        } deleted successfully`,
-        {
-          duration: Toast.durations.SHORT,
-        }
-      );
-    } catch (error) {
-      console.error(error);
-      Toast.show(`Delete failed: ${error.message}`, {
-        duration: Toast.durations.LONG,
-      });
-    }
-  }, [selectedLeads, clearSelection, refreshLeads]);
-
-  const handleBulkActions = useCallback(() => {
-    if (selectedLeads.length === 0) {
-      Toast.show("Please select leads for bulk actions", {
-        duration: Toast.durations.SHORT,
-      });
-      return;
-    }
-
-    setShowBulkModal(true);
-  }, [selectedLeads.length]);
-
-  const handleBulkOperationComplete = useCallback(async () => {
-    clearSelection();
-    await refreshLeads();
-  }, [clearSelection, refreshLeads]);
-
-  const handleHistory = useCallback(() => {
-    Toast.show("History feature coming soon", {
-      duration: Toast.durations.SHORT,
-    });
-  }, []);
-
-  const handleDealSubmission = useCallback(() => {
-    if (selectedLeads.length !== 1) return;
-
-    const selectedLead = selectedLeads[0];
-    if (selectedLead.LeadStatus?.Status !== "Closure") return;
-
-    Toast.show(
-      `Opening deal submission for ${selectedLead.Name || "selected lead"}`,
-      {
-        duration: Toast.durations.SHORT,
-      }
-    );
-  }, [selectedLeads]);
-
-  const handleStatusFilter = useCallback(
-    (statusValue: string) => {
-      const currentSelectedStatuses = filters.selectedStatuses || [];
-      let newSelectedStatuses;
-
-      if (currentSelectedStatuses.includes(statusValue)) {
-        newSelectedStatuses = currentSelectedStatuses.filter(
-          (status) => status !== statusValue
-        );
-      } else {
-        newSelectedStatuses = [...currentSelectedStatuses, statusValue];
-      }
-
-      const newFilters = {
-        ...filters,
-        selectedStatuses: newSelectedStatuses,
-      };
-      updateFilters(newFilters);
-      setCurrentPage(0);
-
-      if (!statusCountsExpanded) {
-        setStatusCountsExpanded(true);
-      }
-    },
-    [filters, updateFilters, setCurrentPage, statusCountsExpanded]
-  );
-
-  useEffect(() => {
-    if (!user) return;
-
-    const fetchStatusCountsData = async () => {
-      setStatusCountsLoading(true);
       try {
-        const statusCountsData = await fetchStatusCounts(
-          user,
-          filters,
-          searchTerm
-        );
-        setStatusCounts(statusCountsData);
-      } catch (error) {
-        console.error(error);
-        setStatusCounts({});
+        setError(null);
+        if (append) {
+          setLoadingMore(true);
+        }
+
+        const response = await fetchCampaignsWithCounts(page, 20); // Load 20 items per page
+        const { data: campaignsData, pagination: paginationData } = response;
+
+        if (append) {
+          // Append new campaigns to existing list
+          setCampaigns((prev) => [...prev, ...campaignsData]);
+        } else {
+          // Replace campaigns (for refresh or initial load)
+          setCampaigns(campaignsData);
+        }
+
+        setPagination(paginationData || null);
+        setCurrentPage(page);
+      } catch (error: any) {
+        console.error("=== CAMPAIGNS ERROR DEBUG ===");
+        console.error("Full error object:", error);
+        console.error("Error message:", error?.message);
+        console.error("Error name:", error?.name);
+        console.error("Error stack:", error?.stack);
+        console.error("Error cause:", error?.cause);
+        console.error("User context:", {
+          userId: user?.id,
+          username: user?.username,
+        });
+        console.error("==============================");
+
+        const errorMessage = error?.message || "Failed to load campaigns";
+        setError(errorMessage);
+
+        if (errorMessage.includes("Authentication failed")) {
+          Toast.show("Session expired. Please login again.", {
+            duration: Toast.durations.LONG,
+          });
+          // Clear auth data - this will trigger the root layout to show login
+          setTimeout(async () => {
+            await clearAuthData();
+          }, 1500);
+        } else if (errorMessage.includes("Network request failed")) {
+          Toast.show(
+            "Cannot connect to server. Please check your connection.",
+            {
+              duration: Toast.durations.LONG,
+            }
+          );
+          // For network failures, also clear auth to force re-authentication
+          setTimeout(async () => {
+            await clearAuthData();
+          }, 2000);
+        } else {
+          Toast.show("Failed to load campaigns", {
+            duration: Toast.durations.SHORT,
+          });
+        }
       } finally {
-        setStatusCountsLoading(false);
-      }
-    };
-
-    fetchStatusCountsData();
-  }, [
-    user,
-    filters.selectedAgents,
-    filters.selectedStatuses,
-    filters.selectedSources,
-    filters.selectedTags,
-    filters.dateRange,
-    filters.dateFor,
-    filters.searchBoxFilters,
-    searchTerm,
-  ]);
-
-  /**
-   * Handle lead update from LeadCard component
-   */
-  const handleLeadUpdate = useCallback(
-    async (leadId: string, updates: any) => {
-      try {
-        await updateLead(user, leadId, updates);
-
-        setLocalLeads((prevLeads) =>
-          prevLeads.map((lead) =>
-            lead._id === leadId ? { ...lead, ...updates } : lead
-          )
-        );
-        Toast.show("Lead updated successfully", {
-          duration: Toast.durations.SHORT,
-        });
-        await refreshLeads();
-      } catch (error) {
-        console.error("Failed to update lead:", error);
-        Toast.show(`Failed to update lead: ${error.message}`, {
-          duration: Toast.durations.LONG,
-        });
-        throw error;
+        setLoading(false);
+        setLoadingMore(false);
       }
     },
-    [user, refreshLeads]
+    [user]
   );
 
-  const scrollToCard = useCallback((leadId: string) => {
-    const cardRef = leadCardRefs.current[leadId];
-    const scrollView = scrollViewRef.current;
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadCampaigns(1, false); // Reset to page 1
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadCampaigns]);
 
-    if (!cardRef || !scrollView) {
-      console.warn("❌ Missing refs for scrolling:", {
-        cardRef: !!cardRef,
-        scrollView: !!scrollView,
-      });
+  const loadMoreCampaigns = useCallback(async () => {
+    if (loadingMore || !pagination?.hasNextPage || isLoadingTriggered) {
       return;
     }
 
-    cardRef.measureLayout(
-      scrollView as any,
-      (x, y, width, height) => {
-        const totalOffset =
-          HEADER_HEIGHT + ACTION_BUTTONS_HEIGHT + SCROLL_PADDING;
+    setIsLoadingTriggered(true);
+    const nextPage = currentPage + 1;
+    await loadCampaigns(nextPage, true); // Append to existing data
+    setIsLoadingTriggered(false);
+  }, [loadCampaigns, loadingMore, pagination, currentPage, isLoadingTriggered]);
 
-        const targetY = Math.max(0, y - totalOffset);
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const { layoutMeasurement, contentOffset, contentSize } =
+        event.nativeEvent;
 
-        scrollView.scrollTo({
-          y: targetY,
-          animated: true,
-        });
-      },
-      (error) => {
-        console.warn("❌ measureLayout failed, trying measureInWindow:", error);
+      // Calculate how much of the content has been scrolled
+      const paddingToBottom = 500; // Start loading when 300px from bottom
+      const isCloseToBottom =
+        layoutMeasurement.height + contentOffset.y >=
+        contentSize.height - paddingToBottom;
 
-        cardRef.measureInWindow((x, y, width, height) => {
-          scrollView.scrollTo({ y: 0, animated: false });
+      const distanceFromBottom =
+        contentSize.height - (layoutMeasurement.height + contentOffset.y);
 
-          setTimeout(() => {
-            cardRef.measureInWindow((newX, newY, newWidth, newHeight) => {
-              const targetScrollY = Math.max(0, newY - 200);
-
-              scrollView.scrollTo({
-                y: targetScrollY,
-                animated: true,
-              });
-            });
-          }, MODAL_CLOSE_DELAY_SHORT / 2);
+      // Debug logging (can be removed later)
+      if (distanceFromBottom < 400) {
+        console.log(
+          `📊 Distance from bottom: ${Math.round(distanceFromBottom)}px`
+        );
+        console.log(`🔄 Loading states:`, {
+          loadingMore,
+          isLoadingTriggered,
+          hasNextPage: pagination?.hasNextPage,
+          currentPage,
+          totalPages: pagination?.totalPages,
         });
       }
-    );
+
+      // Trigger loading when close to bottom and not already loading
+      if (
+        isCloseToBottom &&
+        !loadingMore &&
+        !isLoadingTriggered &&
+        pagination?.hasNextPage
+      ) {
+        console.log("🚀 Triggering load more - user is near bottom");
+        console.log(
+          `📄 Loading page ${currentPage + 1} of ${pagination.totalPages}`
+        );
+        loadMoreCampaigns();
+      }
+    },
+    [
+      loadingMore,
+      isLoadingTriggered,
+      pagination,
+      loadMoreCampaigns,
+      currentPage,
+    ]
+  );
+
+  const handleCampaignPress = useCallback((campaign: Campaign) => {
+    // Navigate to leads list with this campaign/tag filter
+    const tagFilter = `${campaign.Tag}::${campaign._id}`;
+    router.push({
+      pathname: "/(tabs)/leads",
+      params: {
+        selectedTags: JSON.stringify([tagFilter]),
+        campaignName: campaign.Tag,
+      },
+    });
   }, []);
 
-  if (!user) return <LoadingView />;
+  useEffect(() => {
+    loadCampaigns();
+  }, [loadCampaigns]);
+
+  const renderCampaignCard = ({ item }: { item: Campaign }) => (
+    <TouchableOpacity
+      className="bg-white mx-4 mb-3 rounded-lg shadow-sm border border-gray-100"
+      onPress={() => handleCampaignPress(item)}
+      activeOpacity={0.7}
+    >
+      <View className="p-4">
+        <View className="flex-row justify-between items-center">
+          <View className="flex-1">
+            <Text className="text-lg font-semibold text-gray-900 mb-1">
+              {item.Tag}
+            </Text>
+            <View className="flex-col space-y-1">
+              <View className="flex-row items-center">
+                <Ionicons name="people" size={16} color="#6B7280" />
+                <Text className="text-sm text-gray-600 ml-2">
+                  {item.leadCount} lead{item.leadCount !== 1 ? "s" : ""}
+                </Text>
+              </View>
+              {item.pendingLeadsCount !== undefined && (
+                <View className="flex-row items-center">
+                  <Ionicons 
+                    name={item.pendingLeadsCount > 0 ? "time-outline" : "checkmark-circle-outline"} 
+                    size={16} 
+                    color={item.pendingLeadsCount > 0 ? "#F59E0B" : "#10B981"} 
+                  />
+                  <Text className={`text-sm ml-2 ${
+                    item.pendingLeadsCount > 0 ? "text-amber-600" : "text-emerald-600"
+                  }`}>
+                    {item.pendingLeadsCount}/{item.leadCount} pending
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+          <View className="flex-row items-center">
+            <View
+              className={`px-3 py-1 rounded-full ${
+                item.leadCount > 100
+                  ? "bg-green-100"
+                  : item.leadCount > 50
+                  ? "bg-yellow-100"
+                  : item.leadCount > 0
+                  ? "bg-blue-100"
+                  : "bg-gray-100"
+              }`}
+            >
+              <Text
+                className={`text-sm font-medium ${
+                  item.leadCount > 100
+                    ? "text-green-700"
+                    : item.leadCount > 50
+                    ? "text-yellow-700"
+                    : item.leadCount > 0
+                    ? "text-blue-700"
+                    : "text-gray-600"
+                }`}
+              >
+                {item.leadCount}
+              </Text>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color="#9CA3AF"
+              className="ml-2"
+            />
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderEmptyState = () => {
+    if (error) {
+      const isNetworkOrAuthError =
+        error.includes("Network request failed") ||
+        error.includes("Authentication failed");
+
+      return (
+        <View className="flex-1 justify-center items-center px-6">
+          <Ionicons name="warning-outline" size={64} color="#EF4444" />
+          <Text className="text-lg font-medium text-gray-900 mt-4 mb-2">
+            {isNetworkOrAuthError
+              ? "Connection Issue"
+              : "Unable to load campaigns"}
+          </Text>
+          <Text className="text-gray-600 text-center mb-4">
+            {isNetworkOrAuthError
+              ? "Cannot connect to server. Authentication will be cleared to resolve this issue."
+              : error}
+          </Text>
+          {!isNetworkOrAuthError && (
+            <TouchableOpacity
+              className="bg-miles-600 px-4 py-2 rounded-lg"
+              onPress={() => {
+                setError(null);
+                loadCampaigns();
+              }}
+            >
+              <Text className="text-white font-medium">Try Again</Text>
+            </TouchableOpacity>
+          )}
+          {isNetworkOrAuthError && (
+            <View className="flex-row items-center mt-2">
+              <ActivityIndicator size="small" color="#6B7280" />
+              <Text className="text-sm text-gray-500 ml-2">
+                Clearing auth...
+              </Text>
+            </View>
+          )}
+        </View>
+      );
+    }
+
+    return (
+      <View className="flex-1 justify-center items-center px-6">
+        <Ionicons name="pricetags-outline" size={64} color="#9CA3AF" />
+        <Text className="text-lg font-medium text-gray-900 mt-4 mb-2">
+          No campaigns found
+        </Text>
+        <Text className="text-gray-600 text-center">
+          Campaigns will appear here once tags are added to leads
+        </Text>
+      </View>
+    );
+  };
+
+  const renderHeader = () => (
+    <View className="bg-white px-4 pt-4 pb-2 border-b border-gray-200">
+      <Text className="text-2xl font-bold text-gray-900 mb-1">Campaigns</Text>
+      <Text className="text-gray-600">
+        {campaigns.length} campaign{campaigns.length !== 1 ? "s" : ""}
+        {pagination && ` of ${pagination.totalCount}`} •{" "}
+        {campaigns.reduce((total, campaign) => total + campaign.leadCount, 0)}{" "}
+        total leads
+      </Text>
+    </View>
+  );
+
+  const renderLoadingFooter = () => {
+    if (!loadingMore) return null;
+
+    return (
+      <View className="py-4 flex-row justify-center items-center">
+        <ActivityIndicator size="small" color="#059669" />
+        <Text className="text-gray-600 ml-2">Loading more campaigns...</Text>
+      </View>
+    );
+  };
+
+  // Show loading state only when not authenticated
+  if (!user) {
+    return (
+      <View className="flex-1 bg-gray-50 justify-center items-center">
+        <ActivityIndicator size="large" color="#059669" />
+        <Text className="text-gray-600 mt-4">Checking authentication...</Text>
+      </View>
+    );
+  }
+
+  if (loading && !refreshing) {
+    return (
+      <View className="flex-1 bg-gray-50 justify-center items-center">
+        <ActivityIndicator size="large" color="#059669" />
+        <Text className="text-gray-600 mt-4">Loading campaigns...</Text>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-gray-50">
-      <LeadsHeader
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        onFiltersPress={() => setShowFilters(true)}
-        selectedLeads={selectedLeads}
-        onClearSelection={clearSelection}
-      />
-
-      {!loading && leads?.length > 0 && (
-        <ActionButtons
-          selectedLeads={selectedLeads}
-          totalLeads={localLeads.length}
-          onSelectAll={handleSelectAll}
-          onClearSelection={clearSelection}
-          onExport={userPermissions.export ? handleExport : undefined}
-          onDelete={userPermissions.delete ? handleDelete : undefined}
-          onBulkActions={
-            userPermissions.mapLeads ? handleBulkActions : undefined
-          }
-          onHistory={userPermissions.mapLeads ? handleHistory : undefined}
-          onDealSubmission={handleDealSubmission}
-          isExporting={isExporting}
-          userPermissions={userPermissions}
-        />
-      )}
-
-      <LeadsContent
-        loading={loading}
-        leads={leads}
-        localLeads={localLeads}
-        searchTerm={searchTerm}
-        filters={filters}
-        statusOptions={statusOptions}
-        sourceOptions={sourceOptions}
-        statusCounts={statusCounts}
-        statusCountsLoading={statusCountsLoading}
-        statusCountsExpanded={statusCountsExpanded}
-        selectedLeads={selectedLeads}
-        userPermissions={userPermissions}
-        leadCardRefs={leadCardRefs}
-        scrollViewRef={scrollViewRef}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalLeads={totalLeads}
-        leadsPerPage={leadsPerPage}
-        paginationLoading={paginationLoading}
-        miles600={miles600}
-        onStatusCountsExpandedChange={setStatusCountsExpanded}
-        onStatusFilter={handleStatusFilter}
-        onClearStatusFilter={() => {
-          updateFilters({ ...filters, selectedStatuses: [] });
-          setCurrentPage(0);
-        }}
-        onLeadUpdate={handleLeadUpdate}
-        onPageChange={handlePageChange}
-        onModalOpen={(type, leadId, callback) => {
-          if (type === "Add Reminder") {
-            const modalId = "reminder-modal";
-            if (ModalManager.canOpenModal(modalId)) {
-              ModalManager.closeAllExcept(modalId);
-              openReminderModal(leadId, callback);
-              ModalManager.registerModal(modalId, closeReminderModal);
-            }
-          } else if (type === "Add Meeting") {
-            const modalId = "meeting-modal";
-            if (ModalManager.canOpenModal(modalId)) {
-              ModalManager.closeAllExcept(modalId);
-              openMeetingModal(leadId, callback);
-              ModalManager.registerModal(modalId, closeMeetingModal);
-            }
-          } else {
-            if (callback) callback();
-          }
-        }}
-        isLeadSelected={isLeadSelected}
-        toggleLeadSelection={toggleLeadSelection}
-        scrollToCard={scrollToCard}
-        setSearchTerm={setSearchTerm}
-        updateFilters={updateFilters}
-        setCurrentPage={setCurrentPage}
-      />
-
-      <LeadTypeModal
-        visible={headerDropdownOpen}
-        selectedType={filters.leadType || "marketing"}
-        onClose={() => setHeaderDropdownOpen(false)}
-        onTypeChange={handleLeadTypeChange}
-      />
-
-      <FiltersModal
-        visible={showFilters}
-        onClose={() => setShowFilters(false)}
-        filters={filters}
-        onFiltersChange={handleFiltersChange}
-        onLeadsDataChange={handleLeadsDataChange}
-        statusOptions={statusOptions}
-        sourceOptions={sourceOptions}
-        tagOptions={tagOptions}
-        agents={processAgentsForFilters(agents, user)}
-        searchBoxOptions={SEARCH_BOX_OPTIONS}
-        countOptions={COUNT_OPTIONS}
-        leadsData={{
-          leadsPerPage,
-          currentPage: currentPage + 1,
-        }}
-        onFetchTags={fetchTagOptions}
-        currentUser={user}
-      />
-
-      <ReminderModal
-        visible={showReminderModal}
-        onClose={() => {
-          ModalManager.unregisterModal("reminder-modal");
-          setTimeout(closeReminderModal, MODAL_CLOSE_DELAY_SHORT);
-        }}
-        leadId={reminderLeadId || ""}
-        assigneesOptions={getUsersFromAgents(agents)}
-        onSuccess={() => {
-          if (reminderCallback) {
-            setTimeout(() => {
-              reminderCallback();
-            }, CALLBACK_DELAY);
-          }
-
-          Toast.show("Reminder added successfully", {
-            duration: Toast.durations.SHORT,
-          });
-
-          ModalManager.unregisterModal("reminder-modal");
-          setTimeout(closeReminderModal, MODAL_CLOSE_DELAY_LONG);
-        }}
-      />
-
-      <MeetingModal
-        visible={showMeetingModal}
-        onClose={() => {
-          ModalManager.unregisterModal("meeting-modal");
-          setTimeout(closeMeetingModal, MODAL_CLOSE_DELAY_SHORT);
-        }}
-        leadId={meetingLeadId || ""}
-        assigneeOptions={getUsersFromAgents(agents)}
-        statusOptions={statusOptions}
-        onSuccess={() => {
-          if (meetingCallback) {
-            setTimeout(() => {
-              meetingCallback();
-            }, CALLBACK_DELAY);
-          }
-
-          Toast.show("Meeting scheduled successfully", {
-            duration: Toast.durations.SHORT,
-          });
-
-          ModalManager.unregisterModal("meeting-modal");
-          setTimeout(closeMeetingModal, MODAL_CLOSE_DELAY_LONG);
-        }}
-      />
-
-      <BulkModal
-        visible={showBulkModal}
-        onClose={() => setShowBulkModal(false)}
-        selectedLeads={selectedLeads}
-        onBulkOperationComplete={handleBulkOperationComplete}
-        statusOptions={statusOptions}
-        sourceOptions={sourceOptions}
-        agents={getFlattenedAgents(agents)}
-        tagOptions={tagOptions || []}
-        currentUser={user}
+      <FlatList
+        ref={flatListRef}
+        data={campaigns}
+        renderItem={renderCampaignCard}
+        keyExtractor={(item) => item._id}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={renderEmptyState}
+        ListFooterComponent={renderLoadingFooter}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        onScroll={handleScroll}
+        scrollEventThrottle={16} // Fire scroll events every 16ms for smooth detection
+        contentContainerStyle={
+          campaigns.length === 0
+            ? { flex: 1 }
+            : { paddingBottom: 20, paddingTop: 16 }
+        }
+        showsVerticalScrollIndicator={false}
+        removeClippedSubviews={true} // Optimize performance for long lists
+        maxToRenderPerBatch={10} // Render 10 items per batch for better performance
+        updateCellsBatchingPeriod={50} // Update batches every 50ms
+        initialNumToRender={20} // Render first 20 items immediately
       />
     </View>
   );
