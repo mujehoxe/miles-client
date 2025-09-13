@@ -1,4 +1,5 @@
-import { clearAuthData, fetchCampaignsWithCounts } from "@/services/api";
+import { clearAuthData } from "@/services/api";
+import { fetchCampaignsWithCounts } from "@/services/campaignApi";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, {
@@ -76,18 +77,6 @@ export default function CampaignsTab() {
         setPagination(paginationData || null);
         setCurrentPage(page);
       } catch (error: any) {
-        console.error("=== CAMPAIGNS ERROR DEBUG ===");
-        console.error("Full error object:", error);
-        console.error("Error message:", error?.message);
-        console.error("Error name:", error?.name);
-        console.error("Error stack:", error?.stack);
-        console.error("Error cause:", error?.cause);
-        console.error("User context:", {
-          userId: user?.id,
-          username: user?.username,
-        });
-        console.error("==============================");
-
         const errorMessage = error?.message || "Failed to load campaigns";
         setError(errorMessage);
 
@@ -157,19 +146,6 @@ export default function CampaignsTab() {
       const distanceFromBottom =
         contentSize.height - (layoutMeasurement.height + contentOffset.y);
 
-      // Debug logging (can be removed later)
-      if (distanceFromBottom < 400) {
-        console.log(
-          `📊 Distance from bottom: ${Math.round(distanceFromBottom)}px`
-        );
-        console.log(`🔄 Loading states:`, {
-          loadingMore,
-          isLoadingTriggered,
-          hasNextPage: pagination?.hasNextPage,
-          currentPage,
-          totalPages: pagination?.totalPages,
-        });
-      }
 
       // Trigger loading when close to bottom and not already loading
       if (
@@ -178,10 +154,6 @@ export default function CampaignsTab() {
         !isLoadingTriggered &&
         pagination?.hasNextPage
       ) {
-        console.log("🚀 Triggering load more - user is near bottom");
-        console.log(
-          `📄 Loading page ${currentPage + 1} of ${pagination.totalPages}`
-        );
         loadMoreCampaigns();
       }
     },
@@ -195,13 +167,13 @@ export default function CampaignsTab() {
   );
 
   const handleCampaignPress = useCallback((campaign: Campaign) => {
-    // Navigate to leads list with this campaign/tag filter
-    const tagFilter = `${campaign.Tag}::${campaign._id}`;
+    // Navigate to dedicated campaign details page
     router.push({
-      pathname: "/(tabs)/leads",
+      pathname: `/campaign-details/${campaign._id}`,
       params: {
-        selectedTags: JSON.stringify([tagFilter]),
-        campaignName: campaign.Tag,
+        name: campaign.Tag,
+        totalLeads: campaign.leadCount.toString(),
+        pendingLeads: (campaign.pendingLeadsCount || 0).toString(),
       },
     });
   }, []);
@@ -222,28 +194,31 @@ export default function CampaignsTab() {
             <Text className="text-lg font-semibold text-gray-900 mb-1">
               {item.Tag}
             </Text>
-            <View className="flex-col space-y-1">
-              <View className="flex-row items-center">
-                <Ionicons name="people" size={16} color="#6B7280" />
-                <Text className="text-sm text-gray-600 ml-2">
-                  {item.leadCount} lead{item.leadCount !== 1 ? "s" : ""}
+            {/* Pending leads indicator */}
+            {item.pendingLeadsCount !== undefined && (
+              <View className="flex-row items-center mt-1">
+                <Ionicons 
+                  name={item.pendingLeadsCount > 0 ? "time-outline" : "checkmark-circle-outline"} 
+                  size={16} 
+                  color={
+                    item.pendingLeadsCount === 0 
+                      ? "#10B981" // Green when no pending leads
+                      : item.pendingLeadsCount <= Math.floor(item.leadCount * 0.2)
+                      ? "#F59E0B" // Amber when <= 20% pending  
+                      : "#EF4444" // Red when > 20% pending
+                  } 
+                />
+                <Text className={`text-sm ml-2 font-medium ${
+                  item.pendingLeadsCount === 0 
+                    ? "text-emerald-600" // Green when no pending leads
+                    : item.pendingLeadsCount <= Math.floor(item.leadCount * 0.2)
+                    ? "text-amber-600" // Amber when <= 20% pending
+                    : "text-red-600" // Red when > 20% pending
+                }`}>
+                  {item.pendingLeadsCount}/{item.leadCount} pending
                 </Text>
               </View>
-              {item.pendingLeadsCount !== undefined && (
-                <View className="flex-row items-center">
-                  <Ionicons 
-                    name={item.pendingLeadsCount > 0 ? "time-outline" : "checkmark-circle-outline"} 
-                    size={16} 
-                    color={item.pendingLeadsCount > 0 ? "#F59E0B" : "#10B981"} 
-                  />
-                  <Text className={`text-sm ml-2 ${
-                    item.pendingLeadsCount > 0 ? "text-amber-600" : "text-emerald-600"
-                  }`}>
-                    {item.pendingLeadsCount}/{item.leadCount} pending
-                  </Text>
-                </View>
-              )}
-            </View>
+            )}
           </View>
           <View className="flex-row items-center">
             <View
@@ -338,18 +313,6 @@ export default function CampaignsTab() {
     );
   };
 
-  const renderHeader = () => (
-    <View className="bg-white px-4 pt-4 pb-2 border-b border-gray-200">
-      <Text className="text-2xl font-bold text-gray-900 mb-1">Campaigns</Text>
-      <Text className="text-gray-600">
-        {campaigns.length} campaign{campaigns.length !== 1 ? "s" : ""}
-        {pagination && ` of ${pagination.totalCount}`} •{" "}
-        {campaigns.reduce((total, campaign) => total + campaign.leadCount, 0)}{" "}
-        total leads
-      </Text>
-    </View>
-  );
-
   const renderLoadingFooter = () => {
     if (!loadingMore) return null;
 
@@ -382,14 +345,13 @@ export default function CampaignsTab() {
 
   return (
     <View className="flex-1 bg-gray-50">
-      <FlatList
-        ref={flatListRef}
-        data={campaigns}
-        renderItem={renderCampaignCard}
-        keyExtractor={(item) => item._id}
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={renderEmptyState}
-        ListFooterComponent={renderLoadingFooter}
+        <FlatList
+          ref={flatListRef}
+          data={campaigns}
+          renderItem={renderCampaignCard}
+          keyExtractor={(item) => item._id}
+          ListEmptyComponent={renderEmptyState}
+          ListFooterComponent={renderLoadingFooter}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -398,7 +360,7 @@ export default function CampaignsTab() {
         contentContainerStyle={
           campaigns.length === 0
             ? { flex: 1 }
-            : { paddingBottom: 20, paddingTop: 16 }
+            : { paddingBottom: 20, paddingTop: 20 }
         }
         showsVerticalScrollIndicator={false}
         removeClippedSubviews={true} // Optimize performance for long lists

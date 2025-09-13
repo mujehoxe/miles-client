@@ -6,8 +6,6 @@ export * from './types';
 // Authentication
 export { createAuthHeaders, validateAuthToken, clearAuthData } from './auth';
 
-// Campaigns
-export { fetchCampaignsWithCounts } from './campaigns';
 
 // Leads
 export { fetchLeads, buildLeadsRequestBody, getLeadMeetings } from './leads';
