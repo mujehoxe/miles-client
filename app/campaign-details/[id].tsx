@@ -45,6 +45,7 @@ interface Lead {
   }>;
   lastComment?: {
     Content: string;
+    CreatedAt: string;
   };
   commentCount?: number;
   timestamp?: string;
@@ -62,16 +63,6 @@ export default function CampaignDetailsPage() {
   const campaignName = params.name as string;
   const totalLeads = parseInt(params.totalLeads as string) || 0;
   const pendingLeads = parseInt(params.pendingLeads as string) || 0;
-  
-  console.log('=== CAMPAIGN PARAMS DEBUG ===');
-  console.log('Campaign params:', {
-    id: campaignId,
-    name: campaignName,
-    totalLeads,
-    pendingLeads,
-    rawParams: params
-  });
-  console.log('=============================');
 
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,13 +89,6 @@ export default function CampaignDetailsPage() {
           setLoadingMore(true);
         }
 
-        console.log("=== CAMPAIGN LEADS DEBUG ===");
-        console.log("Campaign ID:", campaignId);
-        console.log("Campaign Name:", campaignName);
-        console.log("User ID:", user.id);
-        console.log("Total leads expected:", totalLeads);
-        console.log("Page:", page, "Limit:", leadsPerPage);
-
         // Use the campaign-specific API with pending-first sorting
         const campaignFilters = {
           campaignName: campaignName,
@@ -113,31 +97,6 @@ export default function CampaignDetailsPage() {
         };
 
         const response = await fetchCampaignLeads(campaignFilters);
-
-        console.log("Response:", {
-          totalLeads: response.totalLeads,
-          dataLength: response.data.length,
-          sampleLeads: response.data
-            .slice(0, 3)
-            .map((lead) => ({ id: lead._id, name: lead.Name })),
-        });
-        
-        // Debug lead statuses
-        console.log('=== LEAD STATUS DEBUG ===');
-        const statusBreakdown = response.data.reduce((acc: any, lead: any) => {
-          const status = lead.LeadStatus?.Status || 'No Status';
-          acc[status] = (acc[status] || 0) + 1;
-          return acc;
-        }, {});
-        console.log('Status breakdown:', statusBreakdown);
-        console.log('Sample lead statuses:', response.data.slice(0, 5).map((lead: any) => ({
-          name: lead.Name,
-          status: lead.LeadStatus?.Status || 'No Status',
-          statusId: lead.LeadStatus?._id,
-          statusColor: lead.LeadStatus?.color
-        })));
-        console.log('========================');
-        console.log("=============================");
 
         if (append) {
           setLeads((prev) => [...prev, ...response.data]);
@@ -149,9 +108,6 @@ export default function CampaignDetailsPage() {
         const totalPages = Math.ceil(response.totalLeads / leadsPerPage);
         setHasMorePages(page + 1 < totalPages);
       } catch (error: any) {
-        console.error("=== CAMPAIGN LEADS ERROR ===");
-        console.error("Error:", error);
-
         const errorMessage = error?.message || "Failed to load campaign leads";
         setError(errorMessage);
 
@@ -202,7 +158,6 @@ export default function CampaignDetailsPage() {
         !isLoadingTriggered &&
         hasMorePages
       ) {
-        console.log("🚀 Loading more campaign leads...");
         loadMoreLeads();
       }
     },
@@ -213,50 +168,100 @@ export default function CampaignDetailsPage() {
     router.push(`/lead-details/${lead._id}`);
   }, []);
 
+  // Helper function to determine text color based on background color
+  const getTextColorForBackground = (backgroundColor: string): string => {
+    // Remove # if present
+    const hex = backgroundColor.replace("#", "");
+
+    // Convert hex to RGB
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+
+    // Calculate luminance
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+    // Return white for dark backgrounds, dark for light backgrounds
+    return luminance > 0.6 ? "#1F2937" : "#FFFFFF";
+  };
+
   useEffect(() => {
     loadLeads();
   }, [loadLeads]);
 
-  const renderLeadCard = ({ item }: { item: Lead }) => {
+  const renderLeadCard = ({ item: lead }: { item: Lead }) => {
     try {
-      console.log('Rendering lead card for:', item._id, item.Name);
-      
-      // Temporary simplified render to isolate the issue
+      // Get status color and text color
+      const statusColor = lead.LeadStatus?.color || "#6B7280"; // Default to gray
+      const statusTextColor = getTextColorForBackground(statusColor);
+
       return (
         <TouchableOpacity
-          className="bg-white mx-4 mb-2 rounded-lg border border-gray-100 p-3"
-          onPress={() => handleLeadPress(item)}
+          className="flex flex-col bg-white mx-4 mb-3 rounded-xl border border-gray-100 p-4 shadow-sm"
+          onPress={() => handleLeadPress(lead)}
           activeOpacity={0.7}
         >
-          <View className="flex-row justify-between items-center">
-            <View className="flex-1">
-              <Text className="text-base font-semibold text-gray-900">
-                {String(item.Name || 'Unknown Lead')}
+          <View className="flex-row justify-between items-start">
+            <View className="flex-1 mr-4">
+              <Text className="text-lg font-semibold text-gray-900 mb-2">
+                {String(lead.Name || "Unknown Lead")}
               </Text>
-              {item.Description && (
-                <Text className="text-sm text-gray-600 mt-1">
-                  {String(item.Description).substring(0, 50)}...
-                </Text>
-              )}
             </View>
-            {item.LeadStatus && (
-              <View className="px-2 py-1 rounded bg-gray-100">
-                <Text className="text-xs">
-                  {String(item.LeadStatus.Status || 'No Status')}
-                </Text>
+
+            {/* Status badge with proper coloring */}
+            {lead.LeadStatus && (
+              <View className="items-end">
+                <View
+                  className="px-3 py-1 rounded-full items-center shadow-sm"
+                  style={{ backgroundColor: statusColor + "10" }}
+                >
+                  <Text
+                    className="text-xs font-semibold text-center"
+                    style={{ color: statusColor }}
+                  >
+                    {lead.LeadStatus.Status}
+                  </Text>
+                </View>
               </View>
+            )}
+          </View>
+
+          <View>
+            {lead.lastComment?.Content ? (
+              <Text className="text-sm line-clamp-2 text-gray-600 leading-relaxed mt-2">
+                {lead.lastComment.Content}
+              </Text>
+            ) : (
+              <Text className="text-sm line-clamp-2 text-gray-600 leading-relaxed mt-2">
+                {lead.Description}
+              </Text>
+            )}
+
+            {/* Lead assigned date */}
+            {lead.lastComment?.CreatedAt ? (
+              <Text className="text-right text-xs text-gray-500">
+                {new Date(lead.lastComment.CreatedAt).toLocaleDateString()}
+              </Text>
+            ) : (
+              lead.LeadAssignedDate && (
+                <Text className="text-right text-xs text-gray-500">
+                  {new Date(lead.LeadAssignedDate).toLocaleDateString()}
+                </Text>
+              )
             )}
           </View>
         </TouchableOpacity>
       );
-      
+
       // Original CompactLeadCard - commented out temporarily
       // return <CompactLeadCard lead={item} onPress={() => handleLeadPress(item)} />;
     } catch (error) {
-      console.error('Error rendering lead card:', error);
+      console.error("Error rendering lead card:", error);
       return (
         <View className="bg-white mx-4 mb-2 rounded-lg border border-red-200 p-3">
-          <Text className="text-red-600">Error rendering lead: {String(item.Name || 'Unknown')}</Text>
+          <Text className="text-red-600">
+            Error rendering lead: {String(lead.Name || "Unknown")}
+          </Text>
         </View>
       );
     }
@@ -321,7 +326,9 @@ export default function CampaignDetailsPage() {
           <Text className="text-lg font-medium text-gray-900 mt-4 mb-2">
             Unable to load leads
           </Text>
-          <Text className="text-gray-600 text-center mb-4">{String(error || 'Unknown error')}</Text>
+          <Text className="text-gray-600 text-center mb-4">
+            {String(error || "Unknown error")}
+          </Text>
           <TouchableOpacity
             className="bg-miles-600 px-4 py-2 rounded-lg"
             onPress={() => {
