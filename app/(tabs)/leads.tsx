@@ -288,7 +288,7 @@ export default function LeadsPage() {
         prevLeads.filter((lead) => !leadIds.includes(lead._id))
       );
       clearSelection();
-      await refreshLeads();
+      // Note: Removed refreshLeads() since we already updated local state
 
       Toast.show(
         `${leadIds.length} lead${
@@ -304,7 +304,7 @@ export default function LeadsPage() {
         duration: Toast.durations.LONG,
       });
     }
-  }, [selectedLeads, clearSelection, refreshLeads]);
+  }, [selectedLeads, clearSelection]);
 
   const handleBulkActions = useCallback(() => {
     if (selectedLeads.length === 0) {
@@ -408,17 +408,45 @@ export default function LeadsPage() {
   const handleLeadUpdate = useCallback(
     async (leadId: string, updates: any) => {
       try {
-        await updateLead(user, leadId, updates);
+        await updateLead(leadId, updates);
 
         setLocalLeads((prevLeads) =>
-          prevLeads.map((lead) =>
-            lead._id === leadId ? { ...lead, ...updates } : lead
-          )
+          prevLeads.map((lead) => {
+            if (lead._id === leadId) {
+              const updatedLead = { ...lead, ...updates };
+              
+              // Update lastCalled timestamp if there's a status change or comment
+              if (updates.updateDescription || 
+                  (updates.LeadStatus && updates.LeadStatus._id !== lead.LeadStatus?._id)) {
+                updatedLead.lastCalled = Date.now();
+              }
+              
+              // If there's an update description, create a new lastComment
+              if (updates.updateDescription && updates.updateDescription.trim()) {
+                updatedLead.lastComment = {
+                  Content: updates.updateDescription,
+                  UserId: user.id,
+                  timestamp: Date.now(),
+                  // Add user info if available for display
+                  User: {
+                    username: user.username || user.name || 'Current User'
+                  }
+                };
+                // Increment the visible comment count
+                updatedLead.visibleCommentCount = (lead.visibleCommentCount || 0) + 1;
+              }
+              
+              return updatedLead;
+            }
+            return lead;
+          })
         );
+        
         Toast.show("Lead updated successfully", {
           duration: Toast.durations.SHORT,
         });
-        await refreshLeads();
+        
+        // Note: Removed refreshLeads() call to avoid unnecessary network request
       } catch (error) {
         console.error("Failed to update lead:", error);
         Toast.show(`Failed to update lead: ${error.message}`, {
@@ -427,7 +455,7 @@ export default function LeadsPage() {
         throw error;
       }
     },
-    [user, refreshLeads]
+    [user]
   );
 
   const scrollToCard = useCallback((leadId: string) => {
