@@ -67,8 +67,13 @@ export default function CampaignsTab() {
         const { data: campaignsData, pagination: paginationData } = response;
 
         if (append) {
-          // Append new campaigns to existing list
-          setCampaigns((prev) => [...prev, ...campaignsData]);
+          // Append new campaigns to existing list with deduplication
+          setCampaigns((prev) => {
+            const existingTagNames = new Set(prev.map(c => c.Tag));
+            const newCampaigns = campaignsData.filter(c => !existingTagNames.has(c.Tag));
+            console.log(`Appending ${newCampaigns.length} new campaigns (filtered out ${campaignsData.length - newCampaigns.length} duplicates)`);
+            return [...prev, ...newCampaigns];
+          });
         } else {
           // Replace campaigns (for refresh or initial load)
           setCampaigns(campaignsData);
@@ -95,10 +100,7 @@ export default function CampaignsTab() {
               duration: Toast.durations.LONG,
             }
           );
-          // For network failures, also clear auth to force re-authentication
-          setTimeout(async () => {
-            await clearAuthData();
-          }, 2000);
+          // Network errors don't require clearing auth - user can retry when connection is restored
         } else {
           Toast.show("Failed to load campaigns", {
             duration: Toast.durations.SHORT,
@@ -260,24 +262,27 @@ export default function CampaignsTab() {
 
   const renderEmptyState = () => {
     if (error) {
-      const isNetworkOrAuthError =
-        error.includes("Network request failed") ||
-        error.includes("Authentication failed");
+      const isNetworkError = error.includes("Network request failed");
+      const isAuthError = error.includes("Authentication failed");
 
       return (
         <View className="flex-1 justify-center items-center px-6">
           <Ionicons name="warning-outline" size={64} color="#EF4444" />
           <Text className="text-lg font-medium text-gray-900 mt-4 mb-2">
-            {isNetworkOrAuthError
+            {isNetworkError
               ? "Connection Issue"
+              : isAuthError
+              ? "Authentication Issue"
               : "Unable to load campaigns"}
           </Text>
           <Text className="text-gray-600 text-center mb-4">
-            {isNetworkOrAuthError
-              ? "Cannot connect to server. Authentication will be cleared to resolve this issue."
+            {isNetworkError
+              ? "Cannot connect to server. Please check your internet connection and try again."
+              : isAuthError
+              ? "Your session has expired. Please log in again."
               : error}
           </Text>
-          {!isNetworkOrAuthError && (
+          {(isNetworkError || (!isNetworkError && !isAuthError)) && (
             <TouchableOpacity
               className="bg-miles-600 px-4 py-2 rounded-lg"
               onPress={() => {
@@ -288,11 +293,11 @@ export default function CampaignsTab() {
               <Text className="text-white font-medium">Try Again</Text>
             </TouchableOpacity>
           )}
-          {isNetworkOrAuthError && (
+          {isAuthError && (
             <View className="flex-row items-center mt-2">
               <ActivityIndicator size="small" color="#6B7280" />
               <Text className="text-sm text-gray-500 ml-2">
-                Clearing auth...
+                Clearing authentication...
               </Text>
             </View>
           )}
@@ -349,7 +354,7 @@ export default function CampaignsTab() {
           ref={flatListRef}
           data={campaigns}
           renderItem={renderCampaignCard}
-          keyExtractor={(item) => item._id}
+          keyExtractor={(item, index) => `${item._id || item.Tag}-${index}`}
           ListEmptyComponent={renderEmptyState}
           ListFooterComponent={renderLoadingFooter}
         refreshControl={
