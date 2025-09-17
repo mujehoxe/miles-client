@@ -39,7 +39,7 @@ export default function RootLayout() {
             setUser(decodedToken);
           }
         } catch (tokenError) {
-          console.error('[iOS Debug] Token decode error in _layout:', tokenError);
+          console.error("Token decode error in _layout:", tokenError);
           await handleLogout();
         }
       }
@@ -59,7 +59,7 @@ export default function RootLayout() {
       setToken(null);
       setUser(null);
     } catch (error) {
-      console.error('Logout cleanup error:', error);
+      console.error("Logout cleanup error:", error);
       // Even if cleanup fails, reset the state
       setToken(null);
       setUser(null);
@@ -108,18 +108,17 @@ export default function RootLayout() {
 
   const handleLoginSuccess = async (newToken: string) => {
     try {
-      
       // Decode token first to validate it
       const decodedToken = jwtDecode(newToken) as { id: string; exp?: number };
 
       // Store token
-      await SecureStore.setItemAsync("userToken", newToken);      
+      await SecureStore.setItemAsync("userToken", newToken);
 
       // Update app state
       setToken(newToken);
       setUser(decodedToken);
     } catch (error) {
-      console.error('[iOS Debug] Login success handler error:', error);
+      console.error("Login success handler error:", error);
       throw error; // Re-throw so the login component can handle it
     }
   };
