@@ -12,6 +12,7 @@ import {
 import Toast from "react-native-root-toast";
 import { addLeadComment, fetchLeadComments } from "../../services/api";
 import { formatTimestamp } from "../../utils/dateFormatter";
+import LoadingView from "../LoadingView";
 
 interface Lead {
   _id: string;
@@ -119,7 +120,7 @@ const CommentsTab: React.FC<CommentsTabProps> = ({ lead }) => {
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" color="#3B82F6" />
+        <LoadingView />
         <Text className="text-gray-500 mt-2">Loading comments...</Text>
       </View>
     );

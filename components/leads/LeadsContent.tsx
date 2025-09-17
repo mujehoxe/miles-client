@@ -2,7 +2,6 @@ import { FilterOption, FilterOptions } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -11,6 +10,7 @@ import {
   View,
 } from "react-native";
 import LeadCard from "../LeadCard";
+import LoadingView from "../LoadingView";
 import Pagination from "../Pagination";
 import StatusCounts from "../StatusCounts";
 
@@ -84,7 +84,7 @@ export default function LeadsContent({
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center gap-4">
-        <ActivityIndicator size="large" color={miles600} />
+        <LoadingView />
         <Text className="text-base text-gray-500">Loading leads...</Text>
       </View>
     );

@@ -3,7 +3,6 @@ import { formatTimestamp } from "@/utils/dateFormatter";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   RefreshControl,
   ScrollView,
   Text,
@@ -11,6 +10,7 @@ import {
   View,
 } from "react-native";
 import Toast from "react-native-root-toast";
+import LoadingView from "../LoadingView";
 
 interface Lead {
   _id: string;
@@ -46,13 +46,12 @@ const MeetingsTab: React.FC<MeetingsTabProps> = ({ lead }) => {
 
   const fetchMeetings = useCallback(async () => {
     try {
-            const meetingsData = await getLeadMeetings(lead._id);
+      const meetingsData = await getLeadMeetings(lead._id);
 
-            const finalMeetings = meetingsData || [];
+      const finalMeetings = meetingsData || [];
       setMeetings(finalMeetings);
       setError(null);
-
-          } catch (err: any) {
+    } catch (err: any) {
       console.error({
         error: err,
         message: err.message,
@@ -109,7 +108,7 @@ const MeetingsTab: React.FC<MeetingsTabProps> = ({ lead }) => {
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center bg-white p-4">
-        <ActivityIndicator size="large" color="#3B82F6" />
+        <LoadingView />
         <Text className="text-gray-500 mt-2">Loading meetings...</Text>
       </View>
     );

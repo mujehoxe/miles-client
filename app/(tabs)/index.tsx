@@ -1,3 +1,4 @@
+import LoadingView from "@/components/LoadingView";
 import { clearAuthData } from "@/services/api/auth";
 import { fetchCampaignsWithCounts } from "@/services/campaignApi";
 import { Ionicons } from "@expo/vector-icons";
@@ -10,7 +11,6 @@ import React, {
   useState,
 } from "react";
 import {
-  ActivityIndicator,
   FlatList,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -58,7 +58,7 @@ export default function CampaignsTab() {
 
       try {
         setError(null);
-        
+
         if (append) {
           setLoadingMore(true);
         } else {
@@ -81,7 +81,7 @@ export default function CampaignsTab() {
         } else {
           // Replace campaigns (for refresh or initial load)
           setCampaigns(campaignsData);
-          
+
           // Use setTimeout to delay loading state change until after render
           setTimeout(() => {
             setLoading(false);
@@ -113,7 +113,7 @@ export default function CampaignsTab() {
             duration: Toast.durations.SHORT,
           });
         }
-        
+
         // Set both loading states to false on error
         setLoading(false);
         setLoadingMore(false);
@@ -316,7 +316,7 @@ export default function CampaignsTab() {
           )}
           {isAuthError && (
             <View className="flex-row items-center mt-2">
-              <ActivityIndicator size="small" color="#6B7280" />
+              <LoadingView />
               <Text className="text-sm text-gray-500 ml-2">
                 Clearing authentication...
               </Text>
@@ -344,7 +344,7 @@ export default function CampaignsTab() {
 
     return (
       <View className="py-4 flex-row justify-center items-center">
-        <ActivityIndicator size="small" color="#059669" />
+        <LoadingView />
         <Text className="text-gray-600 ml-2">Loading more campaigns...</Text>
       </View>
     );
@@ -354,7 +354,7 @@ export default function CampaignsTab() {
   if (!user) {
     return (
       <View className="flex-1 bg-gray-50 justify-center items-center">
-        <ActivityIndicator size="large" color="#059669" />
+        <LoadingView />
         <Text className="text-gray-600 mt-4">Checking authentication...</Text>
       </View>
     );
@@ -363,7 +363,7 @@ export default function CampaignsTab() {
   if (loading && !refreshing) {
     return (
       <View className="flex-1 bg-gray-50 justify-center items-center">
-        <ActivityIndicator size="large" color="#059669" />
+        <LoadingView />
         <Text className="text-gray-600 mt-4">Loading campaigns...</Text>
       </View>
     );

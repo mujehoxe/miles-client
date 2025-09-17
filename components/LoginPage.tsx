@@ -143,7 +143,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               resizeMode="contain"
               accessibilityLabel="Miles Homes Real Estate Logo"
               onError={() => {
-                                setLogoError(true);
+                setLogoError(true);
               }}
             />
           ) : (

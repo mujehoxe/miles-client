@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   RefreshControl,
   ScrollView,
   Text,
@@ -10,6 +9,7 @@ import {
 } from "react-native";
 import Toast from "react-native-root-toast";
 import { getLeadReminders } from "../../services/api";
+import LoadingView from "../LoadingView";
 
 interface Lead {
   _id: string;
@@ -49,9 +49,9 @@ const RemindersTab: React.FC<RemindersTabProps> = ({ lead }) => {
       }
       setError(null);
 
-            const leadReminders = await getLeadReminders(lead._id);
+      const leadReminders = await getLeadReminders(lead._id);
       setReminders(leadReminders);
-          } catch (err: any) {
+    } catch (err: any) {
       console.error("API Error:", err);
       setError(err.message || "Failed to load reminders");
       Toast.show("Failed to load reminders", {
@@ -192,7 +192,7 @@ const RemindersTab: React.FC<RemindersTabProps> = ({ lead }) => {
   if (loading && !refreshing) {
     return (
       <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" color="#3B82F6" />
+        <LoadingView />
         <Text className="text-gray-500 mt-2">Loading reminders...</Text>
       </View>
     );

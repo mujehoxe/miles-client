@@ -2,7 +2,6 @@ import { bulkUpdateLeads, fetchTagOptions } from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   Modal,
   ScrollView,
   Text,
@@ -11,6 +10,7 @@ import {
   View,
 } from "react-native";
 import Toast from "react-native-root-toast";
+import LoadingView from "./LoadingView";
 import MultiSelectModal from "./MultiSelectModal";
 import SearchableDropdown from "./SearchableDropdown";
 
@@ -73,7 +73,7 @@ const BulkModal: React.FC<BulkModalProps> = ({
   // Update local tag options when initialTagOptions change
   useEffect(() => {
     if (initialTagOptions && initialTagOptions.length > 0) {
-            setTagOptions(initialTagOptions);
+      setTagOptions(initialTagOptions);
     }
   }, [initialTagOptions]);
 
@@ -117,8 +117,8 @@ const BulkModal: React.FC<BulkModalProps> = ({
 
   // Debug options data
   useEffect(() => {
-        if (initialTagOptions && initialTagOptions.length > 0) {
-          }
+    if (initialTagOptions && initialTagOptions.length > 0) {
+    }
   }, [
     statusOptions,
     sourceOptions,
@@ -355,7 +355,7 @@ const BulkModal: React.FC<BulkModalProps> = ({
             <Text className="text-lg font-semibold text-gray-900">
               Bulk Actions
             </Text>
-            {loading && <ActivityIndicator size="small" color="#176298" />}
+            {loading && <LoadingView />}
           </View>
           <View className="w-6" />
           {/* Spacer for center alignment */}

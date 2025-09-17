@@ -1,9 +1,9 @@
+import LoadingView from "@/components/LoadingView";
 import { getUserPermissions } from "@/utils/userPermissions";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   SafeAreaView,
   ScrollView,
   Text,
@@ -141,7 +141,7 @@ export default function LeadDetailsPage() {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#3B82F6" />
+          <LoadingView />
           <Text className="text-gray-500 mt-2">Loading lead details...</Text>
         </View>
       </SafeAreaView>

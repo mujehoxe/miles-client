@@ -1,3 +1,4 @@
+import LoadingView from "@/components/LoadingView";
 import { fetchCampaignLeads } from "@/services/campaignApi";
 import { Ionicons } from "@expo/vector-icons";
 import { router, Stack, useLocalSearchParams } from "expo-router";
@@ -9,7 +10,6 @@ import React, {
   useState,
 } from "react";
 import {
-  ActivityIndicator,
   FlatList,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -301,7 +301,7 @@ export default function CampaignDetailsPage() {
 
     return (
       <View className="py-4 flex-row justify-center items-center">
-        <ActivityIndicator size="small" color="#059669" />
+        <LoadingView />
         <Text className="text-gray-600 ml-2">Loading more leads...</Text>
       </View>
     );
@@ -357,7 +357,7 @@ export default function CampaignDetailsPage() {
           }}
         />
         <View className="flex-1 bg-gray-50 justify-center items-center">
-          <ActivityIndicator size="large" color="#059669" />
+          <LoadingView />
           <Text className="text-gray-600 mt-4">Checking authentication...</Text>
         </View>
       </>
@@ -374,7 +374,7 @@ export default function CampaignDetailsPage() {
           }}
         />
         <View className="flex-1 bg-gray-50 justify-center items-center">
-          <ActivityIndicator size="large" color="#059669" />
+          <LoadingView />
           <Text className="text-gray-600 mt-4">Loading campaign leads...</Text>
         </View>
       </>

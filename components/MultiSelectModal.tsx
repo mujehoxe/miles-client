@@ -266,8 +266,8 @@ export default function MultiSelectModal({
                 layoutMeasurement.height + contentOffset.y >=
                 contentSize.height - loadMoreBuffer;
 
-                            if (isNearBottom && lazyLoad && hasMore && !loadingMore) {
-                                loadMoreOptions();
+              if (isNearBottom && lazyLoad && hasMore && !loadingMore) {
+                loadMoreOptions();
               }
             }}
             onScrollEndDrag={({ nativeEvent }) => {
@@ -279,8 +279,8 @@ export default function MultiSelectModal({
                 layoutMeasurement.height + contentOffset.y >=
                 contentSize.height - loadMoreBuffer;
 
-                            if (isNearBottom && lazyLoad && hasMore && !loadingMore) {
-                                loadMoreOptions();
+              if (isNearBottom && lazyLoad && hasMore && !loadingMore) {
+                loadMoreOptions();
               }
             }}
             onMomentumScrollEnd={({ nativeEvent }) => {
@@ -292,15 +292,15 @@ export default function MultiSelectModal({
                 layoutMeasurement.height + contentOffset.y >=
                 contentSize.height - loadMoreBuffer;
 
-                            if (isNearBottom && lazyLoad && hasMore && !loadingMore) {
-                                loadMoreOptions();
+              if (isNearBottom && lazyLoad && hasMore && !loadingMore) {
+                loadMoreOptions();
               }
             }}
             scrollEventThrottle={100}
           >
             {loading ? (
               <View className="flex-1 justify-center items-center p-8">
-                <ActivityIndicator size="large" color="#3B82F6" />
+                <LoadingView />
                 <Text className="mt-3 text-base text-gray-500">
                   Loading options...
                 </Text>

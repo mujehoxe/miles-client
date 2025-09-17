@@ -15,8 +15,8 @@ import { useNavigationHeader } from "@/hooks/useNavigationHeader";
 import useOneSignal from "@/hooks/useOneSignal";
 import { usePagination } from "@/hooks/usePagination";
 import { useSearchDebounce } from "@/hooks/useSearchDebounce";
-import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 
 import { ScrollView, View } from "react-native";
 
@@ -152,7 +152,7 @@ export default function LeadsPage() {
 
   // Handle campaign filtering from URL params
   useEffect(() => {
-    if (params.selectedTags && typeof params.selectedTags === 'string') {
+    if (params.selectedTags && typeof params.selectedTags === "string") {
       try {
         const tags = JSON.parse(params.selectedTags);
         if (Array.isArray(tags) && tags.length > 0) {
@@ -162,16 +162,16 @@ export default function LeadsPage() {
           };
           updateFilters(newFilters);
           setCurrentPage(0);
-          
+
           // Show toast if campaign name is provided
-          if (params.campaignName && typeof params.campaignName === 'string') {
+          if (params.campaignName && typeof params.campaignName === "string") {
             Toast.show(`Filtering by campaign: ${params.campaignName}`, {
               duration: Toast.durations.SHORT,
             });
           }
         }
       } catch (error) {
-        console.error('Error parsing selectedTags param:', error);
+        console.error("Error parsing selectedTags param:", error);
       }
     }
   }, [params.selectedTags, params.campaignName]);
@@ -180,9 +180,8 @@ export default function LeadsPage() {
     updateFilters({ ...newFilters, searchTerm });
     setCurrentPage(0);
 
-    if (newFilters.searchTerm !== searchTerm) {
+    if (newFilters.searchTerm !== searchTerm)
       setSearchTerm(newFilters.searchTerm);
-    }
   };
 
   const handlePageChange = async (newPage: number) => {
@@ -414,38 +413,45 @@ export default function LeadsPage() {
           prevLeads.map((lead) => {
             if (lead._id === leadId) {
               const updatedLead = { ...lead, ...updates };
-              
+
               // Update lastCalled timestamp if there's a status change or comment
-              if (updates.updateDescription || 
-                  (updates.LeadStatus && updates.LeadStatus._id !== lead.LeadStatus?._id)) {
+              if (
+                updates.updateDescription ||
+                (updates.LeadStatus &&
+                  updates.LeadStatus._id !== lead.LeadStatus?._id)
+              ) {
                 updatedLead.lastCalled = Date.now();
               }
-              
+
               // If there's an update description, create a new lastComment
-              if (updates.updateDescription && updates.updateDescription.trim()) {
+              if (
+                updates.updateDescription &&
+                updates.updateDescription.trim()
+              ) {
                 updatedLead.lastComment = {
                   Content: updates.updateDescription,
                   UserId: user.id,
                   timestamp: Date.now(),
                   // Add user info if available for display
                   User: {
-                    username: user.username || user.name || 'Current User'
-                  }
+                    username: user.username || user.name || "Current User",
+                  },
                 };
                 // Increment the visible comment count
-                updatedLead.visibleCommentCount = (lead.visibleCommentCount || 0) + 1;
+                updatedLead.visibleCommentCount =
+                  (lead.visibleCommentCount || 0) + 1;
               }
-              
+
               return updatedLead;
             }
             return lead;
           })
         );
-        
+
         Toast.show("Lead updated successfully", {
           duration: Toast.durations.SHORT,
         });
-        
+
         // Note: Removed refreshLeads() call to avoid unnecessary network request
       } catch (error) {
         console.error("Failed to update lead:", error);
