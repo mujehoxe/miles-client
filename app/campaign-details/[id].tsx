@@ -268,41 +268,30 @@ export default function CampaignDetailsPage() {
   };
 
   const renderHeader = () => (
-    <View className="bg-white px-4 pt-3 pb-3 border-b border-gray-100">
-      <View className="flex-row items-center justify-between">
-        <View className="flex-row items-center flex-1">
-          <Ionicons name="people" size={16} color="#6B7280" />
-          <Text className="text-sm text-gray-600 ml-1">
-            {leads.length} of {totalLeads} leads
-          </Text>
-        </View>
-
-        <View className="flex-row items-center">
-          <Ionicons
-            name={
-              pendingLeads > 0 ? "time-outline" : "checkmark-circle-outline"
-            }
-            size={16}
-            color={
-              pendingLeads === 0
-                ? "#10B981" // Green when no pending leads
-                : pendingLeads <= Math.floor(totalLeads * 0.2)
-                ? "#F59E0B" // Amber when <= 20% pending
-                : "#EF4444" // Red when > 20% pending
-            }
-          />
-          <Text
-            className={`text-sm ml-1 font-medium ${
-              pendingLeads === 0
-                ? "text-emerald-600" // Green when no pending leads
-                : pendingLeads <= Math.floor(totalLeads * 0.2)
-                ? "text-amber-600" // Amber when <= 20% pending
-                : "text-red-600" // Red when > 20% pending
-            }`}
-          >
-            {pendingLeads}/{totalLeads} pending
-          </Text>
-        </View>
+    <View className="text-right bg-white px-4 pt-3 pb-3 border-b border-gray-100">
+      <View className="flex-row items-center justify-end">
+        <Ionicons
+          name={pendingLeads > 0 ? "time-outline" : "checkmark-circle-outline"}
+          size={16}
+          color={
+            pendingLeads === 0
+              ? "#10B981" // Green when no pending leads
+              : pendingLeads <= Math.floor(totalLeads * 0.2)
+              ? "#F59E0B" // Amber when <= 20% pending
+              : "#EF4444" // Red when > 20% pending
+          }
+        />
+        <Text
+          className={`text-sm ml-1 font-medium ${
+            pendingLeads === 0
+              ? "text-emerald-600" // Green when no pending leads
+              : pendingLeads <= Math.floor(totalLeads * 0.2)
+              ? "text-amber-600" // Amber when <= 20% pending
+              : "text-red-600" // Red when > 20% pending
+          }`}
+        >
+          {pendingLeads}/{totalLeads} pending
+        </Text>
       </View>
     </View>
   );
