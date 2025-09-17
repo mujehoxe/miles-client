@@ -12,18 +12,7 @@ export const createAuthHeaders = async () => {
 
   // Validate JWT format
   const tokenParts = storedToken.split('.');
-  const isValidJWTFormat = tokenParts.length === 3;
   
-  console.log('[iOS Debug] Creating auth headers with token:', {
-    tokenLength: storedToken.length,
-    tokenStart: storedToken.substring(0, 20) + '...',
-    tokenEnd: '...' + storedToken.substring(storedToken.length - 20),
-    platform: require('react-native').Platform.OS,
-    jwtParts: tokenParts.length,
-    isValidJWTFormat,
-    containsSpecialChars: /[^A-Za-z0-9._-]/.test(storedToken),
-    fullToken: storedToken // Full token for debugging campaigns API issue
-  });
 
   const headers = {
     'Accept': 'application/json, text/plain, */*',
@@ -36,13 +25,6 @@ export const createAuthHeaders = async () => {
     'x-auth-token': storedToken,
   };
 
-  console.log('[iOS Debug] Auth headers created:', {
-    hasCookie: !!headers.Cookie,
-    cookieLength: headers.Cookie?.length,
-    cookieStart: headers.Cookie?.substring(0, 30) + '...',
-    hasAuthorization: !!headers.Authorization,
-    authorizationStart: headers.Authorization?.substring(0, 20) + '...',
-  });
 
   return headers;
 };
@@ -54,11 +36,9 @@ const refreshAuthToken = async (): Promise<string | null> => {
   try {
     const refreshToken = await SecureStore.getItemAsync('refreshToken');
     if (!refreshToken) {
-      console.log('[iOS Debug] No refresh token found');
       return null;
     }
 
-    console.log('[iOS Debug] Attempting token refresh');
     const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/auth/refresh`, {
       method: 'POST',
       headers: {
@@ -67,11 +47,9 @@ const refreshAuthToken = async (): Promise<string | null> => {
       },
     });
 
-    console.log('[iOS Debug] Refresh response status:', response.status);
     
     if (response.ok) {
       const result = await response.json();
-      console.log('[iOS Debug] Refresh result:', { success: result.success, hasToken: !!result.token });
       
       if (result.success && result.token) {
         // Store new access token
@@ -82,17 +60,16 @@ const refreshAuthToken = async (): Promise<string | null> => {
           await SecureStore.setItemAsync('refreshToken', result.refreshToken);
         }
         
-        console.log('[iOS Debug] Token refreshed successfully');
         return result.token;
       }
     } else {
       const errorText = await response.text();
-      console.log('[iOS Debug] Refresh failed:', response.status, errorText);
+      console.error('Refresh token API error:', response.status, errorText);
     }
     
     return null;
   } catch (error) {
-    console.error('[iOS Debug] Refresh token error:', error);
+    console.error('Refresh token error:', error);
     return null;
   }
 };
