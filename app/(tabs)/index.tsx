@@ -1,3 +1,4 @@
+import { clearAuthData } from "@/services/api/auth";
 import { fetchCampaignsWithCounts } from "@/services/campaignApi";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -20,7 +21,6 @@ import {
 } from "react-native";
 import Toast from "react-native-root-toast";
 import { UserContext } from "../_layout";
-import { clearAuthData } from "@/services/api/auth";
 
 interface Campaign {
   _id: string;
@@ -41,7 +41,6 @@ export default function CampaignsTab() {
   const user = useContext(UserContext);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
@@ -59,8 +58,11 @@ export default function CampaignsTab() {
 
       try {
         setError(null);
+        
         if (append) {
           setLoadingMore(true);
+        } else {
+          setLoading(true);
         }
 
         const response = await fetchCampaignsWithCounts(page, 20); // Load 20 items per page
@@ -69,14 +71,21 @@ export default function CampaignsTab() {
         if (append) {
           // Append new campaigns to existing list with deduplication
           setCampaigns((prev) => {
-            const existingTagNames = new Set(prev.map(c => c.Tag));
-            const newCampaigns = campaignsData.filter(c => !existingTagNames.has(c.Tag));
-            console.log(`Appending ${newCampaigns.length} new campaigns (filtered out ${campaignsData.length - newCampaigns.length} duplicates)`);
+            const existingTagNames = new Set(prev.map((c) => c.Tag));
+            const newCampaigns = campaignsData.filter(
+              (c) => !existingTagNames.has(c.Tag)
+            );
             return [...prev, ...newCampaigns];
           });
+          setLoadingMore(false);
         } else {
           // Replace campaigns (for refresh or initial load)
           setCampaigns(campaignsData);
+          
+          // Use setTimeout to delay loading state change until after render
+          setTimeout(() => {
+            setLoading(false);
+          }, 100);
         }
 
         setPagination(paginationData || null);
@@ -104,13 +113,16 @@ export default function CampaignsTab() {
             duration: Toast.durations.SHORT,
           });
         }
-      } finally {
+        
+        // Set both loading states to false on error
         setLoading(false);
         setLoadingMore(false);
       }
     },
     [user]
   );
+
+  const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -145,7 +157,6 @@ export default function CampaignsTab() {
 
       const distanceFromBottom =
         contentSize.height - (layoutMeasurement.height + contentOffset.y);
-
 
       // Trigger loading when close to bottom and not already loading
       if (
@@ -197,24 +208,32 @@ export default function CampaignsTab() {
             {/* Pending leads indicator */}
             {item.pendingLeadsCount !== undefined && (
               <View className="flex-row items-center mt-1">
-                <Ionicons 
-                  name={item.pendingLeadsCount > 0 ? "time-outline" : "checkmark-circle-outline"} 
-                  size={16} 
+                <Ionicons
+                  name={
+                    item.pendingLeadsCount > 0
+                      ? "time-outline"
+                      : "checkmark-circle-outline"
+                  }
+                  size={16}
                   color={
-                    item.pendingLeadsCount === 0 
+                    item.pendingLeadsCount === 0
                       ? "#10B981" // Green when no pending leads
-                      : item.pendingLeadsCount <= Math.floor(item.leadCount * 0.2)
-                      ? "#F59E0B" // Amber when <= 20% pending  
+                      : item.pendingLeadsCount <=
+                        Math.floor(item.leadCount * 0.2)
+                      ? "#F59E0B" // Amber when <= 20% pending
                       : "#EF4444" // Red when > 20% pending
-                  } 
+                  }
                 />
-                <Text className={`text-sm ml-2 font-medium ${
-                  item.pendingLeadsCount === 0 
-                    ? "text-emerald-600" // Green when no pending leads
-                    : item.pendingLeadsCount <= Math.floor(item.leadCount * 0.2)
-                    ? "text-amber-600" // Amber when <= 20% pending
-                    : "text-red-600" // Red when > 20% pending
-                }`}>
+                <Text
+                  className={`text-sm ml-2 font-medium ${
+                    item.pendingLeadsCount === 0
+                      ? "text-emerald-600" // Green when no pending leads
+                      : item.pendingLeadsCount <=
+                        Math.floor(item.leadCount * 0.2)
+                      ? "text-amber-600" // Amber when <= 20% pending
+                      : "text-red-600" // Red when > 20% pending
+                  }`}
+                >
                   {item.pendingLeadsCount}/{item.leadCount} pending
                 </Text>
               </View>
@@ -259,6 +278,10 @@ export default function CampaignsTab() {
   );
 
   const renderEmptyState = () => {
+    if (loading && campaigns.length === 0) {
+      return null;
+    }
+
     if (error) {
       const isNetworkError = error.includes("Network request failed");
       const isAuthError = error.includes("Authentication failed");
@@ -348,20 +371,22 @@ export default function CampaignsTab() {
 
   return (
     <View className="flex-1 bg-gray-50">
-        <FlatList
-          ref={flatListRef}
-          data={campaigns}
-          renderItem={renderCampaignCard}
-          keyExtractor={(item, index) => `${item._id || item.Tag}-${index}`}
-          ListEmptyComponent={renderEmptyState}
-          ListFooterComponent={renderLoadingFooter}
+      <FlatList
+        ref={flatListRef}
+        data={campaigns}
+        renderItem={renderCampaignCard}
+        keyExtractor={(item, index) => `${item._id || item.Tag}-${index}`}
+        ListEmptyComponent={() => {
+          return !loading && campaigns.length === 0 ? renderEmptyState() : null;
+        }}
+        ListFooterComponent={renderLoadingFooter}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         onScroll={handleScroll}
         scrollEventThrottle={16} // Fire scroll events every 16ms for smooth detection
         contentContainerStyle={
-          campaigns.length === 0
+          campaigns.length === 0 && !loading
             ? { flex: 1 }
             : { paddingBottom: 20, paddingTop: 20 }
         }
