@@ -60,28 +60,34 @@ export const fetchLeads = async (
   pagination: PaginationParams,
   options: LeadRequestOptions = {}
 ): Promise<LeadsResponse> => {
+  
   if (!user || !user.id) {
     throw new Error('User not available');
   }
 
-  if (!(await validateAuthToken())) {
+  const tokenValid = await validateAuthToken();
+  
+  if (!tokenValid) {
     throw new Error('Authentication failed');
   }
 
   const headers = await createAuthHeaders();
   const requestBody = buildLeadsRequestBody(user, filters, searchText, pagination, options);
-
+  
   const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/get`, {
     method: 'POST',
     headers,
     body: JSON.stringify(requestBody),
   });
 
+  
   if (!response.ok) {
-    throw new Error(`Failed to fetch leads: ${response.status}`);
+    const errorText = await response.text();
+    throw new Error(`Failed to fetch leads: ${response.status} - ${errorText}`);
   }
 
   const data = await response.json();
+  
   return {
     data: Array.isArray(data.data) ? data.data : [],
     totalLeads: data.totalLeads || 0,

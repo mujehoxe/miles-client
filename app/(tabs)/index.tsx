@@ -1,4 +1,3 @@
-import { clearAuthData } from "@/services/api";
 import { fetchCampaignsWithCounts } from "@/services/campaignApi";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -21,6 +20,7 @@ import {
 } from "react-native";
 import Toast from "react-native-root-toast";
 import { UserContext } from "../_layout";
+import { clearAuthData } from "@/services/api/auth";
 
 interface Campaign {
   _id: string;
@@ -89,10 +89,8 @@ export default function CampaignsTab() {
           Toast.show("Session expired. Please login again.", {
             duration: Toast.durations.LONG,
           });
-          // Clear auth data - this will trigger the root layout to show login
-          setTimeout(async () => {
-            await clearAuthData();
-          }, 1500);
+
+          await clearAuthData();
         } else if (errorMessage.includes("Network request failed")) {
           Toast.show(
             "Cannot connect to server. Please check your connection.",

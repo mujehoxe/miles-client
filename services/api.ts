@@ -1,5 +1,6 @@
 import * as SecureStore from "expo-secure-store";
 import Toast from "react-native-root-toast";
+import { jwtDecode } from 'jwt-decode';
 export interface FilterOptions {
   searchTerm: string;
   searchBoxFilters: string[];
@@ -246,15 +247,6 @@ const refreshAuthToken = async (): Promise<string | null> => {
 };
 
 /**
- * Clear all authentication data and force logout
- * @returns Promise<void>
- */
-export const clearAuthData = async (): Promise<void> => {
-  await SecureStore.deleteItemAsync("userToken");
-  await SecureStore.deleteItemAsync("refreshToken");
-};
-
-/**
  * Validate token and attempt refresh if needed
  * @returns Promise<boolean> - true if token is valid or refreshed, false if authentication failed
  */
@@ -266,10 +258,10 @@ export const validateAuthToken = async (): Promise<boolean> => {
     }
 
     // Check if current token is valid
-    const tokenPayload = JSON.parse(atob(storedToken.split(".")[1]));
+    const tokenPayload = jwtDecode(storedToken) as { exp?: number };
     const currentTime = Math.floor(Date.now() / 1000);
     const tokenExpiry = tokenPayload.exp;
-    const timeUntilExpiry = tokenExpiry - currentTime;
+    const timeUntilExpiry = tokenExpiry ? tokenExpiry - currentTime : -1;
 
     // If token expires within 5 minutes, try to refresh it
     if (timeUntilExpiry < 300) {
@@ -288,7 +280,7 @@ export const validateAuthToken = async (): Promise<boolean> => {
     }
 
     // Token is still valid
-    if (currentTime < tokenExpiry) {
+    if (tokenExpiry && currentTime < tokenExpiry) {
       return true;
     }
 

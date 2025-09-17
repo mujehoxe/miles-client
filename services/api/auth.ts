@@ -1,5 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import Toast from 'react-native-root-toast';
+import { jwtDecode } from 'jwt-decode';
 
 /**
  * Create standardized authentication headers for API requests
@@ -9,16 +10,41 @@ export const createAuthHeaders = async () => {
   const storedToken = await SecureStore.getItemAsync('userToken');
   if (!storedToken) throw new Error('No authentication token available');
 
-  return {
-    accept: 'application/json, text/plain, */*',
-    'content-type': 'application/json',
-    Cookie: `token=${storedToken}`,
-    referer: `${process.env.EXPO_PUBLIC_BASE_URL}/Leads/Marketing`,
-    origin: `${process.env.EXPO_PUBLIC_BASE_URL}`,
-    'user-agent':
-      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) MilesClient-Mobile/1.0.0',
-    'x-requested-with': 'XMLHttpRequest',
+  // Validate JWT format
+  const tokenParts = storedToken.split('.');
+  const isValidJWTFormat = tokenParts.length === 3;
+  
+  console.log('[iOS Debug] Creating auth headers with token:', {
+    tokenLength: storedToken.length,
+    tokenStart: storedToken.substring(0, 20) + '...',
+    tokenEnd: '...' + storedToken.substring(storedToken.length - 20),
+    platform: require('react-native').Platform.OS,
+    jwtParts: tokenParts.length,
+    isValidJWTFormat,
+    containsSpecialChars: /[^A-Za-z0-9._-]/.test(storedToken),
+    fullToken: storedToken // Full token for debugging campaigns API issue
+  });
+
+  const headers = {
+    'Accept': 'application/json, text/plain, */*',
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${storedToken}`,
+    'Cookie': `token=${storedToken}`,
+    'X-Requested-With': 'XMLHttpRequest',
+    // iOS device-specific headers
+    'token': storedToken,
+    'x-auth-token': storedToken,
   };
+
+  console.log('[iOS Debug] Auth headers created:', {
+    hasCookie: !!headers.Cookie,
+    cookieLength: headers.Cookie?.length,
+    cookieStart: headers.Cookie?.substring(0, 30) + '...',
+    hasAuthorization: !!headers.Authorization,
+    authorizationStart: headers.Authorization?.substring(0, 20) + '...',
+  });
+
+  return headers;
 };
 
 /**
@@ -28,9 +54,11 @@ const refreshAuthToken = async (): Promise<string | null> => {
   try {
     const refreshToken = await SecureStore.getItemAsync('refreshToken');
     if (!refreshToken) {
+      console.log('[iOS Debug] No refresh token found');
       return null;
     }
 
+    console.log('[iOS Debug] Attempting token refresh');
     const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/auth/refresh`, {
       method: 'POST',
       headers: {
@@ -39,8 +67,12 @@ const refreshAuthToken = async (): Promise<string | null> => {
       },
     });
 
+    console.log('[iOS Debug] Refresh response status:', response.status);
+    
     if (response.ok) {
       const result = await response.json();
+      console.log('[iOS Debug] Refresh result:', { success: result.success, hasToken: !!result.token });
+      
       if (result.success && result.token) {
         // Store new access token
         await SecureStore.setItemAsync('userToken', result.token);
@@ -50,13 +82,17 @@ const refreshAuthToken = async (): Promise<string | null> => {
           await SecureStore.setItemAsync('refreshToken', result.refreshToken);
         }
         
+        console.log('[iOS Debug] Token refreshed successfully');
         return result.token;
       }
+    } else {
+      const errorText = await response.text();
+      console.log('[iOS Debug] Refresh failed:', response.status, errorText);
     }
     
     return null;
   } catch (error) {
-    console.error(error);
+    console.error('[iOS Debug] Refresh token error:', error);
     return null;
   }
 };
@@ -81,10 +117,19 @@ export const validateAuthToken = async (): Promise<boolean> => {
     }
 
     // Check if current token is valid
-    const tokenPayload = JSON.parse(atob(storedToken.split('.')[1]));
+    let tokenPayload: { exp?: number };
+    try {
+      tokenPayload = jwtDecode(storedToken) as { exp?: number };
+    } catch (decodeError) {
+      console.log('[iOS Debug] JWT decode failed, clearing token:', decodeError);
+      await clearAuthData();
+      return false;
+    }
+    
     const currentTime = Math.floor(Date.now() / 1000);
     const tokenExpiry = tokenPayload.exp;
-    const timeUntilExpiry = tokenExpiry - currentTime;
+    const timeUntilExpiry = tokenExpiry ? tokenExpiry - currentTime : -1;
+    
 
     // If token expires within 5 minutes, try to refresh it
     if (timeUntilExpiry < 300) {
@@ -103,11 +148,10 @@ export const validateAuthToken = async (): Promise<boolean> => {
     }
 
     // Token is still valid
-    if (currentTime < tokenExpiry) {
+    if (tokenExpiry && currentTime < tokenExpiry) {
       return true;
     }
 
-    // Token is expired, try to refresh
     const newToken = await refreshAuthToken();
     
     if (newToken) {

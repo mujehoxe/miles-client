@@ -1,4 +1,4 @@
-import { createAuthHeaders, validateAuthToken } from './api';
+import { createAuthHeaders, validateAuthToken } from './api/auth';
 import * as SecureStore from 'expo-secure-store';
 
 export interface CampaignFilters {
@@ -39,11 +39,7 @@ export const fetchCampaignLeads = async (
   if (!campaignFilters.campaignName) {
     throw new Error('Campaign name is required');
   }
-
-  if (!(await validateAuthToken())) {
-    throw new Error('Authentication failed');
-  }
-
+  
   const headers = await createAuthHeaders();
   
   const requestBody = {
@@ -69,7 +65,8 @@ export const fetchCampaignLeads = async (
     });
     
     if (response.status === 303 || response.status === 401) {
-      throw new Error('Authentication failed. Please login again.');
+      console.log('[iOS Debug] Got 401/303 but not throwing auth error for debugging');
+      // throw new Error('Authentication failed. Please login again.');
     }
     
     throw new Error(`Failed to fetch campaign leads: HTTP ${response.status} - ${errorText}`);
@@ -90,9 +87,12 @@ export const fetchCampaignsWithCounts = async (
   page = 1, 
   limit = 100
 ): Promise<CampaignsWithCountsResponse> => {
-  if (!(await validateAuthToken())) {
-    throw new Error('Authentication failed');
-  }
+  const tokenValid = await validateAuthToken();
+  console.log('[iOS Debug] Token validation result:', tokenValid);
+  // Skip throwing error for debugging
+  // if (!tokenValid) {
+  //   throw new Error('Authentication failed');
+  // }
   
   const headers = await createAuthHeaders();
   // Use the properly optimized with-counts endpoint
@@ -129,7 +129,8 @@ export const fetchCampaignsWithCounts = async (
     });
     
     if (response.status === 303 || response.status === 401) {
-      throw new Error('Authentication failed. Please login again.');
+      console.log('[iOS Debug] Got 401/303 but not throwing auth error for debugging');
+      // throw new Error('Authentication failed. Please login again.');
     }
     
     throw new Error(`Failed to fetch campaigns: HTTP ${response.status} - ${errorText}`);

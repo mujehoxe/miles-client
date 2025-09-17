@@ -31,14 +31,14 @@ export default function RootLayout() {
 
           // Check if token is expired
           if (decodedToken.exp && currentTime > decodedToken.exp) {
-                        await handleLogout();
+            await handleLogout();
           } else {
             // Token is still valid, update state
             setToken(storedToken);
             setUser(decodedToken);
           }
         } catch (tokenError) {
-          console.error(tokenError);
+          console.error('[iOS Debug] Token decode error in _layout:', tokenError);
           await handleLogout();
         }
       }
@@ -99,17 +99,18 @@ export default function RootLayout() {
 
   const handleLoginSuccess = async (newToken: string) => {
     try {
+      
       // Decode token first to validate it
       const decodedToken = jwtDecode(newToken) as { id: string; exp?: number };
 
       // Store token
-      await SecureStore.setItemAsync("userToken", newToken);
+      await SecureStore.setItemAsync("userToken", newToken);      
 
       // Update app state
       setToken(newToken);
       setUser(decodedToken);
     } catch (error) {
-      console.error(error);
+      console.error('[iOS Debug] Login success handler error:', error);
       throw error; // Re-throw so the login component can handle it
     }
   };
