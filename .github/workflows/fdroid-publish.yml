@@ -1,0 +1,158 @@
+name: F-Droid Publish
+
+on:
+  push:
+    tags:
+      - 'v*'  # Only publish on version tags
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  publish-fdroid:
+    name: Build APK and Publish to F-Droid
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for F-Droid
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
+          cache: npm
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build APK with EAS
+        run: |
+          echo "Building production APK for F-Droid..."
+          eas build --platform android --profile production --non-interactive --wait --local --output ./miles-client.apk
+
+      - name: Setup Python for F-Droid tools
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install F-Droid server tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fdroidserver
+
+      - name: Extract version information
+        id: version
+        run: |
+          # Extract version from tag (remove 'v' prefix)
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          # Extract version code from app.json
+          VERSION_CODE=$(node -p "require('./package.json').version.split('.').reduce((acc, val, i) => acc + (parseInt(val) * Math.pow(100, 2-i)), 0)")
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+
+      - name: Prepare F-Droid repository
+        run: |
+          # Create F-Droid repo structure
+          mkdir -p fdroid-repo/repo
+          mkdir -p fdroid-repo/metadata
+          
+          # Copy metadata
+          cp fdroid/metadata/com.mujeorg.milesclient.yml fdroid-repo/metadata/
+          
+          # Copy APK to repo
+          cp miles-client.apk fdroid-repo/repo/com.mujeorg.milesclient_${{ steps.version.outputs.version_code }}.apk
+
+      - name: Update F-Droid metadata with current version
+        run: |
+          # Update metadata file with current version
+          sed -i "s/CurrentVersion: .*/CurrentVersion: '${{ steps.version.outputs.version }}'/" fdroid-repo/metadata/com.mujeorg.milesclient.yml
+          sed -i "s/CurrentVersionCode: .*/CurrentVersionCode: ${{ steps.version.outputs.version_code }}/" fdroid-repo/metadata/com.mujeorg.milesclient.yml
+
+      - name: Generate signing key (if not exists)
+        run: |
+          if [ ! -f fdroid-repo/keystore.p12 ]; then
+            echo "Generating new F-Droid signing key..."
+            # Generate keystore for signing
+            keytool -genkeypair -v \
+              -keystore fdroid-repo/keystore.p12 \
+              -alias fdroid \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storetype PKCS12 \
+              -storepass ${{ secrets.FDROID_KEYSTORE_PASS || 'defaultpass' }} \
+              -keypass ${{ secrets.FDROID_KEY_PASS || 'defaultpass' }} \
+              -dname "CN=Miles Client F-Droid, OU=Mobile, O=MujeOrg, L=Unknown, S=Unknown, C=US"
+          fi
+
+      - name: Initialize F-Droid repository
+        run: |
+          cd fdroid-repo
+          
+          # Create F-Droid config
+          cat > config.yml << EOF
+          repo_url: "https://mujehoxe.github.io/miles-client/fdroid"
+          repo_name: "Miles Client F-Droid Repository" 
+          repo_icon: "icon.png"
+          repo_description: "F-Droid repository for Miles Client"
+          keystore: "keystore.p12"
+          keystorepass: "${{ secrets.FDROID_KEYSTORE_PASS || 'defaultpass' }}"
+          keyalias: "fdroid"
+          keypass: "${{ secrets.FDROID_KEY_PASS || 'defaultpass' }}"
+          keydname: "CN=Miles Client F-Droid, OU=Mobile, O=MujeOrg"
+          EOF
+          
+          # Initialize F-Droid repo
+          fdroid init
+          
+          # Update repository
+          fdroid update --create-metadata --create-key
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./fdroid-repo
+          destination_dir: fdroid
+          keep_files: true
+
+      - name: Create release with APK
+        uses: softprops/action-gh-release@v1
+        with:
+          files: miles-client.apk
+          body: |
+            ## 📱 Miles Client ${{ steps.version.outputs.version }}
+            
+            ### F-Droid Installation
+            Add this repository to F-Droid:
+            ```
+            https://mujehoxe.github.io/miles-client/fdroid
+            ```
+            
+            ### Direct APK Download
+            You can also download the APK directly from this release.
+            
+            ### Changes
+            See the commit history for detailed changes in this release.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create installation summary
+        run: |
+          echo "## 🎉 F-Droid Repository Updated!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📱 How to Install:" >> $GITHUB_STEP_SUMMARY
+          echo "1. **Add F-Droid Repository**: https://mujehoxe.github.io/miles-client/fdroid" >> $GITHUB_STEP_SUMMARY
+          echo "2. **Or Download APK**: [miles-client.apk](https://github.com/mujehoxe/miles-client/releases/latest)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Release Info:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version Code**: ${{ steps.version.outputs.version_code }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
