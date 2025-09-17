@@ -344,21 +344,40 @@ export default function CampaignDetailsPage() {
     );
   };
 
+  // Set the header title immediately with the campaign name from params
+  const headerTitle = campaignName || "Campaign Details";
+
   if (!user) {
     return (
-      <View className="flex-1 bg-gray-50 justify-center items-center">
-        <ActivityIndicator size="large" color="#059669" />
-        <Text className="text-gray-600 mt-4">Checking authentication...</Text>
-      </View>
+      <>
+        <Stack.Screen
+          options={{
+            title: headerTitle,
+            headerShown: true,
+          }}
+        />
+        <View className="flex-1 bg-gray-50 justify-center items-center">
+          <ActivityIndicator size="large" color="#059669" />
+          <Text className="text-gray-600 mt-4">Checking authentication...</Text>
+        </View>
+      </>
     );
   }
 
   if (loading && !refreshing) {
     return (
-      <View className="flex-1 bg-gray-50 justify-center items-center">
-        <ActivityIndicator size="large" color="#059669" />
-        <Text className="text-gray-600 mt-4">Loading campaign leads...</Text>
-      </View>
+      <>
+        <Stack.Screen
+          options={{
+            title: headerTitle,
+            headerShown: true,
+          }}
+        />
+        <View className="flex-1 bg-gray-50 justify-center items-center">
+          <ActivityIndicator size="large" color="#059669" />
+          <Text className="text-gray-600 mt-4">Loading campaign leads...</Text>
+        </View>
+      </>
     );
   }
 
@@ -366,7 +385,7 @@ export default function CampaignDetailsPage() {
     <>
       <Stack.Screen
         options={{
-          title: campaignName || "Campaign Details",
+          title: headerTitle,
           headerShown: true,
         }}
       />
