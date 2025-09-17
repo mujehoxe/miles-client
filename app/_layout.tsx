@@ -9,6 +9,7 @@ import { RootSiblingParent } from "react-native-root-siblings";
 import "../global.css";
 
 export const UserContext = createContext<any | null>(null);
+export const LogoutContext = createContext<(() => Promise<void>) | null>(null);
 
 export default function RootLayout() {
   const [loaded, setLoaded] = useState(false);
@@ -51,10 +52,18 @@ export default function RootLayout() {
 
   // Function to handle complete logout
   const handleLogout = async () => {
-        await SecureStore.deleteItemAsync("userToken");
-    await SecureStore.deleteItemAsync("refreshToken");
-    setToken(null);
-    setUser(null);
+    try {
+      await SecureStore.deleteItemAsync("userToken");
+      await SecureStore.deleteItemAsync("refreshToken");
+      await SecureStore.deleteItemAsync("user_permissions");
+      setToken(null);
+      setUser(null);
+    } catch (error) {
+      console.error('Logout cleanup error:', error);
+      // Even if cleanup fails, reset the state
+      setToken(null);
+      setUser(null);
+    }
   };
 
   useEffect(() => {
@@ -123,22 +132,24 @@ export default function RootLayout() {
     <RootSiblingParent>
       <StatusBar style="dark" backgroundColor="#ffffff" />
       <UserContext.Provider value={user}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="lead-details/[id]"
-            options={{
-              headerShown: true,
-              headerTitle: "",
-              headerBackTitle: "Back",
-              headerStyle: {
-                backgroundColor: "#ffffff",
-              },
-              headerTintColor: "#374151",
-              headerShadowVisible: true,
-            }}
-          />
-        </Stack>
+        <LogoutContext.Provider value={handleLogout}>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="lead-details/[id]"
+              options={{
+                headerShown: true,
+                headerTitle: "",
+                headerBackTitle: "Back",
+                headerStyle: {
+                  backgroundColor: "#ffffff",
+                },
+                headerTintColor: "#374151",
+                headerShadowVisible: true,
+              }}
+            />
+          </Stack>
+        </LogoutContext.Provider>
       </UserContext.Provider>
     </RootSiblingParent>
   );

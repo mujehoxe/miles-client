@@ -80,6 +80,56 @@ const refreshAuthToken = async (): Promise<string | null> => {
 export const clearAuthData = async (): Promise<void> => {
   await SecureStore.deleteItemAsync('userToken');
   await SecureStore.deleteItemAsync('refreshToken');
+  await SecureStore.deleteItemAsync('user_permissions');
+};
+
+/**
+ * Perform server logout and clear all local authentication data
+ * @returns Promise<boolean> - true if logout was successful
+ */
+export const logout = async (): Promise<boolean> => {
+  try {
+    // Try to notify the server about logout
+    const storedToken = await SecureStore.getItemAsync('userToken');
+    if (storedToken) {
+      try {
+        const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${storedToken}`,
+            'Cookie': `token=${storedToken}`,
+          },
+        });
+        
+        // Don't wait for server response, proceed with local cleanup
+        console.log('Server logout response:', response.status);
+      } catch (serverError) {
+        // Server error shouldn't prevent local logout
+        console.warn('Server logout failed, proceeding with local logout:', serverError);
+      }
+    }
+    
+    // Always clear local data regardless of server response
+    await clearAuthData();
+    
+    Toast.show('Logged out successfully', {
+      duration: Toast.durations.SHORT,
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Logout error:', error);
+    
+    // Even if there's an error, clear local data
+    await clearAuthData();
+    
+    Toast.show('Logged out successfully', {
+      duration: Toast.durations.SHORT,
+    });
+    
+    return true;
+  }
 };
 
 /**
