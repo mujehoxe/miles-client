@@ -1,0 +1,72 @@
+name: EAS Update
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths-ignore:
+      - '**/*.md'
+      - '.gitignore'
+      - 'LICENSE'
+
+jobs:
+  update:
+    name: EAS Update
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for EXPO_TOKEN
+        run: |
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+            echo "You must provide an EXPO_TOKEN secret linked to this project's Expo account in this repo's secrets."
+            exit 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
+          cache: npm
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Determine update channel
+        id: update-channel
+        run: |
+          if [[ $GITHUB_REF == refs/heads/main ]]; then
+            echo "channel=main" >> $GITHUB_OUTPUT
+            echo "message=Production update from main branch" >> $GITHUB_OUTPUT
+          elif [[ $GITHUB_REF == refs/heads/develop ]]; then
+            echo "channel=staging" >> $GITHUB_OUTPUT
+            echo "message=Staging update from develop branch" >> $GITHUB_OUTPUT
+          else
+            echo "channel=development" >> $GITHUB_OUTPUT
+            echo "message=Development update from ${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Publish update
+        run: |
+          eas update \
+            --channel ${{ steps.update-channel.outputs.channel }} \
+            --message "${{ steps.update-channel.outputs.message }}" \
+            --non-interactive
+
+      - name: Create update summary
+        run: |
+          echo "## 📱 Update Published" >> $GITHUB_STEP_SUMMARY
+          echo "- **Channel**: ${{ steps.update-channel.outputs.channel }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Message**: ${{ steps.update-channel.outputs.message }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Users with compatible builds will receive this update automatically." >> $GITHUB_STEP_SUMMARY
