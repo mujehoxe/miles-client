@@ -3,8 +3,7 @@ name: EAS Build
 on:
   push:
     branches:
-      - main
-      - develop
+      - '**'  # All branches
     tags:
       - 'v*'
   pull_request:

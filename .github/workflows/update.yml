@@ -3,8 +3,7 @@ name: EAS Update
 on:
   push:
     branches:
-      - main
-      - develop
+      - '**'  # All branches
     paths-ignore:
       - '**/*.md'
       - '.gitignore'
