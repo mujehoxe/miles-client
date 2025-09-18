@@ -58,12 +58,6 @@
           "mode": "production"
         }
       ],
-      [
-        "expo-dev-launcher",
-        {
-          "launchMode": "most-recent"
-        }
-      ]
     ],
     "experiments": {
       "typedRoutes": true
