@@ -242,14 +242,14 @@ export default function CampaignsTab() {
           <View className="flex-row justify-between items-center">
             <View className="flex-1">
               <View className="flex-row items-center">
-                <Text className="text-lg font-semibold text-gray-900 mb-1 flex-1">
+                <Text className="text-lg font-semibold text-gray-900 mb-1">
                   {item.Tag}
                 </Text>
                 <Ionicons
                   name="chevron-forward"
                   size={18}
                   color="#9CA3AF"
-                  className="ml-2"
+                  className="ml-1"
                 />
               </View>
               {/* Pending leads indicator */}
@@ -285,33 +285,6 @@ export default function CampaignsTab() {
                   </Text>
                 </View>
               )}
-            </View>
-            <View className="flex-row items-center ml-3">
-              <View
-                className={`px-3 py-1 rounded-full ${
-                  item.leadCount > 100
-                    ? "bg-green-100"
-                    : item.leadCount > 50
-                    ? "bg-yellow-100"
-                    : item.leadCount > 0
-                    ? "bg-blue-100"
-                    : "bg-gray-100"
-                }`}
-              >
-                <Text
-                  className={`text-sm font-medium ${
-                    item.leadCount > 100
-                      ? "text-green-700"
-                      : item.leadCount > 50
-                      ? "text-yellow-700"
-                      : item.leadCount > 0
-                      ? "text-blue-700"
-                      : "text-gray-600"
-                  }`}
-                >
-                  {item.leadCount}
-                </Text>
-              </View>
             </View>
           </View>
         </TouchableOpacity>
