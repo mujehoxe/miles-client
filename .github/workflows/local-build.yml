@@ -1,0 +1,200 @@
+name: Local Build (No Expo Server)
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+
+env:
+  NODE_VERSION: '18'
+  JAVA_VERSION: '17'
+
+jobs:
+  build-android:
+    name: Build Android APK Locally
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Expo CLI
+        run: npm install -g @expo/cli@latest
+
+      - name: Determine environment
+        id: env-setup
+        run: |
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            echo "NODE_ENV=production" >> $GITHUB_OUTPUT
+            echo "BUILD_ENV=production" >> $GITHUB_OUTPUT
+            echo "Building production release"
+          elif [[ $GITHUB_REF == refs/heads/main ]]; then
+            echo "NODE_ENV=production" >> $GITHUB_OUTPUT
+            echo "BUILD_ENV=preview" >> $GITHUB_OUTPUT
+            echo "Building preview for main branch"
+          elif [[ $GITHUB_REF == refs/heads/develop ]]; then
+            echo "NODE_ENV=staging" >> $GITHUB_OUTPUT
+            echo "BUILD_ENV=staging" >> $GITHUB_OUTPUT
+            echo "Building staging for develop branch"
+          else
+            echo "NODE_ENV=development" >> $GITHUB_OUTPUT
+            echo "BUILD_ENV=development" >> $GITHUB_OUTPUT
+            echo "Building development for feature branch"
+          fi
+
+      - name: Set environment variables
+        run: |
+          echo "NODE_ENV=${{ steps.env-setup.outputs.NODE_ENV }}" >> $GITHUB_ENV
+          echo "EXPO_PUBLIC_BASE_URL=https://crm.propertymetre.com" >> $GITHUB_ENV
+
+      - name: Prebuild for Android
+        run: |
+          # Generate native Android project using Expo prebuild
+          npx expo prebuild --platform android --clean
+        env:
+          NODE_ENV: ${{ steps.env-setup.outputs.NODE_ENV }}
+          EXPO_PUBLIC_BASE_URL: https://crm.propertymetre.com
+
+      - name: Create keystore directory
+        run: mkdir -p android/app/
+
+      - name: Generate debug keystore (for non-production builds)
+        if: ${{ steps.env-setup.outputs.BUILD_ENV != 'production' }}
+        run: |
+          keytool -genkeypair -v -keystore android/app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+
+      - name: Setup release keystore (for production)
+        if: ${{ steps.env-setup.outputs.BUILD_ENV == 'production' && secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/my-upload-key.keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+
+      - name: Build Android APK
+        run: |
+          cd android
+          if [[ "${{ steps.env-setup.outputs.BUILD_ENV }}" == "production" && -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]]; then
+            # Production signed build
+            ./gradlew assembleRelease \
+              -PMYAPP_UPLOAD_STORE_FILE=my-upload-key.keystore \
+              -PMYAPP_UPLOAD_KEY_ALIAS="${{ secrets.ANDROID_KEY_ALIAS }}" \
+              -PMYAPP_UPLOAD_STORE_PASSWORD="${{ secrets.ANDROID_STORE_PASSWORD }}" \
+              -PMYAPP_UPLOAD_KEY_PASSWORD="${{ secrets.ANDROID_KEY_PASSWORD }}"
+          else
+            # Debug/development build
+            ./gradlew assembleDebug
+          fi
+        env:
+          NODE_ENV: ${{ steps.env-setup.outputs.NODE_ENV }}
+          EXPO_PUBLIC_BASE_URL: https://crm.propertymetre.com
+
+      - name: Find APK files
+        id: find-apk
+        run: |
+          if [[ "${{ steps.env-setup.outputs.BUILD_ENV }}" == "production" && -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]]; then
+            APK_PATH=$(find android/app/build/outputs/apk/release -name "*.apk" -type f | head -1)
+            APK_NAME="miles-client-${{ steps.env-setup.outputs.BUILD_ENV }}-$(date +'%Y%m%d-%H%M%S').apk"
+          else
+            APK_PATH=$(find android/app/build/outputs/apk/debug -name "*.apk" -type f | head -1)
+            APK_NAME="miles-client-${{ steps.env-setup.outputs.BUILD_ENV }}-debug-$(date +'%Y%m%d-%H%M%S').apk"
+          fi
+          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+          echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
+          echo "Found APK: $APK_PATH"
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.find-apk.outputs.apk_name }}
+          path: ${{ steps.find-apk.outputs.apk_path }}
+          retention-days: 30
+
+      - name: Create Release (for tags)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ steps.find-apk.outputs.apk_path }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Summary
+        run: |
+          echo "## 🚀 Local Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Platform**: Android" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Type**: ${{ steps.env-setup.outputs.BUILD_ENV }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **APK Name**: ${{ steps.find-apk.outputs.apk_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Node Environment**: ${{ steps.env-setup.outputs.NODE_ENV }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch/Tag**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Built locally without Expo servers**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📱 The APK has been uploaded as a build artifact and can be downloaded from the Actions tab." >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "🎉 **Release created**: [View Release](https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }})" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Optional: Create a job for iOS builds (requires macOS runner)
+  # build-ios:
+  #   name: Build iOS IPA Locally
+  #   runs-on: macos-latest
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+  #     
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: ${{ env.NODE_VERSION }}
+  #         cache: 'npm'
+  #     
+  #     - name: Install dependencies
+  #       run: npm ci
+  #     
+  #     - name: Install Expo CLI
+  #       run: npm install -g @expo/cli@latest
+  #     
+  #     - name: Prebuild for iOS
+  #       run: npx expo prebuild --platform ios --clean
+  #     
+  #     - name: Build iOS
+  #       run: |
+  #         cd ios
+  #         xcodebuild -workspace MilesClient.xcworkspace -scheme MilesClient -configuration Release -destination generic/platform=iOS -archivePath MilesClient.xcarchive archive
+  #         xcodebuild -exportArchive -archivePath MilesClient.xcarchive -exportOptionsPlist exportOptions.plist -exportPath ./build

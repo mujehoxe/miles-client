@@ -1,14 +1,19 @@
-name: EAS Build
+name: EAS Build (Cloud)
+
+# This workflow uses Expo's cloud build service (EAS Build)
+# For builds without Expo server dependency, use the 'local-build.yml' workflow instead
 
 on:
-  push:
-    branches:
-      - '**'  # All branches
-    tags:
-      - 'v*'
-  pull_request:
-    branches:
-      - main
+  # Disabled by default - uncomment to use Expo cloud builds
+  # push:
+  #   branches:
+  #     - '**'  # All branches
+  #   tags:
+  #     - 'v*'
+  # pull_request:
+  #   branches:
+  #     - main
+  workflow_dispatch:
 
 jobs:
   build:
