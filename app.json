@@ -57,7 +57,7 @@
         {
           "mode": "production"
         }
-      ],
+      ]
     ],
     "experiments": {
       "typedRoutes": true
