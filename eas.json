@@ -7,6 +7,7 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "prebuild": true,
       "android": {
         "image": "latest",
         "buildType": "apk"
@@ -22,6 +23,7 @@
     "staging": {
       "distribution": "internal",
       "channel": "staging",
+      "prebuild": true,
       "android": {
         "image": "latest",
         "buildType": "apk"
@@ -43,6 +45,7 @@
     "preview": {
       "distribution": "internal",
       "channel": "main",
+      "prebuild": true,
       "android": {
         "image": "latest",
         "buildType": "apk"
@@ -57,6 +60,7 @@
     "production": {
       "channel": "production",
       "autoIncrement": true,
+      "prebuild": true,
       "android": {
         "image": "latest"
       },

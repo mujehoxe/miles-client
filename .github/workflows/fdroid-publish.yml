@@ -34,7 +34,15 @@ jobs:
       - name: Build APK with EAS
         run: |
           echo "Building production APK for F-Droid..."
-          eas build --platform android --profile production --non-interactive --wait --local --output ./miles-client.apk
+          eas build --platform android --profile production --non-interactive --wait
+
+      - name: Download APK from EAS
+        run: |
+          echo "Downloading APK from EAS..."
+          # Get the latest build URL for Android production
+          BUILD_URL=$(eas build:list --platform=android --status=finished --limit=1 --json | jq -r '.[0].artifacts.buildUrl')
+          echo "Downloading from: $BUILD_URL"
+          curl -L -o miles-client.apk "$BUILD_URL"
 
       - name: Setup Python for F-Droid tools
         uses: actions/setup-python@v4
@@ -44,7 +52,7 @@ jobs:
       - name: Install F-Droid server tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y fdroidserver
+          sudo apt-get install -y fdroidserver jq
 
       - name: Extract version information
         id: version
