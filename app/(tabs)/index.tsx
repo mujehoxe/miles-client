@@ -1,6 +1,6 @@
 import LoadingView from "@/components/LoadingView";
 import { clearAuthData } from "@/services/api/auth";
-import { fetchCampaignsWithCounts } from "@/services/campaignApi";
+import { fetchCampaignsWithCounts, fetchCampaignLeads } from "@/services/campaignApi";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, {
@@ -189,92 +189,146 @@ export default function CampaignsTab() {
     });
   }, []);
 
+  const handleStartCalling = useCallback(async (campaign: Campaign, event: any) => {
+    // Prevent the card press event from firing
+    event.stopPropagation();
+    
+    try {
+      // Fetch the first lead in the campaign (pending leads are sorted first)
+      const campaignFilters = {
+        campaignName: campaign.Tag,
+        page: 1,
+        limit: 1,
+      };
+      
+      const response = await fetchCampaignLeads(campaignFilters);
+      
+      if (response.data && response.data.length > 0) {
+        const firstLead = response.data[0];
+        // Navigate directly to the lead details with calling context
+        router.push({
+          pathname: `/lead-details/${firstLead._id}`,
+          params: {
+            fromCalling: 'true',
+            campaignId: campaign._id,
+            campaignName: campaign.Tag,
+          },
+        });
+      } else {
+        Toast.show('No leads found in this campaign', {
+          duration: Toast.durations.SHORT,
+        });
+      }
+    } catch (error: any) {
+      Toast.show('Failed to start calling: ' + (error.message || 'Unknown error'), {
+        duration: Toast.durations.SHORT,
+      });
+    }
+  }, []);
+
   useEffect(() => {
     loadCampaigns();
   }, [loadCampaigns]);
 
   const renderCampaignCard = ({ item }: { item: Campaign }) => (
-    <TouchableOpacity
-      className="bg-white mx-4 mb-3 rounded-lg shadow-sm border border-gray-100"
-      onPress={() => handleCampaignPress(item)}
-      activeOpacity={0.7}
-    >
-      <View className="p-4">
-        <View className="flex-row justify-between items-center">
-          <View className="flex-1">
-            <Text className="text-lg font-semibold text-gray-900 mb-1">
-              {item.Tag}
-            </Text>
-            {/* Pending leads indicator */}
-            {item.pendingLeadsCount !== undefined && (
-              <View className="flex-row items-center mt-1">
-                <Ionicons
-                  name={
-                    item.pendingLeadsCount > 0
-                      ? "time-outline"
-                      : "checkmark-circle-outline"
-                  }
-                  size={16}
-                  color={
-                    item.pendingLeadsCount === 0
-                      ? "#10B981" // Green when no pending leads
-                      : item.pendingLeadsCount <=
-                        Math.floor(item.leadCount * 0.2)
-                      ? "#F59E0B" // Amber when <= 20% pending
-                      : "#EF4444" // Red when > 20% pending
-                  }
-                />
-                <Text
-                  className={`text-sm ml-2 font-medium ${
-                    item.pendingLeadsCount === 0
-                      ? "text-emerald-600" // Green when no pending leads
-                      : item.pendingLeadsCount <=
-                        Math.floor(item.leadCount * 0.2)
-                      ? "text-amber-600" // Amber when <= 20% pending
-                      : "text-red-600" // Red when > 20% pending
-                  }`}
-                >
-                  {item.pendingLeadsCount}/{item.leadCount} pending
+    <View className="bg-white mx-4 mb-3 rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+      <View className="flex-row">
+        {/* Main card content - touchable area */}
+        <TouchableOpacity
+          className="flex-1 p-4"
+          onPress={() => handleCampaignPress(item)}
+          activeOpacity={0.7}
+        >
+          <View className="flex-row justify-between items-center">
+            <View className="flex-1">
+              <View className="flex-row items-center">
+                <Text className="text-lg font-semibold text-gray-900 mb-1 flex-1">
+                  {item.Tag}
                 </Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color="#9CA3AF"
+                  className="ml-2"
+                />
               </View>
-            )}
-          </View>
-          <View className="flex-row items-center">
-            <View
-              className={`px-3 py-1 rounded-full ${
-                item.leadCount > 100
-                  ? "bg-green-100"
-                  : item.leadCount > 50
-                  ? "bg-yellow-100"
-                  : item.leadCount > 0
-                  ? "bg-blue-100"
-                  : "bg-gray-100"
-              }`}
-            >
-              <Text
-                className={`text-sm font-medium ${
+              {/* Pending leads indicator */}
+              {item.pendingLeadsCount !== undefined && (
+                <View className="flex-row items-center mt-1">
+                  <Ionicons
+                    name={
+                      item.pendingLeadsCount > 0
+                        ? "time-outline"
+                        : "checkmark-circle-outline"
+                    }
+                    size={16}
+                    color={
+                      item.pendingLeadsCount === 0
+                        ? "#10B981" // Green when no pending leads
+                        : item.pendingLeadsCount <=
+                          Math.floor(item.leadCount * 0.2)
+                        ? "#F59E0B" // Amber when <= 20% pending
+                        : "#EF4444" // Red when > 20% pending
+                    }
+                  />
+                  <Text
+                    className={`text-sm ml-2 font-medium ${
+                      item.pendingLeadsCount === 0
+                        ? "text-emerald-600" // Green when no pending leads
+                        : item.pendingLeadsCount <=
+                          Math.floor(item.leadCount * 0.2)
+                        ? "text-amber-600" // Amber when <= 20% pending
+                        : "text-red-600" // Red when > 20% pending
+                    }`}
+                  >
+                    {item.pendingLeadsCount}/{item.leadCount} pending
+                  </Text>
+                </View>
+              )}
+            </View>
+            <View className="flex-row items-center ml-3">
+              <View
+                className={`px-3 py-1 rounded-full ${
                   item.leadCount > 100
-                    ? "text-green-700"
+                    ? "bg-green-100"
                     : item.leadCount > 50
-                    ? "text-yellow-700"
+                    ? "bg-yellow-100"
                     : item.leadCount > 0
-                    ? "text-blue-700"
-                    : "text-gray-600"
+                    ? "bg-blue-100"
+                    : "bg-gray-100"
                 }`}
               >
-                {item.leadCount}
-              </Text>
+                <Text
+                  className={`text-sm font-medium ${
+                    item.leadCount > 100
+                      ? "text-green-700"
+                      : item.leadCount > 50
+                      ? "text-yellow-700"
+                      : item.leadCount > 0
+                      ? "text-blue-700"
+                      : "text-gray-600"
+                  }`}
+                >
+                  {item.leadCount}
+                </Text>
+              </View>
             </View>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color="#9CA3AF"
-              className="ml-2"
-            />
           </View>
-        </View>
+        </TouchableOpacity>
+        
+        {/* Start Calling button - separate touchable area */}
+        <TouchableOpacity
+          className="w-20 bg-miles-500 flex justify-center items-center"
+          onPress={(event) => handleStartCalling(item, event)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="call" size={20} color="white" />
+          <Text className="text-white text-xs font-medium mt-1 text-center">
+            Start{"\n"}Calling
+          </Text>
+        </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 
   const renderEmptyState = () => {
