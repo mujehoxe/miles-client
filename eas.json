@@ -19,6 +19,21 @@
         "EXPO_PUBLIC_BASE_URL": "https://crm.propertymetre.com"
       }
     },
+    "staging": {
+      "distribution": "internal",
+      "channel": "staging",
+      "android": {
+        "image": "latest",
+        "buildType": "apk"
+      },
+      "ios": {
+        "image": "latest"
+      },
+      "env": {
+        "NODE_ENV": "staging",
+        "EXPO_PUBLIC_BASE_URL": "https://crm.propertymetre.com"
+      }
+    },
     "development-simulator": {
       "extends": "development",
       "ios": {
