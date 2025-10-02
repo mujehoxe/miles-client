@@ -1,6 +1,6 @@
-import * as SecureStore from 'expo-secure-store';
-import Toast from 'react-native-root-toast';
-
+import * as SecureStore from "expo-secure-store";
+import Toast from "react-native-root-toast";
+import { jwtDecode } from 'jwt-decode';
 export interface FilterOptions {
   searchTerm: string;
   searchBoxFilters: string[];
@@ -10,6 +10,7 @@ export interface FilterOptions {
   selectedTags: string[];
   dateRange: [Date | null, Date | null];
   dateFor: string;
+  leadType?: "community" | "marketing";
 }
 
 export interface LeadRequestOptions {
@@ -31,6 +32,7 @@ export interface FilterOption {
   value: string;
   label: string;
   color?: string;
+  requiresReminder?: "yes" | "no" | "optional";
 }
 
 export interface TagsResponse {
@@ -44,19 +46,161 @@ export interface TagsResponse {
  * Ensures consistent authentication across platforms matching the web application's format
  */
 export const createAuthHeaders = async () => {
-  const storedToken = await SecureStore.getItemAsync('userToken');
-  if (!storedToken) throw new Error('No authentication token available');
+  const storedToken = await SecureStore.getItemAsync("userToken");
+  if (!storedToken) throw new Error("No authentication token available");
 
   return {
-    accept: 'application/json, text/plain, */*',
-    'content-type': 'application/json',
+    accept: "application/json, text/plain, */*",
+    "content-type": "application/json",
     Cookie: `token=${storedToken}`,
     referer: `${process.env.EXPO_PUBLIC_BASE_URL}/Leads/Marketing`,
     origin: `${process.env.EXPO_PUBLIC_BASE_URL}`,
-    'user-agent':
-      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) MilesClient-Mobile/1.0.0',
-    'x-requested-with': 'XMLHttpRequest',
+    "user-agent":
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) MilesClient-Mobile/1.0.0",
+    "x-requested-with": "XMLHttpRequest",
   };
+};
+
+/**
+ * Add a new reminder
+ * @param reminderData - The reminder data to submit
+ * @returns Promise<any> - API response
+ */
+export const addReminder = async (reminderData: any) => {
+  if (!(await validateAuthToken())) {
+    throw new Error("Authentication failed. Please login again.");
+  }
+
+  try {
+    const headers = await createAuthHeaders();
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Reminder/add`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(reminderData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: `HTTP ${response.status}` }));
+      throw new Error(
+        errorData.error || `Failed to add reminder: HTTP ${response.status}`
+      );
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Update an existing reminder
+ * @param reminderId - The ID of the reminder to update
+ * @param reminderData - The updated reminder data
+ * @returns Promise<any> - API response
+ */
+export const updateReminder = async (reminderId: string, reminderData: any) => {
+  if (!(await validateAuthToken())) {
+    throw new Error("Authentication failed. Please login again.");
+  }
+
+  try {
+    const headers = await createAuthHeaders();
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Reminder/update/${reminderId}`;
+
+    const response = await fetch(url, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify(reminderData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: `HTTP ${response.status}` }));
+      throw new Error(
+        errorData.error || `Failed to update reminder: HTTP ${response.status}`
+      );
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Get reminders for a specific lead
+ * @param leadId - The ID of the lead
+ * @returns Promise<any[]> - Array of reminders
+ */
+export const getLeadReminders = async (leadId: string) => {
+  if (!(await validateAuthToken())) {
+    throw new Error("Authentication failed. Please login again.");
+  }
+
+  try {
+    const headers = await createAuthHeaders();
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Reminder/get/${leadId}`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers,
+    });
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: `HTTP ${response.status}` }));
+      throw new Error(
+        errorData.error || `Failed to fetch reminders: HTTP ${response.status}`
+      );
+    }
+
+    const result = await response.json();
+    return result.data || [];
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Get all users/agents for assignee selection
+ * @returns Promise<User[]> - Array of users
+ */
+export const getUsers = async () => {
+  if (!(await validateAuthToken())) {
+    throw new Error("Authentication failed. Please login again.");
+  }
+
+  try {
+    const headers = await createAuthHeaders();
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Users/get`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers,
+    });
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: `HTTP ${response.status}` }));
+      throw new Error(
+        errorData.error || `Failed to fetch users: HTTP ${response.status}`
+      );
+    }
+
+    const result = await response.json();
+    return result.data || [];
+  } catch (error) {
+    throw error;
+  }
 };
 
 /**
@@ -64,52 +208,42 @@ export const createAuthHeaders = async () => {
  */
 const refreshAuthToken = async (): Promise<string | null> => {
   try {
-    const refreshToken = await SecureStore.getItemAsync('refreshToken');
+    const refreshToken = await SecureStore.getItemAsync("refreshToken");
     if (!refreshToken) {
-      console.log('No refresh token available');
       return null;
     }
 
-    const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/auth/refresh`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cookie': `refreshToken=${refreshToken}`,
-      },
-    });
+    const response = await fetch(
+      `${process.env.EXPO_PUBLIC_BASE_URL}/api/auth/refresh`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: `refreshToken=${refreshToken}`,
+        },
+      }
+    );
 
     if (response.ok) {
       const result = await response.json();
       if (result.success && result.token) {
         // Store new access token
-        await SecureStore.setItemAsync('userToken', result.token);
-        
+        await SecureStore.setItemAsync("userToken", result.token);
+
         // Store new refresh token if provided
         if (result.refreshToken) {
-          await SecureStore.setItemAsync('refreshToken', result.refreshToken);
+          await SecureStore.setItemAsync("refreshToken", result.refreshToken);
         }
-        
-        console.log('✅ Token refreshed successfully');
+
         return result.token;
       }
     }
-    
-    console.log('❌ Token refresh failed');
+
     return null;
   } catch (error) {
-    console.error('Error refreshing token:', error);
+    console.error(error);
     return null;
   }
-};
-
-/**
- * Clear all authentication data and force logout
- * @returns Promise<void>
- */
-export const clearAuthData = async (): Promise<void> => {
-  await SecureStore.deleteItemAsync('userToken');
-  await SecureStore.deleteItemAsync('refreshToken');
-  console.log('✅ Authentication data cleared');
 };
 
 /**
@@ -118,29 +252,27 @@ export const clearAuthData = async (): Promise<void> => {
  */
 export const validateAuthToken = async (): Promise<boolean> => {
   try {
-    const storedToken = await SecureStore.getItemAsync('userToken');
+    const storedToken = await SecureStore.getItemAsync("userToken");
     if (!storedToken) {
-      console.log('No access token found');
       return false;
     }
 
     // Check if current token is valid
-    const tokenPayload = JSON.parse(atob(storedToken.split('.')[1]));
+    const tokenPayload = jwtDecode(storedToken) as { exp?: number };
     const currentTime = Math.floor(Date.now() / 1000);
     const tokenExpiry = tokenPayload.exp;
-    const timeUntilExpiry = tokenExpiry - currentTime;
+    const timeUntilExpiry = tokenExpiry ? tokenExpiry - currentTime : -1;
 
     // If token expires within 5 minutes, try to refresh it
     if (timeUntilExpiry < 300) {
-      console.log(`Token expires in ${timeUntilExpiry} seconds, attempting refresh...`);
       const newToken = await refreshAuthToken();
-      
+
       if (newToken) {
         return true; // Successfully refreshed
       } else {
         // Refresh failed, clear auth data
         await clearAuthData();
-        Toast.show('Session expired. Please login again.', {
+        Toast.show("Session expired. Please login again.", {
           duration: Toast.durations.LONG,
         });
         return false;
@@ -148,29 +280,27 @@ export const validateAuthToken = async (): Promise<boolean> => {
     }
 
     // Token is still valid
-    if (currentTime < tokenExpiry) {
+    if (tokenExpiry && currentTime < tokenExpiry) {
       return true;
     }
 
     // Token is expired, try to refresh
-    console.log('Token expired, attempting refresh...');
     const newToken = await refreshAuthToken();
-    
+
     if (newToken) {
       return true; // Successfully refreshed
     } else {
       // Refresh failed, clear auth data
       await clearAuthData();
-      Toast.show('Session expired. Please login again.', {
+      Toast.show("Session expired. Please login again.", {
         duration: Toast.durations.LONG,
       });
       return false;
     }
-    
   } catch (tokenError) {
-    console.error('Token validation error:', tokenError);
+    console.error(tokenError);
     await clearAuthData();
-    Toast.show('Invalid session. Please login again.', {
+    Toast.show("Invalid session. Please login again.", {
       duration: Toast.durations.LONG,
     });
     return false;
@@ -194,20 +324,11 @@ export const buildLeadsRequestBody = (
   if (filters?.selectedAgents && filters.selectedAgents.length > 0) {
     selectedAgents = filters.selectedAgents;
 
-    // Check if 'non-assigned' is selected and add special flags
-    const hasNonAssigned = filters.selectedAgents.includes('non-assigned');
-    if (hasNonAssigned) {
-      console.log('Filters: non-assigned leads selected via agents dropdown');
-      requestOptions.includeNonAssigned = true;
-      if (
-        user.permissions?.lead?.includes('view_non_assigned') ||
-        user.permissions?.lead?.includes('view_all') ||
-        user.role === 'superAdmin'
-      ) {
-        requestOptions.viewAllLeads = true;
-      }
-    }
-  } else if (user.role === 'superAdmin') {
+    // Remove non-assigned from selected agents if it exists
+    selectedAgents = filters.selectedAgents.filter(
+      (agent) => agent !== "non-assigned"
+    );
+  } else if (user.role === "superAdmin") {
     // For superAdmin with no explicit selection, let backend decide scope
     selectedAgents = [];
     requestOptions = { viewAllLeads: true };
@@ -227,8 +348,8 @@ export const buildLeadsRequestBody = (
             .filter((date) => date !== null)
             .map((date) => date!.toISOString())
         : [],
-    dateFor: filters.dateFor || 'LeadIntroduction',
-    searchBoxFilters: filters.searchBoxFilters || ['LeadInfo'],
+    dateFor: filters.dateFor || "LeadIntroduction",
+    searchBoxFilters: filters.searchBoxFilters || ["LeadInfo"],
     page: pagination.page + 1, // Convert 0-based to 1-based for API
     limit: pagination.limit.toString(),
     userid: user.id,
@@ -248,46 +369,36 @@ export const fetchLeads = async (
   options: LeadRequestOptions = {}
 ): Promise<LeadsResponse> => {
   if (!user || !user.id) {
-    throw new Error('User not available');
+    throw new Error("User not available");
   }
 
   if (!(await validateAuthToken())) {
-    throw new Error('Authentication failed');
+    throw new Error("Authentication failed");
   }
 
   const headers = await createAuthHeaders();
-  const requestBody = buildLeadsRequestBody(user, filters, searchText, pagination, options);
+  const requestBody = buildLeadsRequestBody(
+    user,
+    filters,
+    searchText,
+    pagination,
+    options
+  );
 
-  console.log('📤 API Request Body:', {
-    selectedAgents: requestBody.selectedAgents,
-    selectedStatuses: requestBody.selectedStatuses,
-    selectedSources: requestBody.selectedSources,
-    selectedTags: requestBody.selectedTags,
-    searchTerm: requestBody.searchTerm,
-    dateRange: requestBody.date,
-    page: requestBody.page,
-    limit: requestBody.limit,
-  });
-
-  const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/get`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(requestBody),
-  });
+  const response = await fetch(
+    `${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/get`,
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify(requestBody),
+    }
+  );
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`API request failed with status ${response.status}:`, errorText);
     throw new Error(`Failed to fetch leads: ${response.status}`);
   }
 
   const data = await response.json();
-  console.log('✅ Processing API response:', {
-    keys: Object.keys(data),
-    totalLeads: data.totalLeads,
-    dataLength: Array.isArray(data.data) ? data.data.length : 0,
-  });
-
   return {
     data: Array.isArray(data.data) ? data.data : [],
     totalLeads: data.totalLeads || 0,
@@ -300,10 +411,13 @@ export const fetchLeads = async (
 export const fetchStatusOptions = async (): Promise<FilterOption[]> => {
   try {
     const headers = await createAuthHeaders();
-    const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/Status/get`, {
-      method: 'GET',
-      headers,
-    });
+    const response = await fetch(
+      `${process.env.EXPO_PUBLIC_BASE_URL}/api/Status/get`,
+      {
+        method: "GET",
+        headers,
+      }
+    );
 
     if (response.ok) {
       const data = await response.json();
@@ -311,13 +425,12 @@ export const fetchStatusOptions = async (): Promise<FilterOption[]> => {
         value: status._id,
         label: status.Status,
         color: status.color,
+        requiresReminder: status.requiresReminder,
       }));
     } else {
-      console.error('Failed to fetch status options:', response.status);
       return [];
     }
   } catch (error) {
-    console.error('Error fetching status options:', error);
     return [];
   }
 };
@@ -328,10 +441,13 @@ export const fetchStatusOptions = async (): Promise<FilterOption[]> => {
 export const fetchSourceOptions = async (): Promise<FilterOption[]> => {
   try {
     const headers = await createAuthHeaders();
-    const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/Source/get`, {
-      method: 'GET',
-      headers,
-    });
+    const response = await fetch(
+      `${process.env.EXPO_PUBLIC_BASE_URL}/api/Source/get`,
+      {
+        method: "GET",
+        headers,
+      }
+    );
 
     if (response.ok) {
       const data = await response.json();
@@ -340,11 +456,9 @@ export const fetchSourceOptions = async (): Promise<FilterOption[]> => {
         label: source.Source,
       }));
     } else {
-      console.error('Failed to fetch source options:', response.status);
       return [];
     }
   } catch (error) {
-    console.error('Error fetching source options:', error);
     return [];
   }
 };
@@ -355,7 +469,7 @@ export const fetchSourceOptions = async (): Promise<FilterOption[]> => {
 export const fetchTagOptions = async (
   page = 1,
   limit = 50,
-  searchTerm = ''
+  searchTerm = ""
 ): Promise<TagsResponse> => {
   try {
     const headers = await createAuthHeaders();
@@ -368,16 +482,16 @@ export const fetchTagOptions = async (
     const response = await fetch(
       `${process.env.EXPO_PUBLIC_BASE_URL}/api/tags/get?${queryParams}`,
       {
-        method: 'GET',
+        method: "GET",
         headers,
       }
     );
 
     if (response.ok) {
       const data = await response.json();
-      const tagOpts = data.data.map((tag: any, index: number) => ({
+      const tagOpts = data.data.map((tag: any) => ({
         label: tag.Tag,
-        value: tag.Tag + '::' + (page - 1) * limit + index, // Ensure unique values across pages
+        value: `${tag.Tag}::${tag._id}`, // Use actual tag ID
       }));
 
       return {
@@ -386,11 +500,9 @@ export const fetchTagOptions = async (
         totalCount: data.totalTags || data.total || tagOpts.length,
       };
     } else {
-      console.error('Failed to fetch tag options:', response.status);
       return { options: [], hasMore: false, totalCount: 0 };
     }
   } catch (error) {
-    console.error('Error fetching tag options:', error);
     return { options: [], hasMore: false, totalCount: 0 };
   }
 };
@@ -405,11 +517,16 @@ export const transformAgentsDataToTreeSelect = (data: any[]): any[] => {
     value: userData._id,
     title: userData.username,
     label: userData.username,
+    role: userData.role || userData.Role, // Preserve role information
+    email: userData.email,
+    personalEmail: userData.personalemail,
+    isVerified: userData.isVerified,
     children: userData.subordinates
       ? userData.subordinates.map((subordinate: any) => ({
           value: subordinate._id,
           title: subordinate.username,
           label: subordinate.username,
+          role: subordinate.role || subordinate.Role, // Preserve role information
           email: subordinate.email,
           personalEmail: subordinate.personalemail,
           isVerified: subordinate.isVerified,
@@ -424,34 +541,34 @@ export const transformAgentsDataToTreeSelect = (data: any[]): any[] => {
 /**
  * Update a lead with new data
  */
-export const updateLead = async (leadId: string, updates: any): Promise<any> => {
+export const updateLead = async (
+  leadId: string,
+  updates: any
+): Promise<any> => {
   if (!leadId) {
-    throw new Error('Lead ID is required');
+    throw new Error("Lead ID is required");
   }
 
   if (!(await validateAuthToken())) {
-    throw new Error('Authentication failed');
+    throw new Error("Authentication failed");
   }
 
   const headers = await createAuthHeaders();
-  
-  console.log('📤 Updating lead:', { leadId, updates });
 
-  const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/update/${leadId}`, {
-    method: 'PATCH',
-    headers,
-    body: JSON.stringify(updates),
-  });
+  const response = await fetch(
+    `${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/update/${leadId}`,
+    {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify(updates),
+    }
+  );
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`Lead update failed with status ${response.status}:`, errorText);
     throw new Error(`Failed to update lead: ${response.status}`);
   }
 
   const data = await response.json();
-  console.log('✅ Lead updated successfully:', { leadId, data: data.data });
-  
   return data.data;
 };
 
@@ -466,7 +583,7 @@ export const fetchAgents = async (user: any): Promise<any[]> => {
     const response = await fetch(
       `${process.env.EXPO_PUBLIC_BASE_URL}/api/staff/get?preserveHierarchy=true`,
       {
-        method: 'GET',
+        method: "GET",
         headers,
       }
     );
@@ -475,30 +592,11 @@ export const fetchAgents = async (user: any): Promise<any[]> => {
       const data = await response.json();
       const treeData = transformAgentsDataToTreeSelect(data.data);
 
-      // Add non-assigned option as the first option if user has appropriate permissions OR is superAdmin
-      const hasViewAllPermission =
-        user.permissions?.lead?.includes('view_all') ||
-        user.permissions?.lead?.includes('view_non_assigned') ||
-        user.role === 'superAdmin';
-
-      const agentsWithNonAssigned = hasViewAllPermission
-        ? [
-            {
-              value: 'non-assigned',
-              title: 'Non-Assigned Leads',
-              label: 'Non-Assigned Leads',
-            },
-            ...treeData,
-          ]
-        : treeData;
-
-      return agentsWithNonAssigned;
+      return treeData;
     } else {
-      console.error('Failed to fetch agents:', response.status);
       return [];
     }
   } catch (error) {
-    console.error('Error fetching agents:', error);
     return [];
   }
 };
@@ -508,31 +606,28 @@ export const fetchAgents = async (user: any): Promise<any[]> => {
  */
 export const fetchLeadById = async (leadId: string): Promise<any> => {
   if (!leadId) {
-    throw new Error('Lead ID is required');
+    throw new Error("Lead ID is required");
   }
 
   if (!(await validateAuthToken())) {
-    throw new Error('Authentication failed');
+    throw new Error("Authentication failed");
   }
 
   const headers = await createAuthHeaders();
-  
-  console.log('📤 Fetching lead details:', { leadId });
 
-  const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/${leadId}`, {
-    method: 'GET',
-    headers,
-  });
+  const response = await fetch(
+    `${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/${leadId}`,
+    {
+      method: "GET",
+      headers,
+    }
+  );
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`Fetch lead failed with status ${response.status}:`, errorText);
     throw new Error(`Failed to fetch lead: ${response.status}`);
   }
 
   const data = await response.json();
-  console.log('✅ Lead details fetched successfully:', { leadId });
-  
   return data.data || data;
 };
 
@@ -541,68 +636,276 @@ export const fetchLeadById = async (leadId: string): Promise<any> => {
  */
 export const fetchLeadComments = async (leadId: string): Promise<any[]> => {
   if (!leadId) {
-    throw new Error('Lead ID is required');
+    throw new Error("Lead ID is required");
   }
 
   if (!(await validateAuthToken())) {
-    throw new Error('Authentication failed');
+    throw new Error("Authentication failed");
   }
 
   const headers = await createAuthHeaders();
-  
-  console.log('📤 Fetching lead comments:', { leadId });
 
-  const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/comment/get/${leadId}`, {
-    method: 'GET',
-    headers,
-  });
+  const response = await fetch(
+    `${process.env.EXPO_PUBLIC_BASE_URL}/api/comment/get/${leadId}`,
+    {
+      method: "GET",
+      headers,
+    }
+  );
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`Fetch comments failed with status ${response.status}:`, errorText);
     throw new Error(`Failed to fetch comments: ${response.status}`);
   }
 
   const data = await response.json();
-  console.log('✅ Comments fetched successfully:', { leadId, count: data.data?.length || 0 });
-  
   return data.data || [];
+};
+
+/**
+ * Search developers using Algolia API
+ */
+export const searchDevelopers = async (query: string = ""): Promise<any[]> => {
+  try {
+    const response = await fetch(
+      "https://ll8iz711cs-dsn.algolia.net/1/indexes/*/queries?x-algolia-agent=Algolia%20for%20JavaScript%20(3.35.1)%3B%20Browser%20(lite)&x-algolia-application-id=LL8IZ711CS&x-algolia-api-key=15cb8b0a2d2d435c6613111d860ecfc5",
+      {
+        method: "POST",
+        headers: {
+          "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          requests: [
+            {
+              indexName: "bayut-production-agencies-en",
+              params: `page=0&hitsPerPage=100&query=${encodeURIComponent(
+                query
+              )}&optionalWords=&facets=%5B%5D&maxValuesPerFacet=100&attributesToHighlight=%5B%22name%22%5D&attributesToRetrieve=%5B%22name%22%2C%22stats.adsCount%22%5D&filters=(type%3A%22developer%22)&numericFilters=stats.adsCount%3E%3D1`,
+            },
+          ],
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Developer search failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Process and sort the results
+    const developerOptions = data.results[0].hits
+      .sort((a: any, b: any) => b.stats.adsCount - a.stats.adsCount)
+      .slice(0, 20)
+      .map((developer: any) => ({
+        value: developer.name,
+        label: developer.name,
+        adsCount: developer.stats.adsCount,
+      }));
+
+    return developerOptions;
+  } catch (error) {
+    console.error(error);
+    // Return empty array on error instead of throwing
+    return [];
+  }
+};
+
+/**
+ * Export leads to CSV
+ * @param leadIds - Array of lead IDs to export (optional - if not provided, exports all filtered leads)
+ * @param filters - Current filter state for exporting filtered leads
+ * @param user - Current user data
+ * @returns Promise<Blob> - CSV file blob
+ */
+export const exportLeads = async (
+  leadIds?: string[],
+  filters?: any,
+  user?: any,
+  leadType: string = "cold"
+): Promise<Blob> => {
+  if (!(await validateAuthToken())) {
+    throw new Error("Authentication failed");
+  }
+
+  const headers = await createAuthHeaders();
+
+  const requestData: any = {};
+
+  // If specific leads are selected, only export those
+  if (leadIds && leadIds.length > 0) {
+    requestData.leadIds = leadIds;
+  } else if (filters && user) {
+    // Export filtered leads
+    if (filters.selectedAgents && filters.selectedAgents.length > 0) {
+      requestData.selectedAgents = filters.selectedAgents.filter(
+        (agent: string) => agent !== "non-assigned" && agent !== "select-all"
+      );
+    }
+
+    if (filters.selectedStatuses && filters.selectedStatuses.length > 0) {
+      requestData.selectedStatuses = filters.selectedStatuses.filter(
+        (status: string) => status !== "select-all"
+      );
+    }
+
+    if (filters.selectedSources && filters.selectedSources.length > 0) {
+      requestData.selectedSources = filters.selectedSources.filter(
+        (source: string) => source !== "select-all"
+      );
+    }
+
+    if (filters.selectedTags && filters.selectedTags.length > 0) {
+      requestData.selectedTags = filters.selectedTags
+        .filter((tag: string) => tag !== "select-all")
+        .map((tag: string) => {
+          // If tag has :: format, extract just the tag name part
+          const parts = tag.split("::");
+          return parts.length > 1 ? parts[0] : tag;
+        });
+    }
+
+    if (filters.searchTerm) requestData.searchTerm = filters.searchTerm;
+    if (filters.dateRange && filters.dateRange.length === 2) {
+      requestData.date = filters.dateRange
+        .map((date: Date | null) =>
+          date instanceof Date ? date.toISOString() : date
+        )
+        .filter(Boolean);
+    }
+    if (filters.dateFor) requestData.dateFor = filters.dateFor;
+    if (filters.searchBoxFilters)
+      requestData.searchBoxFilters = filters.searchBoxFilters;
+    if (user?.id) requestData.userid = user.id;
+  }
+
+  const response = await fetch(
+    `${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/export/${leadType}`,
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify(requestData),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to export leads: ${response.status}`);
+  }
+
+  const blob = await response.blob();
+
+  if (!blob || blob.size === 0) {
+    throw new Error("No data to export");
+  }
+
+  return blob;
+};
+
+/**
+ * Delete multiple leads
+ * @param leadIds - Array of lead IDs to delete
+ * @returns Promise<any> - API response
+ */
+export const deleteLeads = async (leadIds: string[]): Promise<any> => {
+  if (!leadIds || leadIds.length === 0) {
+    throw new Error("Lead IDs are required");
+  }
+
+  if (!(await validateAuthToken())) {
+    throw new Error("Authentication failed");
+  }
+
+  const headers = await createAuthHeaders();
+
+  const response = await fetch(
+    `${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/delete`,
+    {
+      method: "DELETE",
+      headers,
+      body: JSON.stringify({ leadIds }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to delete leads: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data;
+};
+
+/**
+ * Bulk update multiple leads
+ * @param bulkData - Bulk update data containing leads and updates
+ * @returns Promise<any> - API response with possible skipped leads
+ */
+export const bulkUpdateLeads = async (bulkData: any): Promise<any> => {
+  if (!bulkData.leads || bulkData.leads.length === 0) {
+    throw new Error("Lead IDs are required for bulk update");
+  }
+
+  if (!(await validateAuthToken())) {
+    throw new Error("Authentication failed");
+  }
+
+  const headers = await createAuthHeaders();
+
+  const response = await fetch(
+    `${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/bulk`,
+    {
+      method: "PUT",
+      headers,
+      body: JSON.stringify(bulkData),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to bulk update leads: ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  if (data.skippedLeads && data.skippedLeads.length > 0) {
+  } else {
+  }
+
+  return data;
 };
 
 /**
  * Add a comment to a lead
  */
-export const addLeadComment = async (leadId: string, content: string): Promise<any> => {
+export const addLeadComment = async (
+  leadId: string,
+  content: string
+): Promise<any> => {
   if (!leadId || !content?.trim()) {
-    throw new Error('Lead ID and comment content are required');
+    throw new Error("Lead ID and comment content are required");
   }
 
   if (!(await validateAuthToken())) {
-    throw new Error('Authentication failed');
+    throw new Error("Authentication failed");
   }
 
   const headers = await createAuthHeaders();
-  
-  console.log('📤 Adding lead comment:', { leadId, contentLength: content.length });
 
-  const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/comment/add`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      leadData: { _id: leadId },
-      content: content.trim(),
-    }),
-  });
+  const response = await fetch(
+    `${process.env.EXPO_PUBLIC_BASE_URL}/api/comment/add`,
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        leadData: { _id: leadId },
+        content: content.trim(),
+      }),
+    }
+  );
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`Add comment failed with status ${response.status}:`, errorText);
     throw new Error(`Failed to add comment: ${response.status}`);
   }
 
   const data = await response.json();
-  console.log('✅ Comment added successfully:', { leadId });
-  
   return data;
 };
 
@@ -611,30 +914,201 @@ export const addLeadComment = async (leadId: string, content: string): Promise<a
  */
 export const deleteLeadComment = async (commentId: string): Promise<any> => {
   if (!commentId) {
-    throw new Error('Comment ID is required');
+    throw new Error("Comment ID is required");
   }
 
   if (!(await validateAuthToken())) {
-    throw new Error('Authentication failed');
+    throw new Error("Authentication failed");
   }
 
   const headers = await createAuthHeaders();
-  
-  console.log('📤 Deleting comment:', { commentId });
 
-  const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/comment/delete/${commentId}`, {
-    method: 'DELETE',
-    headers,
-  });
+  const response = await fetch(
+    `${process.env.EXPO_PUBLIC_BASE_URL}/api/comment/delete/${commentId}`,
+    {
+      method: "DELETE",
+      headers,
+    }
+  );
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`Delete comment failed with status ${response.status}:`, errorText);
     throw new Error(`Failed to delete comment: ${response.status}`);
   }
 
   const data = await response.json();
-  console.log('✅ Comment deleted successfully:', { commentId });
-  
   return data;
+};
+
+/**
+ * Add a new meeting
+ * @param meetingData - The meeting data to submit
+ * @returns Promise<any> - API response
+ */
+export const addMeeting = async (meetingData: any) => {
+  if (!(await validateAuthToken())) {
+    throw new Error("Authentication failed. Please login again.");
+  }
+
+  try {
+    const headers = await createAuthHeaders();
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Meeting/add`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(meetingData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: `HTTP ${response.status}` }));
+      throw new Error(
+        errorData.error || `Failed to add meeting: HTTP ${response.status}`
+      );
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Update an existing meeting
+ * @param meetingId - The ID of the meeting to update
+ * @param meetingData - The updated meeting data
+ * @returns Promise<any> - API response
+ */
+export const updateMeeting = async (meetingId: string, meetingData: any) => {
+  if (!(await validateAuthToken())) {
+    throw new Error("Authentication failed. Please login again.");
+  }
+
+  try {
+    const headers = await createAuthHeaders();
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Meeting/update/${meetingId}`;
+
+    const response = await fetch(url, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify(meetingData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: `HTTP ${response.status}` }));
+      throw new Error(
+        errorData.error || `Failed to update meeting: HTTP ${response.status}`
+      );
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Fetch status counts for user with current filters applied
+ * @param user - Current user data
+ * @param filters - Current filter state
+ * @param searchTerm - Current search term
+ * @returns Promise<{[statusId: string]: {count: number, filteredCount: number}}
+ */
+export const fetchStatusCounts = async (
+  user: any,
+  filters: FilterOptions,
+  searchTerm: string
+): Promise<{
+  [statusId: string]: { count: number; filteredCount: number };
+}> => {
+  if (!user || !user.id) {
+    throw new Error("User not available");
+  }
+
+  if (!(await validateAuthToken())) {
+    throw new Error("Authentication failed");
+  }
+
+  const headers = await createAuthHeaders();
+
+  // Build payload similar to the web app
+  const payload = {
+    searchTerm: searchTerm.trim(),
+    selectedAgents: filters.selectedAgents || [user.id],
+    selectedStatuses: filters.selectedStatuses || [],
+    selectedSources: filters.selectedSources || [],
+    selectedTags:
+      filters.selectedTags?.map((tag) => {
+        const parts = tag.split("::");
+        return parts.length > 1 ? parts[0] : tag;
+      }) || [],
+    date:
+      filters.dateRange && (filters.dateRange[0] || filters.dateRange[1])
+        ? filters.dateRange
+            .filter((date) => date !== null)
+            .map((date) => date!.toISOString())
+        : [],
+    dateFor: filters.dateFor || "LeadIntroduction",
+    searchBoxFilters: filters.searchBoxFilters || ["LeadInfo"],
+    userid: user.id,
+  };
+
+  const response = await fetch(
+    `${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/statusCountsForUser`,
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch status counts: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.statusCounts || {};
+};
+
+/**
+ * Get meetings for a specific lead
+ * @param leadId - The ID of the lead
+ * @returns Promise<any[]> - Array of meetings
+ */
+export const getLeadMeetings = async (leadId: string) => {
+  if (!(await validateAuthToken())) {
+    throw new Error("Authentication failed. Please login again.");
+  }
+
+  try {
+    const headers = await createAuthHeaders();
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Meeting/get/${leadId}`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch meetings: HTTP ${response.status}`);
+    }
+
+    const responseText = await response.text();
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch (e) {
+      throw new Error("Invalid JSON response from server");
+    }
+
+    const meetings = result.data || [];
+    return meetings;
+  } catch (error) {
+    throw error;
+  }
 };

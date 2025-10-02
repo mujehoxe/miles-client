@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from "react";
 
 export interface UseSearchDebounceProps {
   delay?: number;
@@ -18,24 +18,22 @@ export interface UseSearchDebounceReturn {
  */
 export const useSearchDebounce = ({
   delay = 500,
-  onSearchChange
+  onSearchChange,
 }: UseSearchDebounceProps = {}): UseSearchDebounceReturn => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 
   /**
    * Clear search term
    */
   const clearSearch = useCallback(() => {
-    console.log('🧹 Clearing search term');
-    setSearchTerm('');
+        setSearchTerm("");
   }, []);
 
   // Debounce the search term
   useEffect(() => {
     const handler = setTimeout(() => {
-      console.log(`🔍 Search debounced: "${searchTerm}"`);
-      setDebouncedSearchTerm(searchTerm);
+            setDebouncedSearchTerm(searchTerm);
       onSearchChange?.(searchTerm);
     }, delay);
 

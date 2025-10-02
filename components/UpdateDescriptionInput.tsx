@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   ActivityIndicator,
   Text,
@@ -32,6 +32,19 @@ const UpdateDescriptionInput: React.FC<UpdateDescriptionInputProps> = ({
   placeholder = 'Describe your changes...',
 }) => {
   const [description, setDescription] = useState('');
+  const inputRef = useRef<TextInput>(null);
+  
+  // Focus the input when the component becomes visible
+  useEffect(() => {
+    if (isUpdateDescriptionInput && inputRef.current) {
+      // Add a small delay to ensure the animation has started
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 150);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isUpdateDescriptionInput]);
 
   const handleDescriptionChange = (text: string) => {
     setDescription(text);
@@ -57,6 +70,7 @@ const UpdateDescriptionInput: React.FC<UpdateDescriptionInputProps> = ({
       
       <View className="flex-row items-center space-x-2">
         <TextInput
+          ref={inputRef}
           value={description}
           onChangeText={handleDescriptionChange}
           placeholder={placeholder}
@@ -64,8 +78,14 @@ const UpdateDescriptionInput: React.FC<UpdateDescriptionInputProps> = ({
           numberOfLines={2}
           className="flex-1 bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900"
           placeholderTextColor="#9CA3AF"
-          autoFocus
           editable={!loading}
+          blurOnSubmit={false}
+          returnKeyType="done"
+          onSubmitEditing={() => {
+            if (description.trim() && !loading) {
+              handleSubmit();
+            }
+          }}
         />
         
         <View className="flex-row items-center space-x-2">

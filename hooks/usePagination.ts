@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from "react";
 
 export interface UsePaginationProps {
   initialPage?: number;
@@ -12,7 +12,7 @@ export interface UsePaginationReturn {
   currentPage: number;
   leadsPerPage: number;
   totalPages: number;
-  
+
   // Pagination actions
   setCurrentPage: (page: number) => void;
   setLeadsPerPage: (size: number) => void;
@@ -33,7 +33,7 @@ export const usePagination = ({
   initialPage = 0,
   initialPageSize = 10,
   onPageChange,
-  onPageSizeChange
+  onPageSizeChange,
 }: UsePaginationProps = {}): UsePaginationReturn => {
   const [currentPage, setCurrentPageState] = useState(initialPage);
   const [leadsPerPage, setLeadsPerPageState] = useState(initialPageSize);
@@ -42,22 +42,26 @@ export const usePagination = ({
   /**
    * Set current page and trigger callback
    */
-  const setCurrentPage = useCallback((page: number) => {
-    console.log(`📄 Changing page to ${page + 1}`);
-    setCurrentPageState(page);
-    onPageChange?.(page);
-  }, [onPageChange]);
+  const setCurrentPage = useCallback(
+    (page: number) => {
+            setCurrentPageState(page);
+      onPageChange?.(page);
+    },
+    [onPageChange]
+  );
 
   /**
    * Set leads per page and trigger callback
    */
-  const setLeadsPerPage = useCallback((size: number) => {
-    console.log(`📊 Changing page size to ${size}`);
-    setLeadsPerPageState(size);
-    // Reset to first page when changing page size
-    setCurrentPageState(0);
-    onPageSizeChange?.(size);
-  }, [onPageSizeChange]);
+  const setLeadsPerPage = useCallback(
+    (size: number) => {
+            setLeadsPerPageState(size);
+      // Reset to first page when changing page size
+      setCurrentPageState(0);
+      onPageSizeChange?.(size);
+    },
+    [onPageSizeChange]
+  );
 
   /**
    * Navigation helper functions
@@ -93,7 +97,7 @@ export const usePagination = ({
     currentPage,
     leadsPerPage,
     totalPages,
-    
+
     // Pagination actions
     setCurrentPage,
     setLeadsPerPage,

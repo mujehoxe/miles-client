@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mujeorg.milesclient",
+      "bundleIdentifier": "com.danish.milesclient.dev",
       "buildNumber": "1",
       "config": {
         "usesNonExemptEncryption": false
@@ -56,12 +56,6 @@
         "onesignal-expo-plugin",
         {
           "mode": "production"
-        }
-      ],
-      [
-        "expo-dev-launcher",
-        {
-          "launchMode": "most-recent"
         }
       ]
     ],

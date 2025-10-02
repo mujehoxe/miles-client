@@ -17,22 +17,41 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
+          title: "Campaigns",
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="pricetags" size={28} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="leads"
+        options={{
           title: "Leads",
+          headerTitle: "Leads", // This can be overridden by the screen
           tabBarIcon: ({ color }) => (
             <Ionicons name="git-network-sharp" size={28} color={color} />
           ),
         }}
       />
-      <Tabs.Screen
-        name="location"
-        options={{
-          title: "Location",
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="map-outline" size={28} color={color} />
-          ),
-        }}
-      />
-    </Tabs>
+        <Tabs.Screen
+          name="location"
+          options={{
+            title: "Location",
+            tabBarIcon: ({ color }) => (
+              <Ionicons name="map-outline" size={28} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: "Profile",
+            tabBarIcon: ({ color }) => (
+              <Ionicons name="person-outline" size={28} color={color} />
+            ),
+          }}
+        />
+      </Tabs>
     </>
   );
 }

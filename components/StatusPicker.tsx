@@ -1,7 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import React, { useState } from "react";
 import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
-
 interface StatusOption {
   value: string;
   label: string;
@@ -24,17 +23,6 @@ const StatusPicker: React.FC<StatusPickerProps> = ({
 }) => {
   const [isVisible, setIsVisible] = useState(false);
 
-  // Debug logging (only if we have a value and options to reduce spam)
-  if (value && options.length > 0) {
-    console.log("StatusPicker Debug:", {
-      value,
-      optionsCount: options.length,
-      firstFewOptions: options.slice(0, 2),
-      selectedOption: selectedOption
-        ? { value: selectedOption.value, label: selectedOption.label }
-        : null,
-    });
-  }
 
   const selectedOption = options.find((opt) => opt.value === value);
 
@@ -74,51 +62,50 @@ const StatusPicker: React.FC<StatusPickerProps> = ({
       <Modal
         visible={isVisible}
         animationType="slide"
-        transparent={true}
+        presentationStyle="pageSheet"
         onRequestClose={() => setIsVisible(false)}
       >
-        <View className="flex-1 justify-end bg-black/50">
-          <View className="bg-white rounded-t-lg max-h-[70%]">
-            <View className="flex-row items-center justify-between p-4 border-b border-gray-200">
-              <Text className="text-lg font-semibold text-gray-900">
-                Select Status
-              </Text>
+        <View className="flex-1 bg-white">
+          <View className="flex-row items-center justify-between p-4 border-b border-gray-200">
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation();
+                setIsVisible(false);
+              }}
+            >
+              <Ionicons name="close" size={24} color="#6B7280" />
+            </TouchableOpacity>
+            <Text className="text-lg font-semibold text-gray-900">
+              Select Status
+            </Text>
+            <View className="w-6" />
+          </View>
+
+          <ScrollView className="flex-1">
+            {options.map((option) => (
               <TouchableOpacity
+                key={option.value}
                 onPress={(e) => {
                   e.stopPropagation();
-                  setIsVisible(false);
+                  handleSelect(option);
                 }}
+                className={`flex-row items-center p-4 border-b border-gray-100 ${
+                  option.value === value ? "bg-miles-50" : ""
+                }`}
               >
-                <Ionicons name="close" size={24} color="#6B7280" />
+                <View
+                  className="w-4 h-4 rounded-full mr-3"
+                  style={{ backgroundColor: option.color }}
+                />
+                <Text className="text-base text-gray-900 flex-1">
+                  {option.label}
+                </Text>
+                {option.value === value && (
+                  <Ionicons name="checkmark" size={20} color="#3B82F6" />
+                )}
               </TouchableOpacity>
-            </View>
-
-            <ScrollView className="max-h-96">
-              {options.map((option) => (
-                <TouchableOpacity
-                  key={option.value}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    handleSelect(option);
-                  }}
-                  className={`flex-row items-center p-4 ${
-                    option.value === value ? "bg-miles-50" : ""
-                  }`}
-                >
-                  <View
-                    className="w-4 h-4 rounded-full mr-3"
-                    style={{ backgroundColor: option.color }}
-                  />
-                  <Text className="text-base text-gray-900 flex-1">
-                    {option.label}
-                  </Text>
-                  {option.value === value && (
-                    <Ionicons name="checkmark" size={20} color="#3B82F6" />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+            ))}
+          </ScrollView>
         </View>
       </Modal>
     </>

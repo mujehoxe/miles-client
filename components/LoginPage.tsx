@@ -1,22 +1,22 @@
+import { Ionicons } from "@expo/vector-icons";
+import * as SecureStore from "expo-secure-store";
 import React, { useState } from "react";
 import {
-  Alert,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  TouchableOpacity,
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
+  Alert,
   Animated,
   Dimensions,
   Image,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { Ionicons } from '@expo/vector-icons';
-import * as SecureStore from 'expo-secure-store';
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 interface LoginPageProps {
   onLoginSuccess: (token: string) => void;
@@ -33,12 +33,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [logoError, setLogoError] = useState(false);
 
   // Force light mode colors
-  const backgroundColor = '#ffffff';
-  const textColor = '#000000';
-  const tintColor = '#176298'; // Miles primary color
-  
+  const backgroundColor = "#ffffff";
+  const textColor = "#000000";
+  const tintColor = "#176298"; // Miles primary color
+
   // Use the high-quality SVG-generated Miles logo
-  const logoSource = require('../assets/images/miles-logo-mobile-hq.png');
+  const logoSource = require("../assets/images/miles-logo-mobile-hq.png");
 
   React.useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -58,7 +58,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       setEmailError("Please enter a valid email address");
       return false;
     }
-    
+
     setEmailError("");
     return true;
   };
@@ -72,7 +72,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       setPasswordError("Password must be at least 6 characters");
       return false;
     }
-    
+
     setPasswordError("");
     return true;
   };
@@ -86,14 +86,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     }
 
     setIsLoading(true);
-    
+
     try {
       const loginUrl = `${process.env.EXPO_PUBLIC_BASE_URL}/api/users/login`;
       const requestHeaders = {
         "Content-Type": "application/json",
       };
       const requestBody = { email, password };
-      
+
       const response = await fetch(loginUrl, {
         method: "POST",
         headers: requestHeaders,
@@ -105,22 +105,21 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       if (result.success) {
         // Store refresh token if provided
         if (result.refreshToken) {
-          await SecureStore.setItemAsync('refreshToken', result.refreshToken);
+          await SecureStore.setItemAsync("refreshToken", result.refreshToken);
         }
         onLoginSuccess(result.token);
       } else {
-        const errorMessage = result.message || "Invalid email or password. Please try again.";
-        Alert.alert(
-          "Login Failed", 
-          errorMessage,
-          [{ text: "OK", style: "default" }]
-        );
+        const errorMessage =
+          result.message || "Invalid email or password. Please try again.";
+        Alert.alert("Login Failed", errorMessage, [
+          { text: "OK", style: "default" },
+        ]);
       }
     } catch (error) {
-      console.error("Login error:", error);
-      
+      console.error(error);
+
       Alert.alert(
-        "Connection Error", 
+        "Connection Error",
         "Unable to connect to the server. Please check your internet connection and try again.",
         [{ text: "OK", style: "default" }]
       );
@@ -130,42 +129,55 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={[styles.container, { backgroundColor }]} 
+    <KeyboardAvoidingView
+      style={[styles.container, { backgroundColor }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
         {/* Logo/Brand Section */}
         <View style={styles.brandSection}>
           {!logoError ? (
-            <Image 
+            <Image
               source={logoSource}
               style={styles.logo}
               resizeMode="contain"
               accessibilityLabel="Miles Homes Real Estate Logo"
               onError={() => {
-                console.log('Miles logo failed to load, using fallback');
                 setLogoError(true);
               }}
             />
           ) : (
             <View style={styles.fallbackLogoContainer}>
               <Ionicons name="business" size={50} color={tintColor} />
-              <Text style={[styles.fallbackTitle, { color: textColor }]}>Miles Client</Text>
+              <Text style={[styles.fallbackTitle, { color: textColor }]}>
+                Miles Client
+              </Text>
             </View>
           )}
-          <Text style={[styles.brandSubtitle, { color: textColor + '80' }]}>Welcome back</Text>
+          <Text style={[styles.brandSubtitle, { color: textColor + "80" }]}>
+            Welcome back
+          </Text>
         </View>
 
         {/* Form Section */}
         <View style={styles.formSection}>
           <View style={styles.inputContainer}>
-            <View style={[styles.inputWrapper, emailError ? styles.inputError : null]}>
-              <Ionicons name="mail-outline" size={20} color={tintColor} style={styles.inputIcon} />
+            <View
+              style={[
+                styles.inputWrapper,
+                emailError ? styles.inputError : null,
+              ]}
+            >
+              <Ionicons
+                name="mail-outline"
+                size={20}
+                color={tintColor}
+                style={styles.inputIcon}
+              />
               <TextInput
                 style={[styles.input, { color: textColor }]}
                 placeholder="Email address"
-                placeholderTextColor={textColor + '60'}
+                placeholderTextColor={textColor + "60"}
                 value={email}
                 onChangeText={(text) => {
                   setEmail(text);
@@ -179,16 +191,28 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 accessibilityHint="Enter your email address"
               />
             </View>
-            {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+            {emailError ? (
+              <Text style={styles.errorText}>{emailError}</Text>
+            ) : null}
           </View>
 
           <View style={styles.inputContainer}>
-            <View style={[styles.inputWrapper, passwordError ? styles.inputError : null]}>
-              <Ionicons name="lock-closed-outline" size={20} color={tintColor} style={styles.inputIcon} />
+            <View
+              style={[
+                styles.inputWrapper,
+                passwordError ? styles.inputError : null,
+              ]}
+            >
+              <Ionicons
+                name="lock-closed-outline"
+                size={20}
+                color={tintColor}
+                style={styles.inputIcon}
+              />
               <TextInput
                 style={[styles.input, { color: textColor }]}
                 placeholder="Password"
-                placeholderTextColor={textColor + '60'}
+                placeholderTextColor={textColor + "60"}
                 value={password}
                 onChangeText={(text) => {
                   setPassword(text);
@@ -199,19 +223,23 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 accessibilityLabel="Password input"
                 accessibilityHint="Enter your password"
               />
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
                 style={styles.eyeIcon}
-                accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+                accessibilityLabel={
+                  showPassword ? "Hide password" : "Show password"
+                }
               >
-                <Ionicons 
-                  name={showPassword ? "eye-off-outline" : "eye-outline"} 
-                  size={20} 
-                  color={tintColor} 
+                <Ionicons
+                  name={showPassword ? "eye-off-outline" : "eye-outline"}
+                  size={20}
+                  color={tintColor}
                 />
               </TouchableOpacity>
             </View>
-            {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+            {passwordError ? (
+              <Text style={styles.errorText}>{passwordError}</Text>
+            ) : null}
           </View>
 
           {/* Login Button */}
@@ -230,7 +258,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           </TouchableOpacity>
 
           {/* Forgot Password */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.forgotPassword}
             accessibilityLabel="Forgot password link"
           >
@@ -251,10 +279,10 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   brandSection: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 50,
   },
   logo: {
@@ -263,12 +291,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   fallbackLogoContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 20,
   },
   fallbackTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginTop: 8,
   },
   brandSubtitle: {
@@ -277,23 +305,23 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   formSection: {
-    width: '100%',
+    width: "100%",
   },
   inputContainer: {
     marginBottom: 20,
   },
   inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1.5,
-    borderColor: '#E1E5E9',
+    borderColor: "#E1E5E9",
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
   },
   inputError: {
-    borderColor: '#FF6B6B',
+    borderColor: "#FF6B6B",
   },
   inputIcon: {
     marginRight: 12,
@@ -307,7 +335,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   errorText: {
-    color: '#FF6B6B',
+    color: "#FF6B6B",
     fontSize: 12,
     marginTop: 4,
     marginLeft: 16,
@@ -315,10 +343,10 @@ const styles = StyleSheet.create({
   loginButton: {
     borderRadius: 12,
     paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 8,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -328,17 +356,17 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   loginButtonText: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   forgotPassword: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 20,
   },
   forgotPasswordText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
 });
 

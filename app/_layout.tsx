@@ -1,14 +1,15 @@
 import LoginPage from "@/components/LoginPage";
 import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
 import * as SecureStore from "expo-secure-store";
+import { StatusBar } from "expo-status-bar";
 import { jwtDecode } from "jwt-decode";
 import React, { createContext, useEffect, useState } from "react";
-import { RootSiblingParent } from "react-native-root-siblings";
 import { AppState } from "react-native";
+import { RootSiblingParent } from "react-native-root-siblings";
 import "../global.css";
 
 export const UserContext = createContext<any | null>(null);
+export const LogoutContext = createContext<(() => Promise<void>) | null>(null);
 
 export default function RootLayout() {
   const [loaded, setLoaded] = useState(false);
@@ -19,19 +20,18 @@ export default function RootLayout() {
   // Function to validate stored token and handle logout
   const validateStoredToken = async () => {
     if (authCheckInProgress) return;
-    
+
     setAuthCheckInProgress(true);
     try {
       const storedToken = await SecureStore.getItemAsync("userToken");
-      
+
       if (storedToken) {
         try {
           const decodedToken = jwtDecode(storedToken);
           const currentTime = Math.floor(Date.now() / 1000);
-          
+
           // Check if token is expired
           if (decodedToken.exp && currentTime > decodedToken.exp) {
-            console.log('Stored token is expired, clearing auth data');
             await handleLogout();
           } else {
             // Token is still valid, update state
@@ -39,12 +39,12 @@ export default function RootLayout() {
             setUser(decodedToken);
           }
         } catch (tokenError) {
-          console.error('Failed to decode stored token:', tokenError);
+          console.error("Token decode error in _layout:", tokenError);
           await handleLogout();
         }
       }
     } catch (error) {
-      console.error('Error during token validation:', error);
+      console.error(error);
     } finally {
       setAuthCheckInProgress(false);
     }
@@ -52,11 +52,18 @@ export default function RootLayout() {
 
   // Function to handle complete logout
   const handleLogout = async () => {
-    console.log('Handling logout: clearing all auth data');
-    await SecureStore.deleteItemAsync("userToken");
-    await SecureStore.deleteItemAsync("refreshToken");
-    setToken(null);
-    setUser(null);
+    try {
+      await SecureStore.deleteItemAsync("userToken");
+      await SecureStore.deleteItemAsync("refreshToken");
+      await SecureStore.deleteItemAsync("user_permissions");
+      setToken(null);
+      setUser(null);
+    } catch (error) {
+      console.error("Logout cleanup error:", error);
+      // Even if cleanup fails, reset the state
+      setToken(null);
+      setUser(null);
+    }
   };
 
   useEffect(() => {
@@ -70,13 +77,16 @@ export default function RootLayout() {
   // Listen for app state changes to validate token when app becomes active
   useEffect(() => {
     const handleAppStateChange = (nextAppState: string) => {
-      if (nextAppState === 'active' && token) {
+      if (nextAppState === "active" && token) {
         // Validate token when app becomes active
         validateStoredToken();
       }
     };
 
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    const subscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
+    );
     return () => subscription?.remove();
   }, [token]);
 
@@ -100,15 +110,15 @@ export default function RootLayout() {
     try {
       // Decode token first to validate it
       const decodedToken = jwtDecode(newToken) as { id: string; exp?: number };
-      
+
       // Store token
       await SecureStore.setItemAsync("userToken", newToken);
-      
+
       // Update app state
       setToken(newToken);
       setUser(decodedToken);
     } catch (error) {
-      console.error('Failed to process login success:', error);
+      console.error("Login success handler error:", error);
       throw error; // Re-throw so the login component can handle it
     }
   };
@@ -121,22 +131,24 @@ export default function RootLayout() {
     <RootSiblingParent>
       <StatusBar style="dark" backgroundColor="#ffffff" />
       <UserContext.Provider value={user}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen 
-            name="lead-details/[id]" 
-            options={{
-              headerShown: true,
-              headerTitle: '',
-              headerBackTitle: 'Back',
-              headerStyle: {
-                backgroundColor: '#ffffff',
-              },
-              headerTintColor: '#374151',
-              headerShadowVisible: true,
-            }} 
-          />
-        </Stack>
+        <LogoutContext.Provider value={handleLogout}>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="lead-details/[id]"
+              options={{
+                headerShown: true,
+                headerTitle: "",
+                headerBackTitle: "Back",
+                headerStyle: {
+                  backgroundColor: "#ffffff",
+                },
+                headerTintColor: "#374151",
+                headerShadowVisible: true,
+              }}
+            />
+          </Stack>
+        </LogoutContext.Provider>
       </UserContext.Provider>
     </RootSiblingParent>
   );

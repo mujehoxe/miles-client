@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Alert, Linking, Text, TouchableOpacity, View } from "react-native";
 import Animated, { SlideInDown, SlideOutUp } from "react-native-reanimated";
+import Toast from "react-native-root-toast";
 import { formatPhoneNumber, formatTimestamp } from "../utils/dateFormatter";
 import AuthenticatedImage from "./AuthenticatedImage";
 import SourcePicker from "./SourcePicker";
@@ -61,6 +62,7 @@ interface LeadCardProps {
     lead?: string[];
   };
   onOpenModal?: (type: string, callback?: () => void) => void;
+  scrollToCard?: (leadId: string) => void;
 }
 
 const LeadCard: React.FC<LeadCardProps> = ({
@@ -73,12 +75,15 @@ const LeadCard: React.FC<LeadCardProps> = ({
   onLeadUpdate,
   userPermissions,
   onOpenModal,
+  scrollToCard,
 }) => {
   const [showContact, setShowContact] = useState(false);
   const [showCommentInput, setShowCommentInput] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [updateBody, setUpdateBody] = useState<any>({});
+  const [reminderAddedForRequiredStatus, setReminderAddedForRequiredStatus] =
+    useState(false);
 
   useEffect(() => {
     setUpdateBody({
@@ -125,16 +130,7 @@ const LeadCard: React.FC<LeadCardProps> = ({
   const canUpdateSource =
     userPermissions?.lead?.includes("update_source") ?? true;
 
-  // Debug logging (limited to reduce spam)
-  if (statusOptions.length > 0 && lead.Name && lead._id) {
-    console.log("LeadCard Debug:", {
-      leadName: lead.Name,
-      statusOptionsCount: statusOptions.length,
-      sourceOptionsCount: sourceOptions.length,
-      hasStatusId: !!lead.LeadStatus?._id,
-      hasSourceId: !!lead.Source?._id,
-    });
-  }
+  // Status and source pickers are now properly populated with options
 
   const handleStatusChange = (value: string, option: any) => {
     setUpdateBody({
@@ -148,10 +144,19 @@ const LeadCard: React.FC<LeadCardProps> = ({
       originalLeadStatus: lead.LeadStatus,
     });
 
+    // Reset reminder flag when status changes
+    setReminderAddedForRequiredStatus(false);
+
     // Automatically open comment input when status changes
     if (option.value !== lead.LeadStatus?._id) {
       setShowCommentInput(true);
       setShowContact(false);
+      // Scroll to this card when comment input opens due to status change
+      if (scrollToCard) {
+        setTimeout(() => {
+          scrollToCard(lead._id);
+        }, 400);
+      }
     }
   };
 
@@ -169,6 +174,12 @@ const LeadCard: React.FC<LeadCardProps> = ({
     if (option.value !== lead.Source?._id) {
       setShowCommentInput(true);
       setShowContact(false);
+      // Scroll to this card when comment input opens due to source change
+      if (scrollToCard) {
+        setTimeout(() => {
+          scrollToCard(lead._id);
+        }, 400);
+      }
     }
   };
 
@@ -194,10 +205,14 @@ const LeadCard: React.FC<LeadCardProps> = ({
         wordCount < 3 &&
         !noDescriptionStatuses.includes(newStatusLabel || "")
       ) {
-        Alert.alert(
-          "Error",
-          "Description must exceed 2 words on status change."
-        );
+        Toast.show("Description must exceed 2 words on status change.", {
+          duration: Toast.durations.LONG,
+          position: Toast.positions.BOTTOM,
+          backgroundColor: "#EF4444",
+          textColor: "#FFFFFF",
+          shadow: true,
+        });
+        setLoading(false);
         return;
       }
 
@@ -218,17 +233,20 @@ const LeadCard: React.FC<LeadCardProps> = ({
       );
       if (statusChanged && newStatus?.requiresReminder) {
         if (newStatus.requiresReminder === "yes") {
-          // Force reminder modal before update
-          onOpenModal?.("Add Reminder", () => updateLead());
+          // Directly open reminder modal for required reminders
+          onOpenModal?.("Add Reminder", () => {
+            setReminderAddedForRequiredStatus(true);
+            // Don't auto-update, let user submit again after reminder is added
+          });
           return;
-        } else if (
-          newStatus.requiresReminder === "optional" &&
-          !showCommentInput
-        ) {
-          // Show comment input with optional reminder button only if not already shown
-          setShowCommentInput(true);
-          setLoading(false);
-          return;
+        } else if (newStatus.requiresReminder === "optional") {
+          // For optional reminders, ensure comment input is shown with reminder button
+          if (!showCommentInput) {
+            setShowCommentInput(true);
+            setLoading(false);
+            return;
+          }
+          // If comment input is already shown and user submitted, proceed with update
         }
       }
 
@@ -247,7 +265,7 @@ const LeadCard: React.FC<LeadCardProps> = ({
           "Lead status changed to Closure. You can now create a deal from this lead."
         );
     } catch (e: any) {
-      console.error("Error updating lead:", e);
+      console.error(e);
       Alert.alert(
         "Error",
         `An error occurred while updating the lead: ${e.message}`
@@ -289,9 +307,17 @@ const LeadCard: React.FC<LeadCardProps> = ({
   };
 
   const toggleCommentInput = () => {
+    const wasClosedBefore = !showCommentInput;
     setShowCommentInput(!showCommentInput);
     if (!showCommentInput) {
       setShowContact(false);
+      // Scroll to this card when comment input opens
+      if (scrollToCard) {
+        // Use setTimeout to ensure the animation and layout have settled
+        setTimeout(() => {
+          scrollToCard(lead._id);
+        }, 400);
+      }
     }
   };
 
@@ -319,14 +345,16 @@ const LeadCard: React.FC<LeadCardProps> = ({
   };
 
   return (
-    <TouchableOpacity
-      className={`bg-white rounded-lg mb-3 shadow-sm border min-h-[340px] ${
+    <View
+      className={`bg-white rounded-lg mb-3 shadow-sm border ${
         selected ? "border-miles-500 border-2" : "border-gray-200"
       }`}
-      onPress={onCardPress}
     >
-      {/* Header */}
-      <View className="w-full p-3 border-b border-gray-200">
+      {/* Header - Touchable for card selection */}
+      <TouchableOpacity
+        onPress={onCardPress}
+        className="w-full p-3 border-b border-gray-200"
+      >
         <View className="flex-row justify-between">
           <View className="flex-1">
             <Text
@@ -363,24 +391,9 @@ const LeadCard: React.FC<LeadCardProps> = ({
               }}
               className="size-10 rounded-full ml-2"
               onError={(error) => {
-                console.log(
-                  `Avatar loading error for ${lead.Assigned?.username}:`,
-                  {
-                    originalPath: lead.Assigned?.Avatar,
-                    encodedPath: encodeURI(lead.Assigned?.Avatar || ""),
-                    fullUri: `${
-                      process.env.EXPO_PUBLIC_BASE_URL || ""
-                    }${encodeURI(lead.Assigned?.Avatar || "")}`,
-                    error: error,
-                  }
-                );
                 setAvatarError(true);
               }}
-              onLoad={() => {
-                console.log(
-                  `Avatar loaded successfully for ${lead.Assigned?.username}: ${lead.Assigned?.Avatar}`
-                );
-              }}
+              onLoad={() => {}}
               fallbackComponent={
                 <View className="size-10 rounded-full bg-gray-100 items-center justify-center ml-2">
                   <Ionicons name="person" size={16} color="#9CA3AF" />
@@ -404,22 +417,16 @@ const LeadCard: React.FC<LeadCardProps> = ({
                 </Text>
               </View>
             )}
-            {lead.timestamp && (
-              <Text className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full font-medium">
-                Created: {formatTimestamp(lead.timestamp)}
-              </Text>
-            )}
-            {lead.LeadAssignedDate && (
-              <Text className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full font-medium">
-                Assigned: {formatTimestamp(lead.LeadAssignedDate)}
-              </Text>
-            )}
           </View>
         )}
-      </View>
+      </TouchableOpacity>
 
-      {/* Body */}
-      <View className="p-3 flex-1 min-h-12">
+      {/* Body - Also touchable for card selection */}
+      <TouchableOpacity
+        onPress={onCardPress}
+        className="p-3"
+        activeOpacity={0.7}
+      >
         {/* Status and Source Row */}
         <View className="flex-row mb-3 gap-3">
           <View className="flex-1">
@@ -453,9 +460,45 @@ const LeadCard: React.FC<LeadCardProps> = ({
           </View>
         </View>
 
+        {/* Description */}
+        {lead.Description &&
+          (lead.LeadStatus?.Status == "New" ||
+            lead.LeadStatus?.Status == "RNR") && (
+            <View className="mb-3">
+              <Text className="text-xs font-medium text-gray-500 mb-1">
+                Description:
+              </Text>
+              <Text
+                className="text-sm text-gray-700 leading-5"
+                numberOfLines={2}
+              >
+                {lead.Description}
+              </Text>
+            </View>
+          )}
+
+        {/* Last Comment */}
+        {lead.lastComment?.Content && lead.LeadStatus?.Status !== "New" && (
+          <View className="mb-2">
+            <Text className="text-xs font-medium text-gray-500 mb-1">
+              Last Comment:
+            </Text>
+            <Text className="text-sm text-gray-900 leading-5" numberOfLines={2}>
+              {lead.lastComment.Content}
+            </Text>
+            {lead.visibleCommentCount && lead.visibleCommentCount - 1 > 0 && (
+              <TouchableOpacity onPress={onDetailsPress}>
+                <Text className="text-xs text-miles-500 font-medium mt-1">
+                  +{lead.visibleCommentCount - 1} more...
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
         {/* Tags - Read Only Display */}
         {lead.tags && lead.tags.length > 0 && (
-          <View className="mb-3">
+          <View>
             <Text className="text-xs font-medium text-gray-500 mb-1">
               Tags:
             </Text>
@@ -478,47 +521,13 @@ const LeadCard: React.FC<LeadCardProps> = ({
             </View>
           </View>
         )}
-
-        {/* Description */}
-        {lead.Description && (
-          <View className="mb-3">
-            <Text className="text-xs font-medium text-gray-500 mb-1">
-              Description:
-            </Text>
-            <Text className="text-sm text-gray-700 leading-5" numberOfLines={2}>
-              {lead.Description}
-            </Text>
-          </View>
-        )}
-
-        {/* Last Comment */}
-        {lead.lastComment?.Content && lead.LeadStatus?.Status !== "New" && (
-          <View className="mb-2">
-            <Text className="text-xs font-medium text-gray-500 mb-1">
-              Last Comment:
-            </Text>
-            <Text className="text-sm text-gray-900 leading-5" numberOfLines={2}>
-              {lead.lastComment.Content}
-            </Text>
-            {lead.visibleCommentCount && lead.visibleCommentCount - 1 > 0 && (
-              <TouchableOpacity onPress={onDetailsPress}>
-                <Text className="text-xs text-miles-500 font-medium mt-1">
-                  +{lead.visibleCommentCount - 1} more...
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-      </View>
+      </TouchableOpacity>
 
       {/* Footer Actions */}
-      <View className="flex-row border-t border-gray-200 mt-auto">
+      <View className="flex-row border-t border-gray-200 divide-x-2 divide-gray-200">
         <TouchableOpacity
           className="flex-1 flex-row justify-center items-center py-2.5"
-          onPress={(e) => {
-            e.stopPropagation();
-            toggleContactInfo();
-          }}
+          onPress={toggleContactInfo}
         >
           <Ionicons name="call" size={18} color="#6B7280" />
           <Text className="ml-1.5 text-gray-500 text-sm font-medium">
@@ -526,14 +535,9 @@ const LeadCard: React.FC<LeadCardProps> = ({
           </Text>
         </TouchableOpacity>
 
-        <View className="w-px bg-gray-200" />
-
         <TouchableOpacity
           className="flex-1 flex-row justify-center items-center py-2.5"
-          onPress={(e) => {
-            e.stopPropagation();
-            toggleCommentInput();
-          }}
+          onPress={toggleCommentInput}
         >
           <Ionicons name="chatbubble" size={18} color="#6B7280" />
           <Text className="ml-1.5 text-gray-500 text-sm font-medium">
@@ -541,14 +545,9 @@ const LeadCard: React.FC<LeadCardProps> = ({
           </Text>
         </TouchableOpacity>
 
-        <View className="w-px bg-gray-200" />
-
         <TouchableOpacity
           className="flex-1 flex-row justify-center items-center py-2.5"
-          onPress={(e) => {
-            e.stopPropagation();
-            router.push(`/lead-details/${lead._id}`);
-          }}
+          onPress={() => router.push(`/lead-details/${lead._id}`)}
         >
           <Ionicons name="information-circle" size={18} color="#6B7280" />
           <Text className="ml-1.5 text-gray-500 text-sm font-medium">
@@ -562,7 +561,7 @@ const LeadCard: React.FC<LeadCardProps> = ({
         <Animated.View
           entering={SlideInDown.duration(300)}
           exiting={SlideOutUp.duration(300)}
-          className="p-3 bg-gray-50 gap-2"
+          className="p-3 bg-gray-50 gap-2 border-t border-gray-200"
         >
           <View className="flex-row gap-2">
             <TouchableOpacity
@@ -687,29 +686,39 @@ const LeadCard: React.FC<LeadCardProps> = ({
       )}
 
       {/* Update Description Input */}
-      <UpdateDescriptionInput
-        isUpdateDescriptionInput={showCommentInput}
-        loading={loading}
-        onDescriptionChange={handleDescriptionChange}
-        onSubmit={handleUpdateSubmit}
-        onReminderPress={handleReminderPress}
-        showReminderButton={
-          // Show for non-status changes (regular comments)
-          !updateBody?.LeadStatus ||
-          (updateBody.LeadStatus && !updateBody.originalLeadStatus) ||
-          (updateBody.LeadStatus &&
-            updateBody.originalLeadStatus &&
-            updateBody.LeadStatus._id === updateBody.originalLeadStatus._id) ||
-          // Show for status changes with requiresReminder: 'optional'
-          (updateBody?.LeadStatus &&
-            updateBody.originalLeadStatus &&
-            updateBody.LeadStatus._id !== updateBody.originalLeadStatus._id &&
-            statusOptions &&
-            statusOptions.find((s) => s.value === updateBody.LeadStatus._id)
-              ?.requiresReminder === "optional")
-        }
-      />
-    </TouchableOpacity>
+      {showCommentInput && (
+        <Animated.View
+          entering={SlideInDown.duration(300)}
+          exiting={SlideOutUp.duration(300)}
+          className="border-t border-gray-200"
+        >
+          <UpdateDescriptionInput
+            isUpdateDescriptionInput={showCommentInput}
+            loading={loading}
+            onDescriptionChange={handleDescriptionChange}
+            onSubmit={handleUpdateSubmit}
+            onReminderPress={handleReminderPress}
+            showReminderButton={
+              // Show for non-status changes (regular comments)
+              !updateBody?.LeadStatus ||
+              (updateBody.LeadStatus && !updateBody.originalLeadStatus) ||
+              (updateBody.LeadStatus &&
+                updateBody.originalLeadStatus &&
+                updateBody.LeadStatus._id ===
+                  updateBody.originalLeadStatus._id) ||
+              // Show for status changes with requiresReminder: 'optional'
+              (updateBody?.LeadStatus &&
+                updateBody.originalLeadStatus &&
+                updateBody.LeadStatus._id !==
+                  updateBody.originalLeadStatus._id &&
+                statusOptions &&
+                statusOptions.find((s) => s.value === updateBody.LeadStatus._id)
+                  ?.requiresReminder === "optional")
+            }
+          />
+        </Animated.View>
+      )}
+    </View>
   );
 };
 

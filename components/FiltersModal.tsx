@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import FilterDropdown from "./FilterDropdown";
+import MultiSelectModal from "./MultiSelectModal";
 import TreeSelect from "./TreeSelect";
 
 interface FilterOption {
@@ -199,6 +199,7 @@ export default function FiltersModal({
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
+      onRequestClose={onClose}
     >
       <View className="flex-1 bg-gray-50">
         <View className="flex-row items-center justify-between p-4 bg-white border-b border-gray-200">
@@ -265,7 +266,7 @@ export default function FiltersModal({
               <Text className="text-base font-semibold text-gray-700 mb-3">
                 Status
               </Text>
-              <FilterDropdown
+              <MultiSelectModal
                 title="Select Status"
                 options={statusOptions}
                 selectedValues={localFilters.selectedStatuses}
@@ -287,7 +288,7 @@ export default function FiltersModal({
               <Text className="text-base font-semibold text-gray-700 mb-3">
                 Sources
               </Text>
-              <FilterDropdown
+              <MultiSelectModal
                 title="Select Sources"
                 options={sourceOptions}
                 selectedValues={localFilters.selectedSources}
@@ -308,7 +309,7 @@ export default function FiltersModal({
             <Text className="text-base font-semibold text-gray-700 mb-3">
               Tags
             </Text>
-            <FilterDropdown
+            <MultiSelectModal
               title="Select Tags"
               options={tagOptions}
               selectedValues={localFilters.selectedTags}

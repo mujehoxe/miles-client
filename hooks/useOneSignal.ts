@@ -3,18 +3,20 @@ import OneSignal from "react-native-onesignal";
 
 const ONE_SIGNAL_APP_ID = "d1134921-c416-419e-a0a7-0c98e2640e2a";
 
-export default function useOneSignal(user) {
+interface User {
+  id: string;
+}
+
+export default function useOneSignal(user: User | null) {
   useEffect(() => {
-    console.log(user);
-    if (user) setupOneSignal();
+        if (user) setupOneSignal();
   }, [user]);
 
   async function setupOneSignal() {
     OneSignal.setAppId(ONE_SIGNAL_APP_ID);
 
     OneSignal.promptForPushNotificationsWithUserResponse((response) => {
-      console.log("User's response to notification prompt:", response);
-    });
+          });
 
     OneSignal.setNotificationWillShowInForegroundHandler(
       (notificationReceivedEvent) => {
@@ -28,35 +30,20 @@ export default function useOneSignal(user) {
 
           notificationReceivedEvent.complete(notification);
         } catch (err) {
-          console.error(err);
+          console.error("OneSignal error:", err);
         }
       }
     );
 
-    OneSignal.getDeviceState().then((deviceState) => {
-      console.log("Device State:", deviceState);
-      if (!deviceState?.isSubscribed) {
-        console.log("Device not subscribed. Attempting to subscribe...");
-        OneSignal.addSubscriptionObserver((event) => {
-          if (event.to.isSubscribed) {
-            console.log("Successfully subscribed with ID:", event.to.userId);
-            sendPlayerIdToServer(user?.id, event.to.userId);
-          }
-        });
-        // Trigger the subscription
-        OneSignal.disablePush(false);
-      } else {
-        console.log("Device already subscribed with ID:", deviceState.userId);
-        sendPlayerIdToServer(user?.id, deviceState.userId);
-      }
-    });
+    // Trigger the subscription
+    OneSignal.disablePush(false);
 
     return () => {
       OneSignal.clearHandlers();
     };
   }
 
-  const sendPlayerIdToServer = async (userId, playerId) => {
+  const sendPlayerIdToServer = async (userId: string, playerId: string) => {
     try {
       const response = await fetch(
         `${process.env.EXPO_PUBLIC_BASE_URL}/api/users/update-player-id`,
@@ -67,7 +54,7 @@ export default function useOneSignal(user) {
         }
       );
     } catch (error) {
-      console.error("Error updating Player ID:", error);
+      console.error(error);
     }
   };
 }

@@ -1,0 +1,109 @@
+name: Enable GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Single deploy job since we're just enabling GitHub Pages
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Create index page
+        run: |
+          mkdir -p public
+          cat > public/index.html << EOF
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Miles Client - F-Droid Repository</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <style>
+                  body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+                  .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                  h1 { color: #2196F3; text-align: center; }
+                  .repo-url { background: #f0f0f0; padding: 15px; border-radius: 5px; margin: 20px 0; font-family: monospace; word-break: break-all; }
+                  .button { background: #2196F3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0; }
+                  .button:hover { background: #1976D2; }
+                  .steps { background: #e8f5e8; padding: 20px; border-radius: 5px; margin: 20px 0; }
+                  .steps ol { padding-left: 20px; }
+                  .steps li { margin: 10px 0; }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>📱 Miles Client F-Droid Repository</h1>
+                  
+                  <p>Welcome to the F-Droid repository for Miles Client - a location tracking and management application.</p>
+                  
+                  <h2>🔧 Installation Instructions</h2>
+                  <div class="steps">
+                      <ol>
+                          <li>Install <a href="https://f-droid.org/" target="_blank">F-Droid</a> on your Android device</li>
+                          <li>Open F-Droid and go to <strong>Settings → Repositories</strong></li>
+                          <li>Tap the <strong>"+"</strong> button to add a new repository</li>
+                          <li>Enter this repository URL:</li>
+                      </ol>
+                  </div>
+                  
+                  <div class="repo-url">
+                      https://mujehoxe.github.io/miles-client/fdroid
+                  </div>
+                  
+                  <p>Once added, you'll be able to install and receive updates for Miles Client directly through F-Droid!</p>
+                  
+                  <h2>🚀 Alternative Installation</h2>
+                  <p>You can also download the APK directly from our releases:</p>
+                  <a href="https://github.com/mujehoxe/miles-client/releases/latest" class="button">Download Latest APK</a>
+                  
+                  <h2>📱 About Miles Client</h2>
+                  <p>Miles Client is a comprehensive location tracking and management application with features including:</p>
+                  <ul>
+                      <li>Real-time GPS location tracking</li>
+                      <li>Campaign management and organization</li>
+                      <li>Progress monitoring and analytics</li>
+                      <li>Offline support for remote areas</li>
+                      <li>Push notifications</li>
+                  </ul>
+                  
+                  <h2>🔗 Links</h2>
+                  <p>
+                      <a href="https://github.com/mujehoxe/miles-client">Source Code</a> |
+                      <a href="https://github.com/mujehoxe/miles-client/issues">Report Issues</a> |
+                      <a href="https://github.com/mujehoxe/miles-client/releases">Releases</a>
+                  </p>
+              </div>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: './public'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
