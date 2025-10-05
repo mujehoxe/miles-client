@@ -24,8 +24,6 @@ import MeetingsTab from "../../components/leadDetails/MeetingsTab";
 import ProfileTab from "../../components/leadDetails/ProfileTab";
 import RemindersTab from "../../components/leadDetails/RemindersTab";
 import { fetchLeadById } from "../../services/api";
-import { logCall } from "../../services/callApi";
-import { getCachedLead, setCachedLead } from "../../utils/leadCache";
 
 interface Lead {
   _id: string;
@@ -225,15 +223,8 @@ export default function LeadDetailsPage() {
         setLoading(true);
         setError(null);
 
-        // Serve from cache immediately if available, then refresh in background
-        const cached = getCachedLead(id);
-        if (cached) {
-          setLead(cached);
-        }
-
         const leadData = await fetchLeadById(id);
         setLead(leadData);
-        setCachedLead(id, leadData);
 
         // Load campaign leads if in calling mode
         if (fromCalling) {
@@ -258,11 +249,8 @@ export default function LeadDetailsPage() {
     const nextIdx = currentLeadIndex + 1;
     if (nextIdx >= campaignLeads.length) return;
     const nextId = campaignLeads[nextIdx];
-    if (!getCachedLead(nextId)) {
-      fetchLeadById(nextId)
-        .then((nextLead) => setCachedLead(nextId, nextLead))
-        .catch(() => {});
-    }
+    // Simple prefetch without caching - let the browser handle caching
+    fetchLeadById(nextId).catch(() => {});
   }, [lead, currentLeadIndex, campaignLeads]);
 
   const handleLeadUpdate = (updatedLead: Lead) => {
