@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
   Modal,
-  Platform,
   ScrollView,
   Text,
   TextInput,
@@ -116,32 +115,6 @@ export default function FiltersModal({
         [field]: newArray,
       };
     });
-  };
-
-  const handleDateChange = (
-    event: any,
-    selectedDate: Date | undefined,
-    isStartDate: boolean
-  ) => {
-    if (Platform.OS === "android") {
-      setShowStartDatePicker(false);
-      setShowEndDatePicker(false);
-    }
-
-    if (selectedDate) {
-      setLocalFilters((prev) => {
-        const newRange: [Date | null, Date | null] = [...prev.dateRange];
-        if (isStartDate) {
-          newRange[0] = selectedDate;
-        } else {
-          newRange[1] = selectedDate;
-        }
-        return {
-          ...prev,
-          dateRange: newRange,
-        };
-      });
-    }
   };
 
   const FilterSection = ({
