@@ -40,6 +40,7 @@ import useUserPermissions from "@/hooks/useUserPermissions";
 import {
   deleteLeads,
   exportLeads,
+  fetchLeads,
   fetchStatusCounts,
   fetchTagOptions,
   updateLead,
@@ -95,6 +96,7 @@ export default function LeadsPage() {
     paginationLoading,
     refreshLeads,
     setPaginationLoading,
+    setLeadsManually,
   } = useLeadsData({
     user,
     filters,
@@ -142,9 +144,15 @@ export default function LeadsPage() {
 
   const userPermissions = useUserPermissions(user);
 
+  // Optimize state updates to prevent flashing between lead sets
   useEffect(() => {
-    setLocalLeads(leads);
-  }, [leads]);
+    // Only update local leads if we have actual data or if it's a reset
+    if (leads.length > 0 || (leads.length === 0 && !loading)) {
+      console.log(`🔄 Updating localLeads: ${leads.length} leads from hook`);
+      console.log('📋 Local leads update:', leads.map(lead => ({ id: lead._id, name: lead.Name })));
+      setLocalLeads(leads);
+    }
+  }, [leads, loading]);
 
   useAgentInitialization({ agents, user, filters, updateFilters });
 
@@ -185,13 +193,29 @@ export default function LeadsPage() {
   const handlePageChange = async (newPage: number) => {
     if (newPage === currentPage || paginationLoading) return;
 
+    console.log(`🔄 Page change: ${currentPage} → ${newPage}`);
+    
     setPaginationLoading(true);
     setCurrentPage(newPage);
 
     try {
-      await refreshLeads();
+      // Add small delay to prevent rapid API calls
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Pass the new page directly to avoid stale state issues
+      const response = await fetchLeads(user, filters, searchTerm, {
+        page: newPage,
+        limit: leadsPerPage,
+      });
+      
+      console.log(`✅ Page ${newPage} loaded: ${response.data.length} leads`);
+      console.log('📋 Leads on this page:', response.data.map(lead => ({ id: lead._id, name: lead.Name })));
+      
+      // Update both local and hook states to keep everything in sync
+      setLocalLeads(response.data);
+      setLeadsManually(response.data, response.totalLeads);
     } catch (error) {
-      console.error(error);
+      console.error(`❌ Page ${newPage} failed:`, error);
       Toast.show("Error loading page", {
         duration: Toast.durations.SHORT,
       });
@@ -520,7 +544,7 @@ export default function LeadsPage() {
         onClearSelection={clearSelection}
       />
 
-      {!loading && leads?.length > 0 && (
+      {!loading && !paginationLoading && leads?.length > 0 && (
         <ActionButtons
           selectedLeads={selectedLeads}
           totalLeads={localLeads.length}
