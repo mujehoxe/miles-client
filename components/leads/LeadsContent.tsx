@@ -33,7 +33,6 @@ interface LeadsContentProps {
   totalPages: number;
   totalLeads: number;
   leadsPerPage: number;
-  paginationLoading: boolean;
   miles600: string;
   onStatusCountsExpandedChange: (expanded: boolean) => void;
   onStatusFilter: (statusId: string) => void;
@@ -68,8 +67,6 @@ export default function LeadsContent({
   totalPages,
   totalLeads,
   leadsPerPage,
-  paginationLoading,
-  miles600,
   onStatusCountsExpandedChange,
   onStatusFilter,
   onClearStatusFilter,
@@ -180,7 +177,7 @@ export default function LeadsContent({
             totalItems={totalLeads}
             itemsPerPage={leadsPerPage}
             onPageChange={onPageChange}
-            loading={paginationLoading}
+            loading={loading}
           />
         </View>
       </ScrollView>

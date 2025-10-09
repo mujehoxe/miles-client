@@ -1,5 +1,7 @@
 import LoginPage from "@/components/LoginPage";
+import useLocation from "@/hooks/useLocation";
 import useOneSignal from "@/hooks/useOneSignal";
+// Import background location task to ensure it's registered
 import { Stack } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { StatusBar } from "expo-status-bar";
@@ -20,6 +22,8 @@ export default function RootLayout() {
 
   // Initialize OneSignal when user is available
   useOneSignal(user);
+  // Start background location updates when user is available (no UI)
+  useLocation(user);
 
   // Function to validate stored token and handle logout
   const validateStoredToken = async () => {

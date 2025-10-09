@@ -198,8 +198,10 @@ export const getUsers = async () => {
           } catch {
             return { error: text || `HTTP ${response.status}` };
           }
-        });      
-      }
+        });
+      throw new Error(
+        errorData.error || `Failed to fetch users: HTTP ${response.status}`
+      );
     }
 
     const result = await response.json();
