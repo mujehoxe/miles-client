@@ -10,7 +10,7 @@
     "web": "expo start --web",
     "test": "jest --watchAll",
     "lint": "expo lint",
-    "pre-build": "./scripts/pre-build.sh"
+    "pre-build": "./.appflow/build.sh || ./scripts/pre-build.sh"
   },
   "jest": {
     "preset": "jest-expo"
