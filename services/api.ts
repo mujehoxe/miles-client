@@ -31,7 +31,7 @@ export interface LeadsResponse {
 export interface FilterOption {
   value: string;
   label: string;
-  color?: string;
+  color: string;
   requiresReminder?: "yes" | "no" | "optional";
 }
 
@@ -432,7 +432,7 @@ export const fetchStatusOptions = async (): Promise<FilterOption[]> => {
       return data.data.map((status: any) => ({
         value: status._id,
         label: status.Status,
-        color: status.color,
+        color: status.color || "#6B7280", // Default color if not provided
         requiresReminder: status.requiresReminder,
       }));
     } else {
@@ -462,6 +462,7 @@ export const fetchSourceOptions = async (): Promise<FilterOption[]> => {
       return data.data.map((source: any) => ({
         value: source._id,
         label: source.Source,
+        color: source.color || "#6B7280", // Default color if not provided
       }));
     } else {
       return [];
@@ -500,6 +501,7 @@ export const fetchTagOptions = async (
       const tagOpts = data.data.map((tag: any) => ({
         label: tag.Tag,
         value: `${tag.Tag}::${tag._id}`, // Use actual tag ID
+        color: tag.color || "#6B7280", // Default color if not provided
       }));
 
       return {
@@ -1118,5 +1120,110 @@ export const getLeadMeetings = async (leadId: string) => {
     return meetings;
   } catch (error) {
     throw error;
+  }
+};
+
+
+/**
+ * Log a dialer time tracking session
+ * @param sessionData - Dialer session data including leadId, phoneNumber, duration, etc.
+ * @returns Promise<any> - API response
+ */
+export const logDialerSession = async (sessionData: {
+  leadId: string;
+  phoneNumber: string;
+  startedAt: string;
+  endedAt: string;
+  durationSeconds: number;
+  transferredToDialer: boolean;
+  platform: string;
+}): Promise<any> => {
+  if (!(await validateAuthToken())) {
+    throw new Error("Authentication failed. Please login again.");
+  }
+
+  try {
+    const headers = await createAuthHeaders();
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/dialer-session/log`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(sessionData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: `HTTP ${response.status}` }));
+      throw new Error(
+        errorData.error || `Failed to log dialer session: HTTP ${response.status}`
+      );
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Get agent call statistics for a date range
+ * @param userId - User ID (optional, defaults to current user)
+ * @param startDate - Start date in YYYY-MM-DD format
+ * @param endDate - End date in YYYY-MM-DD format
+ * @returns Promise<any> - API response with call statistics
+ */
+export const getDialerSessionStats = async (userId: string | null, startDate: string, endDate: string): Promise<any> => {
+  if (!(await validateAuthToken())) {
+    throw new Error("Authentication failed. Please login again.");
+  }
+
+  try {
+    const headers = await createAuthHeaders();
+    
+    // Build query parameters
+    const params = new URLSearchParams({
+      startDate,
+      endDate,
+    });
+    
+    if (userId) {
+      params.append('userId', userId);
+    }
+    
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/dialer-session/stats?${params.toString()}`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers,
+    });
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: `HTTP ${response.status}` }));
+      throw new Error(
+        errorData.error || `Failed to get dialer session stats: HTTP ${response.status}`
+      );
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Clear authentication data from secure storage
+ */
+export const clearAuthData = async (): Promise<void> => {
+  try {
+    await SecureStore.deleteItemAsync("userToken");
+    await SecureStore.deleteItemAsync("refreshToken");
+  } catch (error) {
+    console.error("Error clearing auth data:", error);
   }
 };

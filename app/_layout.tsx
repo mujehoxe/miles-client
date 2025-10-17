@@ -2,18 +2,18 @@ import LoginPage from "@/components/LoginPage";
 import useLocation from "@/hooks/useLocation";
 import useOneSignal from "@/hooks/useOneSignal";
 // Import background location task to ensure it's registered
-import '../tasks/backgroundLocationTask';
-import { Stack } from "expo-router";
 import * as Location from "expo-location";
-import * as TaskManager from "expo-task-manager";
-import { BACKGROUND_LOCATION_TASK } from "../tasks/backgroundLocationTask";
+import { Stack } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { StatusBar } from "expo-status-bar";
+import * as TaskManager from "expo-task-manager";
 import { jwtDecode } from "jwt-decode";
 import React, { createContext, useEffect, useState } from "react";
 import { AppState } from "react-native";
 import { RootSiblingParent } from "react-native-root-siblings";
 import "../global.css";
+import "../tasks/backgroundLocationTask";
+import { BACKGROUND_LOCATION_TASK } from "../tasks/backgroundLocationTask";
 
 export const UserContext = createContext<any | null>(null);
 export const LogoutContext = createContext<(() => Promise<void>) | null>(null);
@@ -26,15 +26,11 @@ export default function RootLayout() {
 
   // Initialize OneSignal when user is available
   useOneSignal(user);
+
   // Get location hook functions
   const {
-    location,
-    address,
-    error,
     permissionGranted,
-    isTrackingLocation,
     requestLocationPermission,
-    stopLocationTracking,
   } = useLocation(user);
 
   // Function to validate stored token and handle logout
@@ -74,12 +70,14 @@ export default function RootLayout() {
   const handleLogout = async () => {
     try {
       // Stop background location tracking
-      const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_LOCATION_TASK);
+      const isRegistered = await TaskManager.isTaskRegisteredAsync(
+        BACKGROUND_LOCATION_TASK
+      );
       if (isRegistered) {
         await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
-        console.log('Background location task stopped on logout');
+        console.log("Background location task stopped on logout");
       }
-      
+
       await SecureStore.deleteItemAsync("userToken");
       await SecureStore.deleteItemAsync("refreshToken");
       await SecureStore.deleteItemAsync("user_permissions");
@@ -111,18 +109,23 @@ export default function RootLayout() {
       const timer = setTimeout(async () => {
         try {
           // First check if we already have permissions
-          const { status: existingStatus } = await Location.getForegroundPermissionsAsync();
-          console.log('Existing foreground permission status:', existingStatus);
-          
-          if (existingStatus === 'granted') {
-            console.log('Location permission already granted, will start tracking via hook');
+          const { status: existingStatus } =
+            await Location.getForegroundPermissionsAsync();
+          console.log("Existing foreground permission status:", existingStatus);
+
+          if (existingStatus === "granted") {
+            console.log(
+              "Location permission already granted, will start tracking via hook"
+            );
             // The hook will handle starting location updates when permission is detected
           } else {
-            console.log('Location permission not granted, requesting permission...');
+            console.log(
+              "Location permission not granted, requesting permission..."
+            );
             await requestLocationPermission();
           }
         } catch (error) {
-          console.warn('Failed to check/request location permission:', error);
+          console.warn("Failed to check/request location permission:", error);
         }
       }, 1000);
       return () => clearTimeout(timer);
@@ -160,7 +163,6 @@ export default function RootLayout() {
 
     return () => clearInterval(checkTokenPeriodically);
   }, [token]);
-
 
   const handleLoginSuccess = async (newToken: string) => {
     try {
