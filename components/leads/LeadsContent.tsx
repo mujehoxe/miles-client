@@ -40,6 +40,7 @@ interface LeadsContentProps {
   onLeadUpdate: (leadId: string, updates: any) => Promise<void>;
   onPageChange: (page: number) => void;
   onModalOpen: (type: string, leadId: string, callback: () => void) => void;
+  onCallStatusUpdateModalOpen?: (lead: any, preSelectedStatusId?: string) => void;
   isLeadSelected: (lead: any) => boolean;
   toggleLeadSelection: (lead: any) => void;
   scrollToCard: (leadId: string) => void;
@@ -73,6 +74,7 @@ export default function LeadsContent({
   onLeadUpdate,
   onPageChange,
   onModalOpen,
+  onCallStatusUpdateModalOpen,
   isLeadSelected,
   toggleLeadSelection,
   scrollToCard,
@@ -166,6 +168,7 @@ export default function LeadsContent({
                 onOpenModal={(type, callback) => {
                   onModalOpen(type, lead._id, callback);
                 }}
+                onCallStatusUpdateModalOpen={(preSelectedStatusId) => onCallStatusUpdateModalOpen?.(lead, preSelectedStatusId)}
               />
             </View>
           ))}
