@@ -49,3 +49,7 @@ build*
 
 # Miles CRM Services - separate repository
 miles-crm-services/
+
+# External projects (not part of Miles Client)
+spicyhunt/
+user-agent-tracker/
