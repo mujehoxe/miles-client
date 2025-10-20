@@ -28,10 +28,7 @@ export default function RootLayout() {
   useOneSignal(user);
 
   // Get location hook functions
-  const {
-    permissionGranted,
-    requestLocationPermission,
-  } = useLocation(user);
+  const { permissionGranted, requestLocationPermission } = useLocation(user);
 
   // Function to validate stored token and handle logout
   const validateStoredToken = async () => {
