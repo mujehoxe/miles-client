@@ -672,28 +672,28 @@ export const fetchLeadComments = async (leadId: string): Promise<any[]> => {
 };
 
 /**
- * Search developers using Algolia API
+ * Search developers using our internal API
  */
 export const searchDevelopers = async (query: string = ""): Promise<any[]> => {
   try {
+    if (!(await validateAuthToken())) {
+      throw new Error("Authentication failed");
+    }
+
+    const headers = await createAuthHeaders();
+    const params = new URLSearchParams({
+      limit: '20', // Match the previous limit of 20 results
+    });
+    
+    if (query.trim()) {
+      params.append('search', query.trim());
+    }
+
     const response = await fetch(
-      "https://ll8iz711cs-dsn.algolia.net/1/indexes/*/queries?x-algolia-agent=Algolia%20for%20JavaScript%20(3.35.1)%3B%20Browser%20(lite)&x-algolia-application-id=LL8IZ711CS&x-algolia-api-key=15cb8b0a2d2d435c6613111d860ecfc5",
+      `${process.env.EXPO_PUBLIC_BASE_URL}/api/developers?${params.toString()}`,
       {
-        method: "POST",
-        headers: {
-          "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          requests: [
-            {
-              indexName: "bayut-production-agencies-en",
-              params: `page=0&hitsPerPage=100&query=${encodeURIComponent(
-                query
-              )}&optionalWords=&facets=%5B%5D&maxValuesPerFacet=100&attributesToHighlight=%5B%22name%22%5D&attributesToRetrieve=%5B%22name%22%2C%22stats.adsCount%22%5D&filters=(type%3A%22developer%22)&numericFilters=stats.adsCount%3E%3D1`,
-            },
-          ],
-        }),
+        method: "GET",
+        headers,
       }
     );
 
@@ -703,14 +703,12 @@ export const searchDevelopers = async (query: string = ""): Promise<any[]> => {
 
     const data = await response.json();
 
-    // Process and sort the results
-    const developerOptions = data.results[0].hits
-      .sort((a: any, b: any) => b.stats.adsCount - a.stats.adsCount)
-      .slice(0, 20)
+    // Transform the results to match the expected format
+    const developerOptions = (data.data || [])
       .map((developer: any) => ({
-        value: developer.name,
-        label: developer.name,
-        adsCount: developer.stats.adsCount,
+        value: developer.Developer || developer.name,
+        label: developer.Developer || developer.name,
+        adsCount: developer.properties_sale_count || 0,
       }));
 
     return developerOptions;
