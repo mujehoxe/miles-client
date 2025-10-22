@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TouchableWithoutFeedback } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { PeriodType } from "../../types/tasks";
 
 interface PeriodToggleProps {
@@ -9,37 +9,87 @@ interface PeriodToggleProps {
 
 export const PeriodToggle: React.FC<PeriodToggleProps> = ({ period, onPeriodChange }) => {
   return (
-    <View className="flex-row bg-miles-50 rounded-xl p-1">
-      <TouchableWithoutFeedback onPress={() => onPeriodChange("today")}>
+    <View style={styles.container}>
+      <TouchableOpacity
+        onPress={() => onPeriodChange("today")}
+        activeOpacity={0.7}
+        style={styles.touchable}
+      >
         <View
-          className={`flex-1 py-2 px-4 rounded-lg items-center ${
-            period === "today" ? "bg-miles-500 shadow-sm" : "bg-transparent"
-          }`}
+          style={[
+            styles.button,
+            period === "today" ? styles.activeButton : styles.inactiveButton,
+          ]}
         >
           <Text
-            className={`font-semibold ${
-              period === "today" ? "text-white" : "text-miles-700"
-            }`}
+            style={[
+              styles.buttonText,
+              period === "today" ? styles.activeText : styles.inactiveText,
+            ]}
           >
             Today
           </Text>
         </View>
-      </TouchableWithoutFeedback>
-      <TouchableWithoutFeedback onPress={() => onPeriodChange("week")}>
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => onPeriodChange("week")}
+        activeOpacity={0.7}
+        style={styles.touchable}
+      >
         <View
-          className={`flex-1 py-2 px-4 rounded-lg items-center ${
-            period === "week" ? "bg-miles-500 shadow-sm" : "bg-transparent"
-          }`}
+          style={[
+            styles.button,
+            period === "week" ? styles.activeButton : styles.inactiveButton,
+          ]}
         >
           <Text
-            className={`font-semibold ${
-              period === "week" ? "text-white" : "text-miles-700"
-            }`}
+            style={[
+              styles.buttonText,
+              period === "week" ? styles.activeText : styles.inactiveText,
+            ]}
           >
             This Week
           </Text>
         </View>
-      </TouchableWithoutFeedback>
+      </TouchableOpacity>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: "row",
+    backgroundColor: "#e6f0f8", // miles-50
+    borderRadius: 12,
+    padding: 4,
+  },
+  touchable: {
+    flex: 1,
+  },
+  button: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  activeButton: {
+    backgroundColor: "#176298", // miles-500
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  inactiveButton: {
+    backgroundColor: "transparent",
+  },
+  buttonText: {
+    fontWeight: "600",
+  },
+  activeText: {
+    color: "#FFFFFF",
+  },
+  inactiveText: {
+    color: "#124b68", // miles-700
+  },
+});
