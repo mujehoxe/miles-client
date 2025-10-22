@@ -1,6 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import { Alert, Linking, Text, TouchableOpacity, View } from "react-native";
 import Animated, { SlideInDown, SlideOutUp } from "react-native-reanimated";
 import { formatPhoneNumber, formatTimestamp } from "../utils/dateFormatter";
