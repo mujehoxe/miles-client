@@ -5,11 +5,7 @@ import { createAuthHeaders } from "../services/api";
 import { Task, TasksResponse, TaskSummary, PeriodType, UpdateTaskStatusParams } from "../types/tasks";
 
 const getBaseUrl = () => {
-  if (__DEV__) {
-    return process.env.EXPO_PUBLIC_BASE_URL || "http://192.168.70.3:3000";
-  } else {
-    return "";
-  }
+  return process.env.EXPO_PUBLIC_BASE_URL || "https://crm.propertymetre.com";
 };
 
 export const useTasksData = () => {
