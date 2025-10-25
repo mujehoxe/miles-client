@@ -12,7 +12,7 @@ export const addReminder = async (reminderData: any) => {
   
   try {
     const headers = await createAuthHeaders();
-    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Reminder/add`;
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/Reminder/add`;
     
     const response = await fetch(url, {
       method: 'POST',
@@ -45,7 +45,7 @@ export const updateReminder = async (reminderId: string, reminderData: any) => {
   
   try {
     const headers = await createAuthHeaders();
-    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Reminder/update/${reminderId}`;
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/Reminder/update/${reminderId}`;
     
     const response = await fetch(url, {
       method: 'PATCH',
@@ -77,7 +77,7 @@ export const getLeadReminders = async (leadId: string) => {
   
   try {
     const headers = await createAuthHeaders();
-    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Reminder/get/${leadId}`;
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/Reminder/get/${leadId}`;
     
     const response = await fetch(url, {
       method: 'GET',

@@ -56,7 +56,7 @@ export const fetchCampaignLeads = async (
   };
 
   const response = await fetch(
-    `${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/campaign`,
+    `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/Lead/campaign`,
     {
       method: "POST",
       headers,
@@ -69,7 +69,7 @@ export const fetchCampaignLeads = async (
     console.error("Campaign Leads API Error:", {
       status: response.status,
       statusText: response.statusText,
-      url: `${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/campaign`,
+      url: `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/Lead/campaign`,
       requestBody,
       errorText,
     });
@@ -221,7 +221,7 @@ export const fetchCampaignLeadIds = async (
   };
 
   const response = await fetch(
-    `${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/campaign/ids`,
+    `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/Lead/campaign/ids`,
     {
       method: "POST",
       headers,
@@ -268,7 +268,7 @@ export const diagnoseStagingIssues = async (): Promise<void> => {
   try {
     console.log("Testing basic connectivity...");
     const basicResponse = await fetch(
-      `${process.env.EXPO_PUBLIC_BASE_URL}/api/healthcheck`,
+      `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/healthcheck`,
       {
         method: "GET",
       }
@@ -289,7 +289,7 @@ export const diagnoseStagingIssues = async (): Promise<void> => {
       console.log("Testing authenticated request...");
       const headers = await createAuthHeaders();
       const authResponse = await fetch(
-        `${process.env.EXPO_PUBLIC_BASE_URL}/api/campaigns/with-counts?page=1&limit=1`,
+        `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/campaigns/with-counts?page=1&limit=1`,
         {
           method: "GET",
           headers,

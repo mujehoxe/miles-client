@@ -146,7 +146,7 @@ export default function useOneSignal(user: User | null) {
     try {
       console.log("Sending player ID to server:", { userId, playerId });
       const response = await fetch(
-        `${process.env.EXPO_PUBLIC_BASE_URL}api/users/update-player-id`,
+        `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/users/update-player-id`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

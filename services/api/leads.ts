@@ -89,7 +89,7 @@ export const fetchLeads = async (
   );
 
   const response = await fetch(
-    `${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/get`,
+    `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/Lead/get`,
     {
       method: "POST",
       headers,
@@ -122,7 +122,7 @@ export const getLeadMeetings = async (leadId: string) => {
 
   try {
     const headers = await createAuthHeaders();
-    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Meeting/get/${leadId}`;
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/Meeting/get/${leadId}`;
 
     const response = await fetch(url, {
       method: "GET",

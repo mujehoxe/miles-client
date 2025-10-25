@@ -46,7 +46,7 @@ const RequirementsSection: React.FC<RequirementsSectionProps> = ({ lead }) => {
         }
 
         const headers = await createAuthHeaders();
-        const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/requirement-fields?includeInactive=false`, {
+        const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/requirement-fields?includeInactive=false`, {
           method: 'GET',
           headers,
         });
@@ -64,7 +64,7 @@ const RequirementsSection: React.FC<RequirementsSectionProps> = ({ lead }) => {
             console.log('RequirementsSection - No fields returned, attempting to initialize defaults');
             try {
               // Try to initialize default fields
-              const initResponse = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/requirement-fields/initialize`, {
+              const initResponse = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/requirement-fields/initialize`, {
                 method: 'POST',
                 headers,
               });

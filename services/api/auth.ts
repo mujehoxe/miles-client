@@ -38,7 +38,7 @@ const refreshAuthToken = async (): Promise<string | null> => {
     }
 
     const response = await fetch(
-      `${process.env.EXPO_PUBLIC_BASE_URL}/api/auth/refresh`,
+      `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/auth/refresh`,
       {
         method: "POST",
         headers: {
@@ -94,7 +94,7 @@ export const logout = async (): Promise<boolean> => {
     if (storedToken) {
       try {
         const response = await fetch(
-          `${process.env.EXPO_PUBLIC_BASE_URL}/api/auth/logout`,
+          `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/auth/logout`,
           {
             method: "POST",
             headers: {

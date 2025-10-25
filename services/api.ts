@@ -53,7 +53,7 @@ export const createAuthHeaders = async () => {
     accept: "application/json, text/plain, */*",
     "content-type": "application/json",
     Cookie: `token=${storedToken}`,
-    referer: `${process.env.EXPO_PUBLIC_BASE_URL}/Leads/Marketing`,
+    referer: `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/Leads/Marketing`,
     origin: `${process.env.EXPO_PUBLIC_BASE_URL}`,
     "user-agent":
       "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) MilesClient-Mobile/1.0.0",
@@ -73,7 +73,7 @@ export const addReminder = async (reminderData: any) => {
 
   try {
     const headers = await createAuthHeaders();
-    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Reminder/add`;
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/Reminder/add`;
 
     const response = await fetch(url, {
       method: "POST",
@@ -110,7 +110,7 @@ export const updateReminder = async (reminderId: string, reminderData: any) => {
 
   try {
     const headers = await createAuthHeaders();
-    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Reminder/update/${reminderId}`;
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/Reminder/update/${reminderId}`;
 
     const response = await fetch(url, {
       method: "PATCH",
@@ -146,7 +146,7 @@ export const getLeadReminders = async (leadId: string) => {
 
   try {
     const headers = await createAuthHeaders();
-    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Reminder/get/${leadId}`;
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/Reminder/get/${leadId}`;
 
     const response = await fetch(url, {
       method: "GET",
@@ -180,7 +180,7 @@ export const getUsers = async () => {
 
   try {
     const headers = await createAuthHeaders();
-    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/staff/get`;
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/staff/get`;
 
     console.log("👥 Fetching users from:", url);
 
@@ -222,7 +222,7 @@ const refreshAuthToken = async (): Promise<string | null> => {
     }
 
     const response = await fetch(
-      `${process.env.EXPO_PUBLIC_BASE_URL}/api/auth/refresh`,
+      `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/auth/refresh`,
       {
         method: "POST",
         headers: {
@@ -394,7 +394,7 @@ export const fetchLeads = async (
   );
 
   const response = await fetch(
-    `${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/get`,
+    `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/Lead/get`,
     {
       method: "POST",
       headers,
@@ -420,7 +420,7 @@ export const fetchStatusOptions = async (): Promise<FilterOption[]> => {
   try {
     const headers = await createAuthHeaders();
     const response = await fetch(
-      `${process.env.EXPO_PUBLIC_BASE_URL}/api/Status/get`,
+      `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/Status/get`,
       {
         method: "GET",
         headers,
@@ -450,7 +450,7 @@ export const fetchSourceOptions = async (): Promise<FilterOption[]> => {
   try {
     const headers = await createAuthHeaders();
     const response = await fetch(
-      `${process.env.EXPO_PUBLIC_BASE_URL}/api/Source/get`,
+      `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/Source/get`,
       {
         method: "GET",
         headers,
@@ -489,7 +489,7 @@ export const fetchTagOptions = async (
     });
 
     const response = await fetch(
-      `${process.env.EXPO_PUBLIC_BASE_URL}/api/tags/get?${queryParams}`,
+      `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/tags/get?${queryParams}`,
       {
         method: "GET",
         headers,
@@ -566,7 +566,7 @@ export const updateLead = async (
   const headers = await createAuthHeaders();
 
   const response = await fetch(
-    `${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/update/${leadId}`,
+    `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/Lead/update/${leadId}`,
     {
       method: "PATCH",
       headers,
@@ -591,7 +591,7 @@ export const fetchAgents = async (user: any): Promise<any[]> => {
   try {
     const headers = await createAuthHeaders();
     const response = await fetch(
-      `${process.env.EXPO_PUBLIC_BASE_URL}/api/staff/get?preserveHierarchy=true`,
+      `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/staff/get?preserveHierarchy=true`,
       {
         method: "GET",
         headers,
@@ -626,7 +626,7 @@ export const fetchLeadById = async (leadId: string): Promise<any> => {
   const headers = await createAuthHeaders();
 
   const response = await fetch(
-    `${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/${leadId}`,
+    `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/Lead/${leadId}`,
     {
       method: "GET",
       headers,
@@ -656,7 +656,7 @@ export const fetchLeadComments = async (leadId: string): Promise<any[]> => {
   const headers = await createAuthHeaders();
 
   const response = await fetch(
-    `${process.env.EXPO_PUBLIC_BASE_URL}/api/comment/get/${leadId}`,
+    `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/comment/get/${leadId}`,
     {
       method: "GET",
       headers,
@@ -690,7 +690,7 @@ export const searchDevelopers = async (query: string = ""): Promise<any[]> => {
     }
 
     const response = await fetch(
-      `${process.env.EXPO_PUBLIC_BASE_URL}/api/developers?${params.toString()}`,
+      `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/developers?${params.toString()}`,
       {
         method: "GET",
         headers,
@@ -788,7 +788,7 @@ export const exportLeads = async (
   }
 
   const response = await fetch(
-    `${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/export/${leadType}`,
+    `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/Lead/export/${leadType}`,
     {
       method: "POST",
       headers,
@@ -826,7 +826,7 @@ export const deleteLeads = async (leadIds: string[]): Promise<any> => {
   const headers = await createAuthHeaders();
 
   const response = await fetch(
-    `${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/delete`,
+    `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/Lead/delete`,
     {
       method: "DELETE",
       headers,
@@ -859,7 +859,7 @@ export const bulkUpdateLeads = async (bulkData: any): Promise<any> => {
   const headers = await createAuthHeaders();
 
   const response = await fetch(
-    `${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/bulk`,
+    `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/Lead/bulk`,
     {
       method: "PUT",
       headers,
@@ -898,7 +898,7 @@ export const addLeadComment = async (
   const headers = await createAuthHeaders();
 
   const response = await fetch(
-    `${process.env.EXPO_PUBLIC_BASE_URL}/api/comment/add`,
+    `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/comment/add`,
     {
       method: "POST",
       headers,
@@ -932,7 +932,7 @@ export const deleteLeadComment = async (commentId: string): Promise<any> => {
   const headers = await createAuthHeaders();
 
   const response = await fetch(
-    `${process.env.EXPO_PUBLIC_BASE_URL}/api/comment/delete/${commentId}`,
+    `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/comment/delete/${commentId}`,
     {
       method: "DELETE",
       headers,
@@ -959,7 +959,7 @@ export const addMeeting = async (meetingData: any) => {
 
   try {
     const headers = await createAuthHeaders();
-    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Meeting/add`;
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/Meeting/add`;
 
     const response = await fetch(url, {
       method: "POST",
@@ -996,7 +996,7 @@ export const updateMeeting = async (meetingId: string, meetingData: any) => {
 
   try {
     const headers = await createAuthHeaders();
-    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Meeting/update/${meetingId}`;
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/Meeting/update/${meetingId}`;
 
     const response = await fetch(url, {
       method: "PATCH",
@@ -1067,7 +1067,7 @@ export const fetchStatusCounts = async (
   };
 
   const response = await fetch(
-    `${process.env.EXPO_PUBLIC_BASE_URL}/api/Lead/statusCountsForUser`,
+    `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/Lead/statusCountsForUser`,
     {
       method: "POST",
       headers,
@@ -1095,7 +1095,7 @@ export const getLeadMeetings = async (leadId: string) => {
 
   try {
     const headers = await createAuthHeaders();
-    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Meeting/get/${leadId}`;
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/Meeting/get/${leadId}`;
 
     const response = await fetch(url, {
       method: "GET",
@@ -1142,7 +1142,7 @@ export const logDialerSession = async (sessionData: {
 
   try {
     const headers = await createAuthHeaders();
-    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/dialer-session/log`;
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/dialer-session/log`;
 
     const response = await fetch(url, {
       method: "POST",
@@ -1191,7 +1191,7 @@ export const getDialerSessionStats = async (userId: string | null, startDate: st
       params.append('userId', userId);
     }
     
-    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/dialer-session/stats?${params.toString()}`;
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/dialer-session/stats?${params.toString()}`;
 
     const response = await fetch(url, {
       method: "GET",

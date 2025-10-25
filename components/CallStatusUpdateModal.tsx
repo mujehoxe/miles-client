@@ -135,7 +135,7 @@ const CallStatusUpdateModal: React.FC<CallStatusUpdateModalProps> = ({
           }
 
           const headers = await createAuthHeaders();
-          const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/requirement-fields?includeInactive=false`, {
+          const response = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/requirement-fields?includeInactive=false`, {
             method: 'GET',
             headers,
           });
@@ -151,7 +151,7 @@ const CallStatusUpdateModal: React.FC<CallStatusUpdateModalProps> = ({
               console.log('CallStatusUpdateModal - No fields returned, attempting to initialize defaults');
               try {
                 // Try to initialize default fields
-                const initResponse = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL}/api/requirement-fields/initialize`, {
+                const initResponse = await fetch(`${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/requirement-fields/initialize`, {
                   method: 'POST',
                   headers,
                 });

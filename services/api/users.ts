@@ -11,7 +11,7 @@ export const getUsers = async () => {
   
   try {
     const headers = await createAuthHeaders();
-    const url = `${process.env.EXPO_PUBLIC_BASE_URL}/api/Users/get`;
+    const url = `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/api/Users/get`;
     
     const response = await fetch(url, {
       method: 'GET',
