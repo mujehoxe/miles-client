@@ -70,7 +70,9 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
   const [showUnitSelect, setShowUnitSelect] = useState(false);
 
   // Assignee options state
-  const [fetchedAssigneesOptions, setFetchedAssigneesOptions] = useState<User[]>([]);
+  const [fetchedAssigneesOptions, setFetchedAssigneesOptions] = useState<
+    User[]
+  >([]);
   const [assigneesOptionsLoading, setAssigneesOptionsLoading] = useState(false);
 
   const isEditMode = !!reminderToEdit;
@@ -123,8 +125,13 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
     }
 
     // If visible and no assignees options provided, fetch users
-    const hasAssigneesOptionsProp = assigneesOptions && assigneesOptions.length > 0;
-    if (visible && !hasAssigneesOptionsProp && fetchedAssigneesOptions.length === 0) {
+    const hasAssigneesOptionsProp =
+      assigneesOptions && assigneesOptions.length > 0;
+    if (
+      visible &&
+      !hasAssigneesOptionsProp &&
+      fetchedAssigneesOptions.length === 0
+    ) {
       (async () => {
         setAssigneesOptionsLoading(true);
         try {
@@ -176,34 +183,32 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
   }, [selectedDate, selectedTime]);
 
   const handleDateChange = (event: any, date?: Date) => {
-    setShowDatePicker(false);
+    if (Platform.OS === "android") {
+      setShowDatePicker(false);
+    }
     if (date) {
       setSelectedDate(date);
     }
   };
 
   const handleTimeChange = (event: any, time?: Date) => {
-    setShowTimePicker(false);
+    if (Platform.OS === "android") {
+      setShowTimePicker(false);
+    }
     if (time) {
       setSelectedTime(time);
     }
   };
 
-  const formatDateTime = (date: Date, time: Date) => {
-    const dateStr = date.toLocaleDateString();
-    const timeStr = time.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    return `${dateStr} ${timeStr}`;
-  };
-
   // Get effective assignees options (prop or fetched)
-  const effectiveAssigneesOptions = assigneesOptions.length > 0 ? assigneesOptions : fetchedAssigneesOptions;
+  const effectiveAssigneesOptions =
+    assigneesOptions.length > 0 ? assigneesOptions : fetchedAssigneesOptions;
 
   const getSelectedAssignee = () => {
     if (!reminder.Assignees) return null;
-    return effectiveAssigneesOptions.find((user) => user._id === reminder.Assignees);
+    return effectiveAssigneesOptions.find(
+      (user) => user._id === reminder.Assignees
+    );
   };
 
   const onSubmit = async () => {
@@ -236,12 +241,12 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
       }
 
       // Log the reminder data being sent
-      console.log('📅 Submitting reminder:', {
+      console.log("📅 Submitting reminder:", {
         DateTime: reminderData.DateTime,
         notifyBefore: reminderData.notifyBefore,
         Assignees: reminderData.Assignees,
         Comment: reminderData.Comment,
-        Leadid: reminderData.Leadid
+        Leadid: reminderData.Leadid,
       });
 
       let result;
@@ -250,8 +255,8 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
       } else {
         result = await addReminder(reminderData);
       }
-      
-      console.log('✅ Reminder API response:', result);
+
+      console.log("✅ Reminder API response:", result);
 
       Toast.show(
         isEditMode
@@ -265,8 +270,7 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
       if (onSuccess) onSuccess();
       onClose();
     } catch (error: any) {
-      console.error(error
-      );
+      console.error(error);
 
       const errorMessage =
         error.message || `Failed to ${isEditMode ? "update" : "add"} reminder`;
@@ -308,48 +312,71 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
               Date & Time <Text className="text-red-500">*</Text>
             </Text>
 
-            <View className="flex-row gap-2">
-              {/* Date Selection */}
-              <TouchableOpacity
-                className="flex-1 bg-white border border-gray-300 rounded-lg p-3 flex-row items-center justify-center"
-                onPress={() => setShowDatePicker(true)}
-              >
-                <Ionicons
-                  name="calendar"
-                  size={16}
-                  color="#6B7280"
-                  className="mr-2"
+            {Platform.OS === "ios" ? (
+              <View className="flex-row gap-4 items-start">
+                {/* Date Picker - takes remaining width */}
+                <DateTimePicker
+                  value={selectedDate}
+                  mode="date"
+                  display="default"
+                  onChange={handleDateChange}
+                  minimumDate={new Date()}
+                  maximumDate={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)}
+                  accentColor="#176298"
                 />
-                <Text className="text-base text-gray-900">
-                  {selectedDate.toLocaleDateString([], {
-                    weekday: "short",
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </Text>
-              </TouchableOpacity>
+                {/* Time Picker - fixed width */}
+                <DateTimePicker
+                  value={selectedTime}
+                  mode="time"
+                  display="default"
+                  onChange={handleTimeChange}
+                  accentColor="#176298"
+                />
+              </View>
+            ) : (
+              <View className="flex-row gap-2">
+                {/* Date Selection */}
+                <TouchableOpacity
+                  className="flex-1 bg-white border border-gray-300 rounded-lg p-3 flex-row items-center justify-center"
+                  onPress={() => setShowDatePicker(true)}
+                >
+                  <Ionicons
+                    name="calendar"
+                    size={16}
+                    color="#6B7280"
+                    className="mr-2"
+                  />
+                  <Text className="text-base text-gray-900">
+                    {selectedDate.toLocaleDateString([], {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </Text>
+                </TouchableOpacity>
 
-              {/* Time Selection */}
-              <TouchableOpacity
-                className="bg-white border border-gray-300 rounded-lg p-3 flex-row items-center justify-center min-w-[100px]"
-                onPress={() => setShowTimePicker(true)}
-              >
-                <Ionicons
-                  name="time"
-                  size={16}
-                  color="#6B7280"
-                  className="mr-2"
-                />
-                <Text className="text-base text-gray-900">
-                  {selectedTime.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: true,
-                  })}
-                </Text>
-              </TouchableOpacity>
-            </View>
+                {/* Time Selection */}
+                <TouchableOpacity
+                  className="bg-white border border-gray-300 rounded-lg p-3 flex-row items-center justify-center min-w-[100px]"
+                  onPress={() => setShowTimePicker(true)}
+                >
+                  <Ionicons
+                    name="time"
+                    size={16}
+                    color="#6B7280"
+                    className="mr-2"
+                  />
+                  <Text className="text-base text-gray-900">
+                    {selectedTime.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: true,
+                    })}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
           {/* Assignee Selection */}
@@ -442,27 +469,26 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
           </TouchableOpacity>
         </View>
 
-        {/* Date Picker */}
-        {showDatePicker && (
+        {/* Android Date/Time Pickers */}
+        {Platform.OS === "android" && showDatePicker && (
           <DateTimePicker
             value={selectedDate}
             mode="date"
-            display={Platform.OS === "ios" ? "compact" : "default"}
+            display="default"
             onChange={handleDateChange}
             minimumDate={new Date()}
-            maximumDate={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)} // 1 year from now
-            accentColor="#176298" // Miles brand color
+            maximumDate={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)}
+            accentColor="#176298"
           />
         )}
 
-        {/* Time Picker */}
-        {showTimePicker && (
+        {Platform.OS === "android" && showTimePicker && (
           <DateTimePicker
             value={selectedTime}
             mode="time"
-            display={Platform.OS === "ios" ? "compact" : "default"}
+            display="default"
             onChange={handleTimeChange}
-            accentColor="#176298" // Miles brand color
+            accentColor="#176298"
           />
         )}
 
@@ -475,70 +501,70 @@ const ReminderModal: React.FC<ReminderModalProps> = ({
           onRequestClose={() => setShowAssigneeSelect(false)}
         >
           <View className="flex-1 bg-white">
-              <View className="flex-row items-center justify-between p-4 border-b border-gray-200">
-                <Text className="text-lg font-semibold text-gray-900">
-                  Select Assignee
-                </Text>
-                <TouchableOpacity onPress={() => setShowAssigneeSelect(false)}>
-                  <Ionicons name="close" size={24} color="#6B7280" />
-                </TouchableOpacity>
-              </View>
-
-              <ScrollView className="flex-1">
-                <TouchableOpacity
-                  className={`flex-row items-center p-4 ${
-                    !reminder.Assignees ? "bg-miles-50" : ""
-                  }`}
-                  onPress={() => {
-                    setReminder((prev) => ({ ...prev, Assignees: "" }));
-                    setShowAssigneeSelect(false);
-                  }}
-                >
-                  <Text className="text-base text-gray-900 flex-1">
-                    No assignee
-                  </Text>
-                  {!reminder.Assignees && (
-                    <Ionicons name="checkmark" size={20} color="#3B82F6" />
-                  )}
-                </TouchableOpacity>
-                {assigneesOptionsLoading ? (
-                  <View className="flex-row justify-center items-center p-4">
-                    <ActivityIndicator size="small" color="#176298" />
-                    <Text className="text-gray-600 ml-2">Loading users...</Text>
-                  </View>
-                ) : (
-                  effectiveAssigneesOptions.map((user) => (
-                    <TouchableOpacity
-                      key={user._id}
-                      className={`flex-row items-center p-4 ${
-                        reminder.Assignees === user._id ? "bg-miles-50" : ""
-                      }`}
-                      onPress={() => {
-                        setReminder((prev) => ({ ...prev, Assignees: user._id }));
-                        setShowAssigneeSelect(false);
-                      }}
-                    >
-                      <View className="text-base text-gray-900 justify-between flex-1 flex-row">
-                        <Text>{user.username}</Text>
-                        <Text className="mr-2">
-                          {user.Role ? ` (${user.Role})` : ""}
-                        </Text>
-                      </View>
-                      <Ionicons
-                        className={`${
-                          reminder.Assignees === user._id
-                            ? "visible"
-                            : "invisible"
-                        }`}
-                        name="checkmark"
-                        size={20}
-                        color="#3B82F6"
-                      />
-                    </TouchableOpacity>
-                  ))
-                )}
-              </ScrollView>
+            <View className="flex-row items-center justify-between p-4 border-b border-gray-200">
+              <Text className="text-lg font-semibold text-gray-900">
+                Select Assignee
+              </Text>
+              <TouchableOpacity onPress={() => setShowAssigneeSelect(false)}>
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
             </View>
+
+            <ScrollView className="flex-1">
+              <TouchableOpacity
+                className={`flex-row items-center p-4 ${
+                  !reminder.Assignees ? "bg-miles-50" : ""
+                }`}
+                onPress={() => {
+                  setReminder((prev) => ({ ...prev, Assignees: "" }));
+                  setShowAssigneeSelect(false);
+                }}
+              >
+                <Text className="text-base text-gray-900 flex-1">
+                  No assignee
+                </Text>
+                {!reminder.Assignees && (
+                  <Ionicons name="checkmark" size={20} color="#3B82F6" />
+                )}
+              </TouchableOpacity>
+              {assigneesOptionsLoading ? (
+                <View className="flex-row justify-center items-center p-4">
+                  <ActivityIndicator size="small" color="#176298" />
+                  <Text className="text-gray-600 ml-2">Loading users...</Text>
+                </View>
+              ) : (
+                effectiveAssigneesOptions.map((user) => (
+                  <TouchableOpacity
+                    key={user._id}
+                    className={`flex-row items-center p-4 ${
+                      reminder.Assignees === user._id ? "bg-miles-50" : ""
+                    }`}
+                    onPress={() => {
+                      setReminder((prev) => ({ ...prev, Assignees: user._id }));
+                      setShowAssigneeSelect(false);
+                    }}
+                  >
+                    <View className="text-base text-gray-900 justify-between flex-1 flex-row">
+                      <Text>{user.username}</Text>
+                      <Text className="mr-2">
+                        {user.Role ? ` (${user.Role})` : ""}
+                      </Text>
+                    </View>
+                    <Ionicons
+                      className={`${
+                        reminder.Assignees === user._id
+                          ? "visible"
+                          : "invisible"
+                      }`}
+                      name="checkmark"
+                      size={20}
+                      color="#3B82F6"
+                    />
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+          </View>
         </Modal>
 
         {/* Unit Select Modal */}

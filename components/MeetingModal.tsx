@@ -83,7 +83,6 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
   const [developers, setDevelopers] = useState<any[]>([]);
   const [developerSearchLoading, setDeveloperSearchLoading] = useState(false);
 
-
   // Modal selection states
   const [showTypeSelect, setShowTypeSelect] = useState(false);
   const [showDirectAgentSelect, setShowDirectAgentSelect] = useState(false);
@@ -115,7 +114,6 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
 
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTime, setSelectedTime] = useState<Date>(new Date());
-
 
   // Handle developer search (move before useEffect to avoid dependency issues)
   const handleDeveloperSearch = async (query: string) => {
@@ -193,7 +191,6 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
     if (visible && developers.length === 0) {
       handleDeveloperSearch("");
     }
-
   }, [visible]);
 
   const updateDateTime = () => {
@@ -223,27 +220,25 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
   }, [selectedDate, selectedTime]);
 
   const handleDateChange = (event: any, date?: Date) => {
-    setShowDatePicker(false);
+    if (Platform.OS === "android") {
+      setShowDatePicker(false);
+    }
     if (date) {
       setSelectedDate(date);
     }
   };
 
   const handleTimeChange = (event: any, time?: Date) => {
-    setShowTimePicker(false);
+    if (Platform.OS === "android") {
+      setShowTimePicker(false);
+    }
     if (time) {
       setSelectedTime(time);
     }
   };
 
-
-
   const onSubmit = async () => {
-    if (
-      !meeting.Subject ||
-      !meeting.Date ||
-      !meeting.MeetingType
-    ) {
+    if (!meeting.Subject || !meeting.Date || !meeting.MeetingType) {
       Alert.alert("Error", "Please fill in all required fields.");
       return;
     }
@@ -283,8 +278,7 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
       if (onSuccess) onSuccess();
       onClose();
     } catch (error: any) {
-      console.error(error
-      );
+      console.error(error);
 
       const errorMessage =
         error.message || `Failed to ${isEditMode ? "update" : "add"} meeting`;
@@ -353,50 +347,70 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
               Meeting Date & Time <Text className="text-red-500">*</Text>
             </Text>
 
-            <View className="flex-row gap-2">
-              {/* Date Selection */}
-              <TouchableOpacity
-                className="flex-1 bg-white border border-gray-300 rounded-lg p-3 flex-row items-center justify-center"
-                onPress={() => setShowDatePicker(true)}
-              >
-                <Ionicons
-                  name="calendar"
-                  size={16}
-                  color="#6B7280"
-                  className="mr-2"
+            {Platform.OS === "ios" ? (
+              <View className="flex-row gap-4 items-start">
+                {/* Date Picker - takes remaining width */}
+                <DateTimePicker
+                  value={selectedDate}
+                  mode="date"
+                  display="default"
+                  onChange={handleDateChange}
+                  accentColor="#176298"
                 />
-                <Text className="text-base text-gray-900">
-                  {selectedDate.toLocaleDateString([], {
-                    weekday: "short",
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </Text>
-              </TouchableOpacity>
+                {/* Time Picker - fixed width */}
+                <DateTimePicker
+                  value={selectedTime}
+                  mode="time"
+                  display="default"
+                  onChange={handleTimeChange}
+                  accentColor="#176298"
+                />
+              </View>
+            ) : (
+              <View className="flex-row gap-2">
+                {/* Date Selection */}
+                <TouchableOpacity
+                  className="flex-1 bg-white border border-gray-300 rounded-lg p-3 flex-row items-center justify-center"
+                  onPress={() => setShowDatePicker(true)}
+                >
+                  <Ionicons
+                    name="calendar"
+                    size={16}
+                    color="#6B7280"
+                    className="mr-2"
+                  />
+                  <Text className="text-base text-gray-900">
+                    {selectedDate.toLocaleDateString([], {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </Text>
+                </TouchableOpacity>
 
-              {/* Time Selection */}
-              <TouchableOpacity
-                className="bg-white border border-gray-300 rounded-lg p-3 flex-row items-center justify-center min-w-[100px]"
-                onPress={() => setShowTimePicker(true)}
-              >
-                <Ionicons
-                  name="time"
-                  size={16}
-                  color="#6B7280"
-                  className="mr-2"
-                />
-                <Text className="text-base text-gray-900">
-                  {selectedTime.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: true,
-                  })}
-                </Text>
-              </TouchableOpacity>
-            </View>
+                {/* Time Selection */}
+                <TouchableOpacity
+                  className="bg-white border border-gray-300 rounded-lg p-3 flex-row items-center justify-center min-w-[100px]"
+                  onPress={() => setShowTimePicker(true)}
+                >
+                  <Ionicons
+                    name="time"
+                    size={16}
+                    color="#6B7280"
+                    className="mr-2"
+                  />
+                  <Text className="text-base text-gray-900">
+                    {selectedTime.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: true,
+                    })}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
-
 
           {/* Meeting Type */}
           <View className="mb-4">
@@ -519,8 +533,6 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
             </>
           )}
 
-
-
           {/* Comment */}
           <View className="mb-4">
             <Text className="text-sm font-medium text-gray-700 mb-2">
@@ -605,28 +617,26 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
           </TouchableOpacity>
         </View>
 
-        {/* Date Picker */}
-        {showDatePicker && (
+        {/* Android Date/Time Pickers */}
+        {Platform.OS === "android" && showDatePicker && (
           <DateTimePicker
             value={selectedDate}
             mode="date"
-            display={Platform.OS === "ios" ? "compact" : "default"}
+            display="default"
             onChange={handleDateChange}
-            accentColor="#176298" // Miles brand color
+            accentColor="#176298"
           />
         )}
 
-        {/* Time Picker */}
-        {showTimePicker && (
+        {Platform.OS === "android" && showTimePicker && (
           <DateTimePicker
             value={selectedTime}
             mode="time"
-            display={Platform.OS === "ios" ? "compact" : "default"}
+            display="default"
             onChange={handleTimeChange}
-            accentColor="#176298" // Miles brand color
+            accentColor="#176298"
           />
         )}
-
 
         {/* Type Select Modal */}
         <Modal
@@ -725,8 +735,6 @@ const MeetingModal: React.FC<MeetingModalProps> = ({
             </View>
           </View>
         </Modal>
-
-
 
         {/* Unit Select Modal */}
         <Modal

@@ -1,3 +1,4 @@
+import { DATE_FOR_OPTIONS } from "@/utils/constants";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import React, { useEffect, useState } from "react";
@@ -12,7 +13,6 @@ import {
 } from "react-native";
 import MultiSelectModal from "./MultiSelectModal";
 import TreeSelect from "./TreeSelect";
-import { DATE_FOR_OPTIONS } from "@/utils/constants";
 
 interface FilterOption {
   value: string;
@@ -299,7 +299,8 @@ export default function FiltersModal({
             <Text className="text-base font-semibold text-gray-700 mb-3">
               Date Range
             </Text>
-            <View className="flex-row gap-3">
+
+            <View className="flex-row gap-3 items-start">
               {/* Start Date */}
               <View className="flex-1">
                 <Text className="text-sm font-medium text-gray-700 mb-1">
@@ -432,56 +433,98 @@ export default function FiltersModal({
           )}
         </ScrollView>
 
-        {/* Native Date Pickers */}
-        {showStartDatePicker && (
-          <DateTimePicker
-            value={localFilters.dateRange[0] || new Date()}
-            mode="date"
-            display={Platform.OS === "ios" ? "compact" : "default"}
-            onChange={(event, date) => {
-              setShowStartDatePicker(false);
-              if (date) {
-                setLocalFilters((prev) => {
-                  const start = date;
-                  const end = prev.dateRange[1];
-                  const adjustedEnd = end && end < start ? start : end;
-                  return { ...prev, dateRange: [start, adjustedEnd] };
-                });
-              }
-            }}
-            maximumDate={localFilters.dateRange[1] || undefined}
-            accentColor="#176298"
-          />
-        )}
+        {/* Start Date Picker Modal */}
+        <Modal
+          visible={showStartDatePicker}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowStartDatePicker(false)}
+        >
+          <View className="flex-1 justify-center items-center bg-black/50 px-6">
+            <View className="bg-white rounded-lg shadow-lg max-w-sm w-full">
+              <View className="flex-row items-center justify-between p-4 border-b border-gray-200">
+                <TouchableOpacity onPress={() => setShowStartDatePicker(false)}>
+                  <Text className="text-blue-500 text-base">Cancel</Text>
+                </TouchableOpacity>
+                <Text className="text-lg font-semibold text-gray-900">Select Start Date</Text>
+                <TouchableOpacity onPress={() => setShowStartDatePicker(false)}>
+                  <Text className="text-blue-500 text-base font-semibold">Done</Text>
+                </TouchableOpacity>
+              </View>
+              <View className="p-4 items-center">
+                <DateTimePicker
+                  value={localFilters.dateRange[0] || new Date()}
+                  mode="date"
+                  display="default"
+                  onChange={(event, date) => {
+                    setShowStartDatePicker(false);
+                    if (date) {
+                      setLocalFilters((prev) => {
+                        const start = date;
+                        const end = prev.dateRange[1];
+                        const adjustedEnd = end && end < start ? start : end;
+                        return { ...prev, dateRange: [start, adjustedEnd] };
+                      });
+                    }
+                  }}
+                  maximumDate={localFilters.dateRange[1] || undefined}
+                  accentColor="#176298"
+                />
+              </View>
+            </View>
+          </View>
+        </Modal>
 
-        {showEndDatePicker && (
-          <DateTimePicker
-            value={localFilters.dateRange[1] || localFilters.dateRange[0] || new Date()}
-            mode="date"
-            display={Platform.OS === "ios" ? "compact" : "default"}
-            onChange={(event, date) => {
-              setShowEndDatePicker(false);
-              if (date) {
-                setLocalFilters((prev) => {
-                  const end = date;
-                  const start = prev.dateRange[0];
-                  const adjustedStart = start && end < start ? end : start;
-                  return { ...prev, dateRange: [adjustedStart, end] };
-                });
-              }
-            }}
-            minimumDate={localFilters.dateRange[0] || undefined}
-            accentColor="#176298"
-          />
-        )}
+        {/* End Date Picker Modal */}
+        <Modal
+          visible={showEndDatePicker}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowEndDatePicker(false)}
+        >
+          <View className="flex-1 justify-center items-center bg-black/50 px-6">
+            <View className="bg-white rounded-lg shadow-lg max-w-sm w-full">
+              <View className="flex-row items-center justify-between p-4 border-b border-gray-200">
+                <TouchableOpacity onPress={() => setShowEndDatePicker(false)}>
+                  <Text className="text-blue-500 text-base">Cancel</Text>
+                </TouchableOpacity>
+                <Text className="text-lg font-semibold text-gray-900">Select End Date</Text>
+                <TouchableOpacity onPress={() => setShowEndDatePicker(false)}>
+                  <Text className="text-blue-500 text-base font-semibold">Done</Text>
+                </TouchableOpacity>
+              </View>
+              <View className="p-4 items-center">
+                <DateTimePicker
+                  value={
+                    localFilters.dateRange[1] ||
+                    localFilters.dateRange[0] ||
+                    new Date()
+                  }
+                  mode="date"
+                  display="default"
+                  onChange={(event, date) => {
+                    setShowEndDatePicker(false);
+                    if (date) {
+                      setLocalFilters((prev) => {
+                        const end = date;
+                        const start = prev.dateRange[0];
+                        const adjustedStart = start && end < start ? end : start;
+                        return { ...prev, dateRange: [adjustedStart, end] };
+                      });
+                    }
+                  }}
+                  minimumDate={localFilters.dateRange[0] || undefined}
+                  accentColor="#176298"
+                />
+              </View>
+            </View>
+          </View>
+        </Modal>
 
         <View className="p-4 bg-white border-t border-gray-200">
           <TouchableOpacity
-            className={`rounded-lg p-4 items-center ${
-              showStartDatePicker || showEndDatePicker ? "bg-gray-300" : "bg-miles-500"
-            }`}
+            className="rounded-lg p-4 items-center bg-miles-500"
             onPress={handleApplyFilters}
-            disabled={showStartDatePicker || showEndDatePicker}
           >
             <Text className="text-white text-base font-semibold">
               Apply Filters
