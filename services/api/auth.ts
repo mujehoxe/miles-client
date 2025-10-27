@@ -1,6 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 import { jwtDecode } from "jwt-decode";
 import Toast from "react-native-root-toast";
+import { unsubscribeFromOneSignal } from "../../utils/oneSignalUtils";
 
 /**
  * Create standardized authentication headers for API requests
@@ -116,6 +117,9 @@ export const logout = async (): Promise<boolean> => {
       }
     }
 
+    // Unsubscribe from OneSignal before clearing auth data
+    await unsubscribeFromOneSignal();
+
     // Always clear local data regardless of server response
     await clearAuthData();
 
@@ -127,7 +131,8 @@ export const logout = async (): Promise<boolean> => {
   } catch (error) {
     console.error("Logout error:", error);
 
-    // Even if there's an error, clear local data
+    // Even if there's an error, unsubscribe from OneSignal and clear local data
+    await unsubscribeFromOneSignal();
     await clearAuthData();
 
     Toast.show("Logged out successfully", {
