@@ -1,0 +1,6 @@
+module Pods_MilesCRM {
+  umbrella header "Pods-MilesCRM-umbrella.h"
+
+  export *
+  module * { export * }
+}

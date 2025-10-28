@@ -1,0 +1,6 @@
+module ExpoCountdownNotification {
+  umbrella header "ExpoCountdownNotification-umbrella.h"
+
+  export *
+  module * { export * }
+}
