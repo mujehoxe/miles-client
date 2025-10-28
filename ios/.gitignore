@@ -32,3 +32,6 @@ project.xcworkspace
 # Allow Pods Target Support Files for Xcode Cloud
 !/Pods/Target Support Files/
 !/Pods/Manifest.lock
+
+# Allow OneSignal XCFramework for Xcode Cloud
+!/Pods/OneSignalXCFramework/
