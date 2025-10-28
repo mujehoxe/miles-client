@@ -28,13 +28,3 @@ project.xcworkspace
 
 # CocoaPods
 /Pods/
-
-# Allow Pods Target Support Files for Xcode Cloud
-!/Pods/Target Support Files/
-!/Pods/Manifest.lock
-
-# Allow OneSignal XCFramework for Xcode Cloud
-!/Pods/OneSignalXCFramework/
-
-# Allow hermes-engine for Xcode Cloud
-!/Pods/hermes-engine/

@@ -34,7 +34,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>exp+miles-crm</string>
+          <string>exp+miles-client</string>
         </array>
       </dict>
     </array>

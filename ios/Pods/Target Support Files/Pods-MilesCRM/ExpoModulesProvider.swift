@@ -126,6 +126,6 @@ public class ExpoModulesProvider: ModulesProvider {
   }
 
   public override func getAppCodeSignEntitlements() -> AppCodeSignEntitlements {
-    return AppCodeSignEntitlements.from(json: #"{"appGroups":["group.com.danish.milesclient.dev.onesignal"]}"#)
+    return AppCodeSignEntitlements.from(json: #"{"appGroups":["group.${ios.bundleIdentifier}.onesignal","group.com.danish.milesclient.dev.onesignal"]}"#)
   }
 }
