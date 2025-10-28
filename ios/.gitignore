@@ -35,3 +35,6 @@ project.xcworkspace
 
 # Allow OneSignal XCFramework for Xcode Cloud
 !/Pods/OneSignalXCFramework/
+
+# Allow hermes-engine for Xcode Cloud
+!/Pods/hermes-engine/
