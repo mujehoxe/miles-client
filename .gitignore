@@ -20,7 +20,6 @@ web-build/
 
 # Prebuild (only exclude root android/ios, not module android/ios)
 /android
-/ios
 
 # Metro
 .metro-health-check*

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Miles Client",
+    "name": "Miles CRM",
     "slug": "miles-client",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -15,12 +15,15 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.danish.milesclient.dev",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "config": {
         "usesNonExemptEncryption": false
       },
       "infoPlist": {
-        "UIBackgroundModes": ["fetch", "location"]
+        "UIBackgroundModes": [
+          "fetch",
+          "location"
+        ]
       },
       "entitlements": {
         "aps-environment": "development",
@@ -66,7 +69,8 @@
         {
           "mode": "development"
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true

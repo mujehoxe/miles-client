@@ -100,7 +100,7 @@ export default function ProfileScreen() {
             <InfoRow
               icon="business-outline"
               label="App"
-              value="Miles Client"
+              value="Miles CRM"
             />
           </View>
         </View>
@@ -126,7 +126,7 @@ export default function ProfileScreen() {
         {/* Footer */}
         <View className="items-center py-8 px-5">
           <Text className="text-gray-500 font-medium mb-1">
-            Miles Client Mobile App
+            Miles CRM Mobile App
           </Text>
           <Text className="text-gray-400">
             © 2024 Miles Homes Real Estate

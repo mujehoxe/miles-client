@@ -150,7 +150,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             <View style={styles.fallbackLogoContainer}>
               <Ionicons name="business" size={50} color={tintColor} />
               <Text style={[styles.fallbackTitle, { color: textColor }]}>
-                Miles Client
+                Miles CRM
               </Text>
             </View>
           )}
