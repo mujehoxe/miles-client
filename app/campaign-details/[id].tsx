@@ -1,5 +1,5 @@
-import LoadingView from "@/components/LoadingView";
-import { fetchCampaignLeads } from "@/services/campaignApi";
+import LoadingView from "../../components/LoadingView";
+import { fetchCampaignLeads } from "../../services/campaignApi";
 import { Ionicons } from "@expo/vector-icons";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import React, {

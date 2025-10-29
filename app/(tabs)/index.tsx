@@ -1,8 +1,8 @@
-import LoadingView from "@/components/LoadingView";
-import { clearAuthData } from "@/services/api/auth";
+import LoadingView from "../../components/LoadingView";
+import { clearAuthData } from "../../services/api/auth";
 import {
   fetchCampaignsWithCounts
-} from "@/services/campaignApi";
+} from "../../services/campaignApi";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, {

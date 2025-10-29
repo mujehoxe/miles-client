@@ -1,4 +1,4 @@
-import { FilterOption } from "@/services/api";
+import { FilterOption } from "../services/api";
 
 /**
  * Static filter options that don't require API calls

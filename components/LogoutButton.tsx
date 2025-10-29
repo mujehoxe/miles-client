@@ -1,4 +1,4 @@
-import { logout } from "@/services/api/auth";
+import { logout } from "../services/api/auth";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useContext, useState } from "react";
 import {

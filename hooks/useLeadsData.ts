@@ -6,7 +6,7 @@ import {
   fetchTagOptions,
   FilterOption,
   FilterOptions,
-} from "@/services/api";
+} from "../services/api";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Toast from "react-native-root-toast";
 

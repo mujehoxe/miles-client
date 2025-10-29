@@ -1,20 +1,20 @@
-import ActionButtons from "@/components/ActionButtons";
-import BulkModal from "@/components/BulkModal";
-import FiltersModal from "@/components/FiltersModal";
-import LeadsContent from "@/components/leads/LeadsContent";
-import LeadsHeader from "@/components/leads/LeadsHeader";
-import LeadTypeModal from "@/components/leads/LeadTypeModal";
-import LoadingView from "@/components/LoadingView";
-import MeetingModal from "@/components/MeetingModal";
-import ReminderModal from "@/components/ReminderModal";
-import CallStatusUpdateModal from "@/components/CallStatusUpdateModal";
+import ActionButtons from "../../components/ActionButtons";
+import BulkModal from "../../components/BulkModal";
+import FiltersModal from "../../components/FiltersModal";
+import LeadsContent from "../../components/leads/LeadsContent";
+import LeadsHeader from "../../components/leads/LeadsHeader";
+import LeadTypeModal from "../../components/leads/LeadTypeModal";
+import LoadingView from "../../components/LoadingView";
+import MeetingModal from "../../components/MeetingModal";
+import ReminderModal from "../../components/ReminderModal";
+import CallStatusUpdateModal from "../../components/CallStatusUpdateModal";
 
-import { useFilters } from "@/hooks/useFilters";
-import { useLeadsData } from "@/hooks/useLeadsData";
-import { useLeadsSelection } from "@/hooks/useLeadsSelection";
-import { useNavigationHeader } from "@/hooks/useNavigationHeader";
-import { usePagination } from "@/hooks/usePagination";
-import { useSearchDebounce } from "@/hooks/useSearchDebounce";
+import { useFilters } from "../../hooks/useFilters";
+import { useLeadsData } from "../../hooks/useLeadsData";
+import { useLeadsSelection } from "../../hooks/useLeadsSelection";
+import { useNavigationHeader } from "../../hooks/useNavigationHeader";
+import { usePagination } from "../../hooks/usePagination";
+import { useSearchDebounce } from "../../hooks/useSearchDebounce";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 
@@ -26,7 +26,7 @@ import tailwindConfig from "../../tailwind.config";
 
 import { UserContext } from "../_layout";
 
-import { LeadType } from "@/components/LeadTypeDropdown";
+import { LeadType } from "../../components/LeadTypeDropdown";
 import {
   ACTION_BUTTONS_HEIGHT,
   CALLBACK_DELAY,
@@ -34,28 +34,28 @@ import {
   MODAL_CLOSE_DELAY_LONG,
   MODAL_CLOSE_DELAY_SHORT,
   SCROLL_PADDING,
-} from "@/constants/ui";
-import useAgentInitialization from "@/hooks/useAgentInitialization";
-import useModalManager from "@/hooks/useModalManager";
-import useUserPermissions from "@/hooks/useUserPermissions";
+} from "../../constants/ui";
+import useAgentInitialization from "../../hooks/useAgentInitialization";
+import useModalManager from "../../hooks/useModalManager";
+import useUserPermissions from "../../hooks/useUserPermissions";
 import {
   deleteLeads,
   exportLeads,
   fetchStatusCounts,
   fetchTagOptions,
   updateLead,
-} from "@/services/api";
+} from "../../services/api";
 import {
   getFlattenedAgents,
   getUsersFromAgents,
   processAgentsForFilters,
-} from "@/utils/agents";
+} from "../../utils/agents";
 import {
   COUNT_OPTIONS,
   DEFAULT_PAGINATION,
   SEARCH_BOX_OPTIONS,
-} from "@/utils/constants";
-import ModalManager from "@/utils/ModalManager";
+} from "../../utils/constants";
+import ModalManager from "../../utils/ModalManager";
 
 const fullConfig = resolveConfig(tailwindConfig);
 const miles600 = fullConfig.theme.colors.miles[600];

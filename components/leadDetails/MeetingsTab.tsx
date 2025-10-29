@@ -1,5 +1,5 @@
-import { getLeadMeetings } from "@/services/api";
-import { formatTimestamp } from "@/utils/dateFormatter";
+import { getLeadMeetings } from "../../services/api";
+import { formatTimestamp } from "../../utils/dateFormatter";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
 import {

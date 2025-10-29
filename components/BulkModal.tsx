@@ -1,4 +1,4 @@
-import { bulkUpdateLeads, fetchTagOptions } from "@/services/api";
+import { bulkUpdateLeads, fetchTagOptions } from "../services/api";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {

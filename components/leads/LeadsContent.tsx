@@ -1,4 +1,4 @@
-import { FilterOption, FilterOptions } from "@/services/api";
+import { FilterOption, FilterOptions } from "../../services/api";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {

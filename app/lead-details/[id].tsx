@@ -1,9 +1,9 @@
-import LoadingView from "@/components/LoadingView";
+import LoadingView from "../../components/LoadingView";
 import {
   fetchCampaignLeadIds,
   fetchCampaignLeads,
-} from "@/services/campaignApi";
-import { getUserPermissions } from "@/utils/userPermissions";
+} from "../../services/campaignApi";
+import { getUserPermissions } from "../../utils/userPermissions";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";

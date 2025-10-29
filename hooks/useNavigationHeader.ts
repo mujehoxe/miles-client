@@ -1,4 +1,4 @@
-import { LeadType } from "@/components/LeadTypeDropdown";
+import { LeadType } from "../components/LeadTypeDropdown";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "expo-router";
 import React, { useCallback } from "react";

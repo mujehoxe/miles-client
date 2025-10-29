@@ -1,4 +1,4 @@
-import { DATE_FOR_OPTIONS } from "@/utils/constants";
+import { DATE_FOR_OPTIONS } from "../utils/constants";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import React, { useEffect, useState } from "react";

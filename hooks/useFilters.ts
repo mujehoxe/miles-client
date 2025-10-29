@@ -1,4 +1,4 @@
-import { FilterOptions } from "@/services/api";
+import { FilterOptions } from "../services/api";
 import { useCallback, useState } from "react";
 
 export interface UseFiltersProps {

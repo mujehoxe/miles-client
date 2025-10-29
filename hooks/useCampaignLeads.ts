@@ -2,7 +2,7 @@ import {
   fetchCampaignLeads,
   CampaignFilters,
   CampaignLeadsResponse,
-} from "@/services/campaignApi";
+} from "../services/campaignApi";
 import { useCallback, useEffect, useState } from "react";
 import Toast from "react-native-root-toast";
 

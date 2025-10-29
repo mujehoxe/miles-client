@@ -1,4 +1,5 @@
 import LoginPage from "../components/LoginPage";
+import TokenDebugger from "../components/TokenDebugger";
 import useLocation from "../hooks/useLocation";
 import useOneSignal from "../hooks/useOneSignal";
 // Import background location task to ensure it's registered
@@ -185,6 +186,7 @@ export default function RootLayout() {
   return (
     <RootSiblingParent>
       <StatusBar style="dark" backgroundColor="#ffffff" />
+      <TokenDebugger />
       <UserContext.Provider value={user}>
         <LogoutContext.Provider value={handleLogout}>
           <Stack>
