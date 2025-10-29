@@ -38,7 +38,7 @@ const AuthenticatedImage: React.FC<AuthenticatedImageProps> = ({
         const response = await fetch(source.uri, {
           method: "GET",
           headers: {
-            Cookie: `token=${token}`,
+            Authorization: `Bearer ${token}`,
             Accept: "image/*",
           },
         });

@@ -49,14 +49,11 @@ export const createAuthHeaders = async () => {
   const storedToken = await SecureStore.getItemAsync("userToken");
   if (!storedToken) throw new Error("No authentication token available");
 
+  // Use standard Bearer auth only to avoid server parsing the wrong header
   return {
     accept: "application/json, text/plain, */*",
     "content-type": "application/json",
-    Cookie: `token=${storedToken}`,
-    referer: `${process.env.EXPO_PUBLIC_BASE_URL?.replace(/\/$/, "")}/Leads/Marketing`,
-    origin: `${process.env.EXPO_PUBLIC_BASE_URL}`,
-    "user-agent":
-      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) MilesClient-Mobile/1.0.0",
+    Authorization: `Bearer ${storedToken}`,
     "x-requested-with": "XMLHttpRequest",
   };
 };

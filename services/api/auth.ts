@@ -11,18 +11,28 @@ export const createAuthHeaders = async () => {
   const storedToken = await SecureStore.getItemAsync("userToken");
   if (!storedToken) throw new Error("No authentication token available");
 
-  // Validate JWT format
+  // Validate JWT format before using it
   const tokenParts = storedToken.split(".");
+  if (tokenParts.length !== 3) {
+    console.log("JWT malformed - clearing invalid token");
+    await clearAuthData();
+    throw new Error("Invalid token format - JWT must have 3 parts");
+  }
+
+  // Try to decode the token to ensure it's valid
+  try {
+    jwtDecode(storedToken);
+  } catch (decodeError) {
+    console.log("JWT decode failed in createAuthHeaders, clearing token:", decodeError);
+    await clearAuthData();
+    throw new Error("Invalid token - decode failed");
+  }
 
   const headers = {
     Accept: "application/json, text/plain, */*",
     "Content-Type": "application/json",
     Authorization: `Bearer ${storedToken}`,
-    Cookie: `token=${storedToken}`,
     "X-Requested-With": "XMLHttpRequest",
-    // iOS device-specific headers
-    token: storedToken,
-    "x-auth-token": storedToken,
   };
 
   return headers;
@@ -101,7 +111,6 @@ export const logout = async (): Promise<boolean> => {
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${storedToken}`,
-              Cookie: `token=${storedToken}`,
             },
           }
         );
@@ -210,3 +219,63 @@ export const validateAuthToken = async (): Promise<boolean> => {
     return false;
   }
 };
+
+/**
+ * Emergency token cleanup - call this if you suspect token corruption
+ */
+export const emergencyTokenCleanup = async (): Promise<void> => {
+  try {
+    console.log('🚨 Emergency token cleanup initiated');
+    
+    // Clear all authentication data
+    await clearAuthData();
+    
+    // Clear any other potential token storage
+    await SecureStore.deleteItemAsync('access_token');
+    await SecureStore.deleteItemAsync('auth_token');
+    
+    console.log('✅ Emergency cleanup completed');
+    return;
+  } catch (error) {
+    console.error('❌ Emergency cleanup failed:', error);
+  }
+};
+
+/**
+ * Diagnostic function to check token health
+ */
+export const diagnoseToken = async (): Promise<string> => {
+  try {
+    const token = await SecureStore.getItemAsync('userToken');
+    
+    if (!token) {
+      return '❌ No token found in SecureStore';
+    }
+    
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      return `❌ JWT malformed - has ${parts.length} parts instead of 3`;
+    }
+    
+    try {
+      const decoded = jwtDecode(token) as { exp?: number };
+      const now = Math.floor(Date.now() / 1000);
+      const exp = decoded.exp || 0;
+      
+      if (exp < now) {
+        return '❌ Token is expired';
+      } else if ((exp - now) < 300) {
+        return '⚠️ Token expires within 5 minutes';
+      } else {
+        return '✅ Token appears healthy';
+      }
+    } catch (decodeError) {
+      return `❌ JWT decode failed: ${(decodeError as Error).message}`;
+    }
+  } catch (error) {
+    return `❌ Diagnostic failed: ${(error as Error).message}`;
+  }
+};
+
+
+
