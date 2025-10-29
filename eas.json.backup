@@ -1,0 +1,99 @@
+{
+  "cli": {
+    "version": ">= 12.4.1",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "resourceClass": "default",
+      "android": {
+        "image": "ubuntu-22.04-jdk-17-ndk-r21e",
+        "buildType": "apk",
+        "withoutCredentials": true
+      },
+      "ios": {
+        "image": "latest",
+        "withoutCredentials": true
+      },
+      "env": {
+        "NODE_ENV": "development",
+        "EXPO_PUBLIC_BASE_URL": "https://crm.propertymetre.com"
+      }
+    },
+    "staging": {
+      "distribution": "internal",
+      "channel": "staging",
+      "resourceClass": "default",
+      "android": {
+        "image": "ubuntu-22.04-jdk-17-ndk-r21e",
+        "buildType": "apk",
+        "withoutCredentials": true
+      },
+      "ios": {
+        "image": "latest",
+        "withoutCredentials": true
+      },
+      "env": {
+        "NODE_ENV": "staging",
+        "EXPO_PUBLIC_BASE_URL": "https://crm.propertymetre.com"
+      }
+    },
+    "development-simulator": {
+      "extends": "development",
+      "ios": {
+        "simulator": true
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "main",
+      "resourceClass": "default",
+      "android": {
+        "image": "ubuntu-22.04-jdk-17-ndk-r21e",
+        "buildType": "apk",
+        "withoutCredentials": true
+      },
+      "ios": {
+        "image": "latest",
+        "withoutCredentials": true
+      },
+      "env": {
+        "EXPO_PUBLIC_BASE_URL": "https://crm.propertymetre.com"
+      }
+    },
+    "production": {
+      "channel": "production",
+      "autoIncrement": true,
+      "resourceClass": "default",
+      "android": {
+        "image": "ubuntu-22.04-jdk-17-ndk-r21e",
+        "withoutCredentials": false
+      },
+      "ios": {
+        "image": "latest",
+        "withoutCredentials": false
+      },
+      "env": {
+        "NODE_ENV": "production",
+        "EXPO_PUBLIC_BASE_URL": "https://crm.propertymetre.com"
+      }
+    },
+    "local-android": {
+      "extends": "preview",
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk",
+        "withoutCredentials": true,
+        "gradleCommand": ":app:assembleRelease"
+      },
+      "env": {
+        "EXPO_PUBLIC_BASE_URL": "https://crm.propertymetre.com"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

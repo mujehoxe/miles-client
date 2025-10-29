@@ -22,6 +22,18 @@
         "EXPO_PUBLIC_BASE_URL": "https://crm.propertymetre.com"
       }
     },
+    "adhoc": {
+      "distribution": "internal",
+      "channel": "adhoc",
+      "resourceClass": "default",
+      "ios": {
+        "image": "latest"
+      },
+      "env": {
+        "NODE_ENV": "production",
+        "EXPO_PUBLIC_BASE_URL": "https://crm.propertymetre.com"
+      }
+    },
     "staging": {
       "distribution": "internal",
       "channel": "staging",
