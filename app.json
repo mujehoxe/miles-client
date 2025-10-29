@@ -4,7 +4,7 @@
     "slug": "miles-client",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/M Icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "light",
     "splash": {
