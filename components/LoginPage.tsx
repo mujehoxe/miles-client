@@ -38,7 +38,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const tintColor = "#176298"; // Miles primary color
 
   // Use the MILES logo
-  const logoSource = require("../assets/images/MILES.png");
+  const logoSource = require("../assets/images/miles-logo.png");
 
   React.useEffect(() => {
     Animated.timing(fadeAnim, {

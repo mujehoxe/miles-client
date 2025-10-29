@@ -4,7 +4,7 @@
     "slug": "miles-client",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/M Icon.png",
+    "icon": "./assets/images/m-icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "light",
     "splash": {
@@ -34,7 +34,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/m-icon.png",
         "backgroundColor": "#ffffff"
       },
       "permissions": [
