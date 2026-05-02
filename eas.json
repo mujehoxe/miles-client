@@ -19,7 +19,7 @@
       },
       "env": {
         "NODE_ENV": "development",
-        "EXPO_PUBLIC_BASE_URL": "https://crm.propertymetre.com"
+        "EXPO_PUBLIC_BASE_URL": "https://earnest-jelly-104eb3.netlify.app"
       }
     },
     "adhoc": {
@@ -31,7 +31,7 @@
       },
       "env": {
         "NODE_ENV": "production",
-        "EXPO_PUBLIC_BASE_URL": "https://crm.propertymetre.com"
+        "EXPO_PUBLIC_BASE_URL": "https://earnest-jelly-104eb3.netlify.app"
       }
     },
     "staging": {
@@ -49,7 +49,7 @@
       },
       "env": {
         "NODE_ENV": "staging",
-        "EXPO_PUBLIC_BASE_URL": "https://crm.propertymetre.com"
+        "EXPO_PUBLIC_BASE_URL": "https://earnest-jelly-104eb3.netlify.app"
       }
     },
     "development-simulator": {
@@ -72,7 +72,7 @@
         "withoutCredentials": true
       },
       "env": {
-        "EXPO_PUBLIC_BASE_URL": "https://crm.propertymetre.com"
+        "EXPO_PUBLIC_BASE_URL": "https://earnest-jelly-104eb3.netlify.app"
       }
     },
     "production": {
@@ -89,7 +89,7 @@
       },
       "env": {
         "NODE_ENV": "production",
-        "EXPO_PUBLIC_BASE_URL": "https://crm.propertymetre.com"
+        "EXPO_PUBLIC_BASE_URL": "https://earnest-jelly-104eb3.netlify.app"
       }
     },
     "local-android": {
@@ -101,7 +101,7 @@
         "gradleCommand": ":app:assembleRelease"
       },
       "env": {
-        "EXPO_PUBLIC_BASE_URL": "https://crm.propertymetre.com"
+        "EXPO_PUBLIC_BASE_URL": "https://earnest-jelly-104eb3.netlify.app"
       }
     }
   },

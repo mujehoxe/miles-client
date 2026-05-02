@@ -78,7 +78,7 @@ jobs:
       - name: Set environment variables
         run: |
           echo "NODE_ENV=${{ steps.env-setup.outputs.NODE_ENV }}" >> $GITHUB_ENV
-          echo "EXPO_PUBLIC_BASE_URL=https://crm.propertymetre.com" >> $GITHUB_ENV
+          echo "EXPO_PUBLIC_BASE_URL=https://earnest-jelly-104eb3.netlify.app" >> $GITHUB_ENV
 
       - name: Prebuild for Android
         run: |
@@ -86,7 +86,7 @@ jobs:
           npx expo prebuild --platform android --clean
         env:
           NODE_ENV: ${{ steps.env-setup.outputs.NODE_ENV }}
-          EXPO_PUBLIC_BASE_URL: https://crm.propertymetre.com
+          EXPO_PUBLIC_BASE_URL: https://earnest-jelly-104eb3.netlify.app
 
       - name: Create keystore directory
         run: mkdir -p android/app/
@@ -119,7 +119,7 @@ jobs:
           fi
         env:
           NODE_ENV: ${{ steps.env-setup.outputs.NODE_ENV }}
-          EXPO_PUBLIC_BASE_URL: https://crm.propertymetre.com
+          EXPO_PUBLIC_BASE_URL: https://earnest-jelly-104eb3.netlify.app
 
       - name: Find APK files
         id: find-apk

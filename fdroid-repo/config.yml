@@ -1,0 +1,18 @@
+repo_url: https://mujehoxe.github.io/miles-client/fdroid
+repo_name: Miles Client F-Droid Repository
+repo_icon: icon.png
+repo_description: |
+  F-Droid repository for Miles Client - a real-time location
+  tracking app for field agents. This repository provides APK
+  builds linked to the Netlify-hosted CRM backend.
+
+keystore: keystore.p12
+keystorepass: defaultpass
+keyalias: fdroid
+keypass: defaultpass
+keydname: CN=Miles Client F-Droid, OU=Mobile, O=MujeOrg
+
+make_current_version_link: true
+update_interval: 24
+
+archive_older_versions: false

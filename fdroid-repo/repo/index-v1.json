@@ -1,0 +1,38 @@
+{
+  "repo": {
+    "name": "Miles Client F-Droid Repository",
+    "icon": "icon.png",
+    "url": "https://mujehoxe.github.io/miles-client/fdroid",
+    "version": 21,
+    "timestamp": 1746201600,
+    "description": "F-Droid repository for Miles Client - a real-time location tracking app for field agents."
+  },
+  "apps": [
+    {
+      "id": "com.mujeorg.milesclient",
+      "name": "Miles Client",
+      "summary": "Real-time location tracking for field agents",
+      "description": "Miles Client is a mobile companion app for the Miles CRM system. It provides real-time location tracking for field agents, push notifications for lead assignments, and offline capabilities.",
+      "categories": ["Navigation", "Sports & Health"],
+      "license": "MIT",
+      "webSite": "https://earnest-jelly-104eb3.netlify.app",
+      "sourceCode": "https://github.com/mujehoxe/miles-client",
+      "added": "2025-05-02",
+      "lastUpdated": "2025-05-02",
+      "suggestedVersionCode": 1,
+      "packages": [
+        {
+          "versionName": "1.0.0",
+          "versionCode": 1,
+          "apkName": "com.mujeorg.milesclient_1.apk",
+          "hash": "8fd1cc91e23c1d72f0d31ba3bea2ae31a479a71ae2c284ed1287ed596ef52f96",
+          "hashType": "sha256",
+          "size": 75260804,
+          "sdkVer": 24,
+          "targetSdkVersion": 34,
+          "added": "2025-05-02"
+        }
+      ]
+    }
+  ]
+}
