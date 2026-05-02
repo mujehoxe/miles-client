@@ -1,11 +1,119 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Miles Client F-Droid Repository</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Miles Client - F-Droid Repository</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .version {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .description {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+        .download-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        .fdroid-section {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid #eee;
+        }
+        .fdroid-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        .repo-url {
+            background: #f5f5f5;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 13px;
+            color: #666;
+            word-break: break-all;
+        }
+        .features {
+            margin: 20px 0;
+            padding-left: 20px;
+        }
+        .features li {
+            margin: 8px 0;
+            color: #555;
+        }
+        .size {
+            color: #888;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Miles Client F-Droid Repository</h1>
-    <p>Add this URL to your F-Droid app:</p>
-    <code>https://mujehoxe.github.io/miles-client/fdroid</code>
+    <div class="card">
+        <h1>Miles Client</h1>
+        <div class="version">Version 1.0.0</div>
+
+        <p class="description">
+            Real-time location tracking app for field agents. Connects to your Miles CRM system on Netlify.
+        </p>
+
+        <ul class="features">
+            <li>GPS tracking with background location</li>
+            <li>Push notifications</li>
+            <li>Secure JWT authentication</li>
+            <li>Lead management</li>
+        </ul>
+
+        <a href="com.mujeorg.milesclient_1.apk" class="download-btn">
+            Download APK (75 MB)
+        </a>
+
+        <div class="fdroid-section">
+            <h3>Or use F-Droid app:</h3>
+            <p style="color: #666; margin-bottom: 10px;">Add this repository:</p>
+            <div class="repo-url">
+                https://mujehoxe.github.io/miles-client/fdroid
+            </div>
+        </div>
+    </div>
 </body>
 </html>
