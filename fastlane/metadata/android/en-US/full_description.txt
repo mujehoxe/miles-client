@@ -1,0 +1,13 @@
+<p>Miles Client is a mobile companion app for the Miles CRM system, designed for field agents who need real-time location tracking and lead management capabilities.</p>
+
+<p><b>Features:</b></p>
+<ul>
+<li>Real-time GPS tracking with background location service</li>
+<li>Push notifications for lead assignments via OneSignal</li>
+<li>Secure authentication with JWT tokens</li>
+<li>Lead management and status updates</li>
+<li>Offline capabilities with automatic sync</li>
+<li>Integration with Netlify-hosted CRM backend</li>
+</ul>
+
+<p><b>Note:</b> This app requires a connection to the Miles CRM backend service at earnest-jelly-104eb3.netlify.app</p>
