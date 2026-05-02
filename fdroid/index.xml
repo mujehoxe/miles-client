@@ -21,6 +21,7 @@
       <version>1.0.0</version>
       <versionCode>1</versionCode>
       <apkName>com.mujeorg.milesclient_1.apk</apkName>
+      <srcName>com.mujeorg.milesclient_1.apk</srcName>
       <hash>8fd1cc91e23c1d72f0d31ba3bea2ae31a479a71ae2c284ed1287ed596ef52f96</hash>
       <hashType>sha256</hashType>
       <size>75260804</size>
