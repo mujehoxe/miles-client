@@ -16,18 +16,18 @@
     <added>2025-05-02</added>
     <lastUpdated>2025-05-02</lastUpdated>
     <marketVersion>1.0.0</marketVersion>
-    <marketVersionCode>1</marketVersionCode>
-    <package version="1.0.0" versionCode="1">
+    <marketVersionCode>2</marketVersionCode>
+    <package version="1.0.0" versionCode="2">
       <version>1.0.0</version>
-      <versionCode>1</versionCode>
-      <apkName>com.mujeorg.milesclient_1.apk</apkName>
-      <srcName>com.mujeorg.milesclient_1.apk</srcName>
-      <hash>8fd1cc91e23c1d72f0d31ba3bea2ae31a479a71ae2c284ed1287ed596ef52f96</hash>
+      <versionCode>2</versionCode>
+      <apkName>com.mujeorg.milesclient_2.apk</apkName>
+      <srcName>com.mujeorg.milesclient_2.apk</srcName>
+      <hash>066761e3dc86a874e0fb11f75653dc37e1312cc93b18ff70755df53eb118b3af</hash>
       <hashType>sha256</hashType>
-      <size>75260804</size>
+      <size>76372597</size>
       <sdkVer>24</sdkVer>
       <targetSdkVersion>34</targetSdkVersion>
-      <added>2025-05-02</added>
+      <added>2025-05-03</added>
     </package>
   </application>
 </fdroid>
